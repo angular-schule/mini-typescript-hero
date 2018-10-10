@@ -2,10 +2,10 @@ import 'reflect-metadata';
 
 import { ExtensionContext } from 'vscode';
 
-import Activatable from './activatable';
-import ioc from './ioc';
-import iocSymbols from './ioc-symbols';
-import TypescriptHero from './typescript-hero';
+import { Activatable } from './activatable';
+import { ioc } from './ioc';
+import { iocSymbols } from './ioc-symbols';
+import { TypescriptHero } from './typescript-hero';
 
 let extension: Activatable;
 
@@ -19,7 +19,9 @@ export async function activate(context: ExtensionContext): Promise<void> {
   if (ioc.isBound(iocSymbols.extensionContext)) {
     ioc.unbind(iocSymbols.extensionContext);
   }
-  ioc.bind<ExtensionContext>(iocSymbols.extensionContext).toConstantValue(context);
+  ioc
+    .bind<ExtensionContext>(iocSymbols.extensionContext)
+    .toConstantValue(context);
 
   extension = ioc.get(TypescriptHero);
 

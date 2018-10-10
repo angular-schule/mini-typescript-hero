@@ -1,9 +1,9 @@
 import { inject, injectable } from 'inversify';
-import { commands, ExtensionContext, window, workspace } from 'vscode';
+import { commands, ExtensionContext, TextDocumentWillSaveEvent, window, workspace } from 'vscode';
 
-import Activatable from '../activatable';
-import Configuration from '../configuration';
-import iocSymbols, { ImportManagerProvider } from '../ioc-symbols';
+import { Activatable } from '../activatable';
+import { Configuration } from '../configuration';
+import { ImportManagerProvider, iocSymbols } from '../ioc-symbols';
 import { Logger } from '../utilities/logger';
 
 @injectable()
@@ -12,23 +12,30 @@ export class ImportOrganizer implements Activatable {
     @inject(iocSymbols.extensionContext) private context: ExtensionContext,
     @inject(iocSymbols.logger) private logger: Logger,
     @inject(iocSymbols.configuration) private config: Configuration,
-    @inject(iocSymbols.importManager) private importManagerProvider: ImportManagerProvider,
-  ) { }
+    @inject(iocSymbols.importManager)
+    private importManagerProvider: ImportManagerProvider,
+  ) {}
 
   public setup(): void {
     this.logger.debug('[ImportOrganizer] Setting up ImportOrganizer.');
     this.context.subscriptions.push(
-      commands.registerTextEditorCommand('typescriptHero.imports.organize', () => this.organizeImports()),
+      commands.registerTextEditorCommand(
+        'typescriptHero.imports.organize',
+        () => this.organizeImports(),
+      ),
     );
     this.context.subscriptions.push(
-      workspace.onWillSaveTextDocument((event) => {
+      workspace.onWillSaveTextDocument((event: TextDocumentWillSaveEvent) => {
         if (!this.config.imports.organizeOnSave(event.document.uri)) {
           this.logger.debug(
             '[ImportOrganizer] OrganizeOnSave is deactivated through config',
           );
           return;
         }
-        if (this.config.parseableLanguages().indexOf(event.document.languageId) < 0) {
+        if (
+          this.config.parseableLanguages().indexOf(event.document.languageId) <
+          0
+        ) {
           this.logger.debug(
             '[ImportOrganizer] OrganizeOnSave not possible for given language',
             { language: event.document.languageId },
@@ -36,12 +43,13 @@ export class ImportOrganizer implements Activatable {
           return;
         }
 
-        this.logger.info(
-          '[ImportOrganizer] OrganizeOnSave for file',
-          { file: event.document.fileName },
-        );
+        this.logger.info('[ImportOrganizer] OrganizeOnSave for file', {
+          file: event.document.fileName,
+        });
         event.waitUntil(
-          this.importManagerProvider(event.document).then(manager => manager.organizeImports().calculateTextEdits()),
+          this.importManagerProvider(event.document).then(manager =>
+            manager.organizeImports().calculateTextEdits(),
+          ),
         );
       }),
     );
@@ -76,7 +84,9 @@ export class ImportOrganizer implements Activatable {
         '[ImportOrganizer] Organize the imports in the document',
         { file: window.activeTextEditor.document.fileName },
       );
-      const ctrl = await this.importManagerProvider(window.activeTextEditor.document);
+      const ctrl = await this.importManagerProvider(
+        window.activeTextEditor.document,
+      );
       await ctrl.organizeImports().commit();
     } catch (e) {
       this.logger.error(

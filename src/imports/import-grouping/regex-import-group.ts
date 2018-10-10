@@ -15,7 +15,9 @@ export class RegexImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
 
   public get sortedImports(): Import[] {
-    const sorted = this.imports.sort((i1, i2) => importSort(i1, i2, this.order));
+    const sorted = this.imports.sort((i1, i2) =>
+      importSort(i1, i2, this.order),
+    );
     return [
       ...sorted.filter(i => i instanceof StringImport),
       ...sorted.filter(i => !(i instanceof StringImport)),
@@ -30,7 +32,10 @@ export class RegexImportGroup implements ImportGroup {
    *
    * @memberof RegexImportGroup
    */
-  constructor(public readonly regex: string, public readonly order: ImportGroupOrder = 'asc') { }
+  constructor(
+    public readonly regex: string,
+    public readonly order: ImportGroupOrder = ImportGroupOrder.Asc,
+  ) {}
 
   public reset(): void {
     this.imports.length = 0;
@@ -38,8 +43,12 @@ export class RegexImportGroup implements ImportGroup {
 
   public processImport(tsImport: Import): boolean {
     let regexString = this.regex;
-    regexString = regexString.startsWith('/') ? regexString.substring(1) : regexString;
-    regexString = regexString.endsWith('/') ? regexString.substring(0, regexString.length - 1) : regexString;
+    regexString = regexString.startsWith('/')
+      ? regexString.substring(1)
+      : regexString;
+    regexString = regexString.endsWith('/')
+      ? regexString.substring(0, regexString.length - 1)
+      : regexString;
     const regex = new RegExp(regexString, 'g');
 
     if (regex.test(tsImport.libraryName)) {

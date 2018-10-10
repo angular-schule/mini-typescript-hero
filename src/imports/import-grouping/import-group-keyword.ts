@@ -5,8 +5,8 @@
  * @enum {number}
  */
 export enum ImportGroupKeyword {
-  Modules,
-  Plains,
-  Workspace,
-  Remaining,
+  Modules = 'Modules',
+  Plains = 'Plains',
+  Workspace = 'Workspace',
+  Remaining = 'Remaining',
 }

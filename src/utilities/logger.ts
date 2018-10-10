@@ -5,7 +5,7 @@ const transportClass = require('winston-transport');
 const { LEVEL, MESSAGE } = require('triple-beam');
 
 const { combine, timestamp, printf } = format;
-const transport = transportClass as { new(...args: any[]): any; };
+const transport = transportClass as { new (...args: any[]): any };
 
 const levels = {
   error: 0,
@@ -60,7 +60,9 @@ export interface Logger {
   info: (message: string, ...data: any[]) => void;
   debug: (message: string, ...data: any[]) => void;
   profile: (name: string) => void;
-  startTimer(): { done: (info: { message: string, [key: string]: any }) => void; };
+  startTimer(): {
+    done: (info: { message: string; [key: string]: any }) => void;
+  };
 }
 
 const loggerTransports = [
@@ -69,7 +71,10 @@ const loggerTransports = [
   }),
 ];
 
-export default function winstonLogger(verbosity: keyof typeof levels, context: ExtensionContext): Logger {
+export function winstonLogger(
+  verbosity: keyof typeof levels,
+  context: ExtensionContext,
+): Logger {
   const level = !!process.env.CI ? 'error' : verbosity;
 
   if (!process.env.CI && !process.env.EXT_DEBUG && !process.env.LOCAL_TEST) {
@@ -85,7 +90,10 @@ export default function winstonLogger(verbosity: keyof typeof levels, context: E
       maxFiles: 1,
       tailable: true,
     });
-    const outputHandler = new OutputWindowTransport({ exitOnError: false }, channel);
+    const outputHandler = new OutputWindowTransport(
+      { exitOnError: false },
+      channel,
+    );
 
     loggerTransports.push(fileHandler);
     loggerTransports.push(outputHandler);
@@ -99,7 +107,7 @@ export default function winstonLogger(verbosity: keyof typeof levels, context: E
     format: combine(
       format.splat(),
       timestamp(),
-      printf((info) => {
+      printf((info: any) => {
         const message = `${info.timestamp} - ${info.level}: ${info.message}`;
         const data = {
           ...info,

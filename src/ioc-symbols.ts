@@ -1,9 +1,9 @@
 import { TypescriptCodeGenerator } from 'typescript-parser';
 import { TextDocument, Uri } from 'vscode';
 
-import ImportManager from './imports/import-manager';
+import { ImportManager } from './imports/import-manager';
 
-export default {
+export const iocSymbols = {
   activatables: Symbol('activatables'),
   configuration: Symbol('configuration'),
   declarationManager: Symbol('declarationManager'),
@@ -14,5 +14,9 @@ export default {
   parser: Symbol('parser'),
 };
 
-export type ImportManagerProvider = (document: TextDocument) => Promise<ImportManager>;
-export type TypescriptCodeGeneratorFactory = (resource: Uri) => TypescriptCodeGenerator;
+export type ImportManagerProvider = (
+  document: TextDocument,
+) => Promise<ImportManager>;
+export type TypescriptCodeGeneratorFactory = (
+  resource: Uri,
+) => TypescriptCodeGenerator;

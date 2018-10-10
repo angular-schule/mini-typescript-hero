@@ -13,7 +13,7 @@
     "experimentalDecorators": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "strictNullChecks": true,
+    "strict": true,
     "importHelpers": true,
     "removeComments": true
   },

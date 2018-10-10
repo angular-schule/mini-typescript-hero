@@ -14,7 +14,7 @@ import {
 } from 'typescript-parser';
 import { Position, Range, TextDocument, TextEdit, window, workspace, WorkspaceEdit } from 'vscode';
 
-import Configuration from '../configuration';
+import { Configuration } from '../configuration';
 import { TypescriptCodeGeneratorFactory } from '../ioc-symbols';
 import { Logger } from '../utilities/logger';
 import {
@@ -29,12 +29,17 @@ import {
 } from '../utilities/utility-functions';
 import { ImportGroup } from './import-grouping';
 
-function sameSpecifiers(specs1: SymbolSpecifier[], specs2: SymbolSpecifier[]): boolean {
+function sameSpecifiers(
+  specs1: SymbolSpecifier[],
+  specs2: SymbolSpecifier[],
+): boolean {
   for (const spec of specs1) {
     const spec2 = specs2[specs1.indexOf(spec)];
-    if (!spec2 ||
+    if (
+      !spec2 ||
       spec.specifier !== spec2.specifier ||
-      spec.alias !== spec2.alias) {
+      spec.alias !== spec2.alias
+    ) {
       return false;
     }
   }
@@ -50,13 +55,21 @@ function sameSpecifiers(specs1: SymbolSpecifier[], specs2: SymbolSpecifier[]): b
  * @param {number} [end]
  * @returns {Range}
  */
-export function importRange(document: TextDocument, start?: number, end?: number): Range {
-  return start !== undefined && end !== undefined ?
-    new Range(
-      document.lineAt(document.positionAt(start).line).rangeIncludingLineBreak.start,
-      document.lineAt(document.positionAt(end).line).rangeIncludingLineBreak.end,
-    ) :
-    new Range(new Position(0, 0), new Position(0, 0));
+export function importRange(
+  document: TextDocument,
+  start?: number,
+  end?: number,
+): Range {
+  return start !== undefined && end !== undefined
+    ? new Range(
+        document.lineAt(
+          document.positionAt(start).line,
+        ).rangeIncludingLineBreak.start,
+        document.lineAt(
+          document.positionAt(end).line,
+        ).rangeIncludingLineBreak.end,
+      )
+    : new Range(new Position(0, 0), new Position(0, 0));
 }
 
 /**
@@ -66,10 +79,10 @@ export function importRange(document: TextDocument, start?: number, end?: number
  * @export
  * @class ImportManager
  */
-export default class ImportManager {
-  private importGroups: ImportGroup[];
+export class ImportManager {
+  private importGroups: ImportGroup[] = [];
   private imports: Import[] = [];
-  private organize: boolean;
+  private organize: boolean = false;
 
   private get rootPath(): string | undefined {
     const rootFolder = workspace.getWorkspaceFolder(this.document.uri);
@@ -99,10 +112,9 @@ export default class ImportManager {
     private readonly logger: Logger,
     private readonly generatorFactory: TypescriptCodeGeneratorFactory,
   ) {
-    this.logger.debug(
-      `[ImportManager] Create import manager`,
-      { file: document.fileName },
-    );
+    this.logger.debug(`[ImportManager] Create import manager`, {
+      file: document.fileName,
+    });
     this.reset();
   }
 
@@ -128,10 +140,9 @@ export default class ImportManager {
    * @memberof ImportManager
    */
   public organizeImports(): this {
-    this.logger.debug(
-      '[ImportManager] Organize the imports',
-      { file: this.document.fileName },
-    );
+    this.logger.debug('[ImportManager] Organize the imports', {
+      file: this.document.fileName,
+    });
     this.organize = true;
     let keep: Import[] = [];
 
@@ -139,29 +150,48 @@ export default class ImportManager {
       keep = this.imports;
     } else {
       for (const actImport of this.imports) {
-        if (this.config.imports.ignoredFromRemoval(this.document.uri).indexOf(actImport.libraryName) >= 0) {
+        if (
+          this.config.imports
+            .ignoredFromRemoval(this.document.uri)
+            .indexOf(actImport.libraryName) >= 0
+        ) {
           keep.push(actImport);
           continue;
         }
-        if (actImport instanceof NamespaceImport ||
-          actImport instanceof ExternalModuleImport) {
-          if (this._parsedDocument.nonLocalUsages.indexOf(actImport.alias) > -1) {
+        if (
+          actImport instanceof NamespaceImport ||
+          actImport instanceof ExternalModuleImport
+        ) {
+          if (
+            this._parsedDocument.nonLocalUsages.indexOf(actImport.alias) > -1
+          ) {
             keep.push(actImport);
           }
         } else if (actImport instanceof NamedImport) {
           actImport.specifiers = actImport.specifiers
-            .filter(o => this._parsedDocument.nonLocalUsages.indexOf(o.alias || o.specifier) > -1)
+            .filter(
+              o =>
+                this._parsedDocument.nonLocalUsages.indexOf(
+                  o.alias || o.specifier,
+                ) > -1,
+            )
             .sort(specifierSort);
           const defaultSpec = actImport.defaultAlias;
-          const libraryAlreadyImported = keep.find(d => d.libraryName === actImport.libraryName);
-          if (actImport.specifiers.length ||
-            (!!defaultSpec && [
-              ...this._parsedDocument.nonLocalUsages,
-              ...this._parsedDocument.usages,
-            ].indexOf(defaultSpec) >= 0)) {
+          const libraryAlreadyImported = keep.find(
+            d => d.libraryName === actImport.libraryName,
+          );
+          if (
+            actImport.specifiers.length ||
+            (!!defaultSpec &&
+              [
+                ...this._parsedDocument.nonLocalUsages,
+                ...this._parsedDocument.usages,
+              ].indexOf(defaultSpec) >= 0)
+          ) {
             if (libraryAlreadyImported) {
               if (actImport.defaultAlias) {
-                (<NamedImport>libraryAlreadyImported).defaultAlias = actImport.defaultAlias;
+                (<NamedImport>libraryAlreadyImported).defaultAlias =
+                  actImport.defaultAlias;
               }
               (<NamedImport>libraryAlreadyImported).specifiers = [
                 ...(<NamedImport>libraryAlreadyImported).specifiers,
@@ -178,7 +208,9 @@ export default class ImportManager {
     }
 
     if (!this.config.imports.disableImportsSorting(this.document.uri)) {
-      const sorter = this.config.imports.organizeSortsByFirstSpecifier(this.document.uri)
+      const sorter = this.config.imports.organizeSortsByFirstSpecifier(
+        this.document.uri,
+      )
         ? importSortByFirstSpecifier
         : importSort;
 
@@ -189,7 +221,9 @@ export default class ImportManager {
     }
 
     if (this.config.imports.removeTrailingIndex(this.document.uri)) {
-      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
+      for (const imp of keep.filter(lib =>
+        lib.libraryName.endsWith('/index'),
+      )) {
         imp.libraryName = imp.libraryName.replace(/\/index$/, '');
       }
     }
@@ -214,17 +248,20 @@ export default class ImportManager {
    * @memberof ImportManager
    */
   public addDeclarationImport(declarationInfo: DeclarationInfo): this {
-    this.logger.debug(
-      '[ImportManager] Add declaration as import',
-      { file: this.document.fileName, specifier: declarationInfo.declaration.name, library: declarationInfo.from },
-    );
+    this.logger.debug('[ImportManager] Add declaration as import', {
+      file: this.document.fileName,
+      specifier: declarationInfo.declaration.name,
+      library: declarationInfo.from,
+    });
     // If there is something already imported, it must be a NamedImport
     const alreadyImported: NamedImport = this.imports.find(
-      o => declarationInfo.from === getAbsolutLibraryName(
-        o.libraryName,
-        this.document.fileName,
-        this.rootPath,
-      ) && o instanceof NamedImport,
+      o =>
+        declarationInfo.from ===
+          getAbsolutLibraryName(
+            o.libraryName,
+            this.document.fileName,
+            this.rootPath,
+          ) && o instanceof NamedImport,
     ) as NamedImport;
 
     if (alreadyImported) {
@@ -232,15 +269,23 @@ export default class ImportManager {
       if (declarationInfo.declaration instanceof DefaultDeclaration) {
         delete alreadyImported.defaultAlias;
         alreadyImported.defaultAlias = declarationInfo.declaration.name;
-      } else if (!alreadyImported.specifiers.some(o => o.specifier === declarationInfo.declaration.name)) {
-        alreadyImported.specifiers.push(new SymbolSpecifier(declarationInfo.declaration.name));
+      } else if (
+        !alreadyImported.specifiers.some(
+          o => o.specifier === declarationInfo.declaration.name,
+        )
+      ) {
+        alreadyImported.specifiers.push(
+          new SymbolSpecifier(declarationInfo.declaration.name),
+        );
       }
     } else {
-      let imp: Import = new NamedImport(getRelativeLibraryName(
-        declarationInfo.from,
-        this.document.fileName,
-        this.rootPath,
-      ));
+      let imp: Import = new NamedImport(
+        getRelativeLibraryName(
+          declarationInfo.from,
+          this.document.fileName,
+          this.rootPath,
+        ),
+      );
 
       if (declarationInfo.declaration instanceof ModuleDeclaration) {
         imp = new NamespaceImport(
@@ -250,7 +295,9 @@ export default class ImportManager {
       } else if (declarationInfo.declaration instanceof DefaultDeclaration) {
         (imp as NamedImport).defaultAlias = declarationInfo.declaration.name;
       } else {
-        (imp as NamedImport).specifiers.push(new SymbolSpecifier(declarationInfo.declaration.name));
+        (imp as NamedImport).specifiers.push(
+          new SymbolSpecifier(declarationInfo.declaration.name),
+        );
       }
       this.imports.push(imp);
       this.addImportsToGroups([imp]);
@@ -274,10 +321,9 @@ export default class ImportManager {
 
     workspaceEdit.set(this.document.uri, edits);
 
-    this.logger.debug(
-      '[ImportManager] Commit the file',
-      { file: this.document.fileName },
-    );
+    this.logger.debug('[ImportManager] Commit the file', {
+      file: this.document.fileName,
+    });
 
     const result = await workspace.applyEdit(workspaceEdit);
 
@@ -312,9 +358,13 @@ export default class ImportManager {
       // delete all imports and the following lines (if empty)
       // newly generate all groups.
       for (const imp of this._parsedDocument.imports) {
-        edits.push(TextEdit.delete(importRange(this.document, imp.start, imp.end)));
+        edits.push(
+          TextEdit.delete(importRange(this.document, imp.start, imp.end)),
+        );
         if (imp.end !== undefined) {
-          const nextLine = this.document.lineAt(this.document.positionAt(imp.end).line + 1);
+          const nextLine = this.document.lineAt(
+            this.document.positionAt(imp.end).line + 1,
+          );
           if (nextLine.text === '') {
             edits.push(TextEdit.delete(nextLine.rangeIncludingLineBreak));
           }
@@ -325,10 +375,12 @@ export default class ImportManager {
         .filter(Boolean)
         .join('\n');
       if (!!imports) {
-        edits.push(TextEdit.insert(
-          getImportInsertPosition(window.activeTextEditor),
-          `${imports}\n`,
-        ));
+        edits.push(
+          TextEdit.insert(
+            getImportInsertPosition(window.activeTextEditor),
+            `${imports}\n`,
+          ),
+        );
       }
     } else {
       // Commit the documents imports:
@@ -336,34 +388,44 @@ export default class ImportManager {
       // 2. Update existing / insert new ones
       for (const imp of this._parsedDocument.imports) {
         if (!this.imports.some(o => o.libraryName === imp.libraryName)) {
-          edits.push(TextEdit.delete(importRange(this.document, imp.start, imp.end)));
+          edits.push(
+            TextEdit.delete(importRange(this.document, imp.start, imp.end)),
+          );
         }
       }
-      const actualDocumentsNamed = this._parsedDocument.imports.filter(o => o instanceof NamedImport);
+      const actualDocumentsNamed = this._parsedDocument.imports.filter(
+        o => o instanceof NamedImport,
+      ) as NamedImport[];
       for (const imp of this.imports) {
-        if (imp instanceof NamedImport &&
-          actualDocumentsNamed.some((o: NamedImport) =>
-            o.libraryName === imp.libraryName &&
-            o.defaultAlias === imp.defaultAlias &&
-            o.specifiers.length === imp.specifiers.length &&
-            sameSpecifiers(o.specifiers, imp.specifiers))) {
+        if (
+          imp instanceof NamedImport &&
+          actualDocumentsNamed.some(
+            o =>
+              o.libraryName === imp.libraryName &&
+              o.defaultAlias === imp.defaultAlias &&
+              o.specifiers.length === imp.specifiers.length &&
+              sameSpecifiers(o.specifiers, imp.specifiers),
+          )
+        ) {
           continue;
         }
         if (imp.isNew) {
-          edits.push(TextEdit.insert(
-            getImportInsertPosition(
-              window.activeTextEditor,
+          edits.push(
+            TextEdit.insert(
+              getImportInsertPosition(window.activeTextEditor),
+              this.generator.generate(imp) + '\n',
             ),
-            this.generator.generate(imp) + '\n',
-          ));
+          );
         } else {
-          edits.push(TextEdit.replace(
-            new Range(
-              this.document.positionAt(imp.start!),
-              this.document.positionAt(imp.end!),
+          edits.push(
+            TextEdit.replace(
+              new Range(
+                this.document.positionAt(imp.start!),
+                this.document.positionAt(imp.end!),
+              ),
+              this.generator.generate(imp),
             ),
-            this.generator.generate(imp),
-          ));
+          );
         }
       }
     }
@@ -380,7 +442,9 @@ export default class ImportManager {
    * @memberof ImportManager
    */
   private addImportsToGroups(imports: Import[]): void {
-    const importGroupsWithPrecedence = importGroupSortForPrecedence(this.importGroups);
+    const importGroupsWithPrecedence = importGroupSortForPrecedence(
+      this.importGroups,
+    );
     for (const tsImport of imports) {
       for (const group of importGroupsWithPrecedence) {
         if (group.processImport(tsImport)) {

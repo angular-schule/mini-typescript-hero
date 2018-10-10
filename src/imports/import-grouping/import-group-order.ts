@@ -1,4 +1,10 @@
 /**
  * Import grouping order (asc / desc).
+ *
+ * @export
+ * @enum {string}
  */
-export type ImportGroupOrder = 'asc' | 'desc';
+export enum ImportGroupOrder {
+  Asc = 'asc',
+  Desc = 'desc',
+}
