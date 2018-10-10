@@ -15,14 +15,16 @@ export class RemainImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
 
   public get sortedImports(): Import[] {
-    const sorted = this.imports.sort((i1, i2) => importSort(i1, i2, this.order));
+    const sorted = this.imports.sort((i1, i2) =>
+      importSort(i1, i2, this.order),
+    );
     return [
       ...sorted.filter(i => i instanceof StringImport),
       ...sorted.filter(i => !(i instanceof StringImport)),
     ];
   }
 
-  constructor(public readonly order: ImportGroupOrder = 'asc') { }
+  constructor(public readonly order: ImportGroupOrder = ImportGroupOrder.Asc) {}
 
   public reset(): void {
     this.imports.length = 0;

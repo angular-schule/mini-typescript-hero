@@ -6,47 +6,20 @@
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
-      "args": [
-        "${workspaceRoot}/test/etc/workspace_1",
-        "--extensionDevelopmentPath=${workspaceRoot}"
-      ],
+      "args": ["${workspaceRoot}/src", "--extensionDevelopmentPath=${workspaceRoot}"],
       "env": {
         "EXT_DEBUG": "true"
       },
       "stopOnEntry": false,
       "sourceMaps": true,
-      "outFiles": [
-        "${workspaceRoot}/out/src/**/*.js"
-      ]
+      "outFiles": ["${workspaceRoot}/out/src/**/*.js"]
     },
     {
-      "name": "Launch Extension Multi-Root",
+      "name": "Launch Tests",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
-      "args": [
-        "${workspaceRoot}/test/etc/multi-root.code-workspace",
-        "--extensionDevelopmentPath=${workspaceRoot}"
-      ],
-      "env": {
-        "EXT_DEBUG": "true"
-      },
-      "stopOnEntry": false,
-      "sourceMaps": true,
-      "outFiles": [
-        "${workspaceRoot}/out/src/**/*.js"
-      ]
-    },
-    {
-      "name": "Launch Tests (single Workspace)",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "${workspaceRoot}/test/etc/workspace_1",
-        "--extensionDevelopmentPath=${workspaceRoot}",
-        "--extensionTestsPath=${workspaceRoot}/out/test/tests/"
-      ],
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}", "--extensionTestsPath=${workspaceRoot}/out/test/"],
       "env": {
         "EXT_DEBUG": "true",
         "LOCAL_TEST": "true",
@@ -56,32 +29,7 @@
       "stopOnEntry": false,
       "sourceMaps": true,
       "smartStep": true,
-      "outFiles": [
-        "${workspaceRoot}/out/**/*.js"
-      ]
-    },
-    {
-      "name": "Launch Tests (multi-root Workspace)",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "${workspaceRoot}/test/etc/multi-root.code-workspace",
-        "--extensionDevelopmentPath=${workspaceRoot}",
-        "--extensionTestsPath=${workspaceRoot}/out/test/tests/"
-      ],
-      "env": {
-        "EXT_DEBUG": "true",
-        "LOCAL_TEST": "true",
-        "COVERAGE": "",
-        "CHAI_JEST_SNAPSHOT_UPDATE_ALL": ""
-      },
-      "stopOnEntry": false,
-      "sourceMaps": true,
-      "smartStep": true,
-      "outFiles": [
-        "${workspaceRoot}/out/**/*.js"
-      ]
+      "outFiles": ["${workspaceRoot}/out/**/*.js"]
     }
   ],
   "compounds": []

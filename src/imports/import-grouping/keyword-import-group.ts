@@ -19,7 +19,10 @@ export class KeywordImportGroup implements ImportGroup {
     return this.imports.sort((i1, i2) => importSort(i1, i2, this.order));
   }
 
-  constructor(public readonly keyword: ImportGroupKeyword, public readonly order: ImportGroupOrder = 'asc') { }
+  constructor(
+    public readonly keyword: ImportGroupKeyword,
+    public readonly order: ImportGroupOrder = ImportGroupOrder.Asc,
+  ) {}
 
   public reset(): void {
     this.imports.length = 0;
@@ -91,10 +94,8 @@ export class KeywordImportGroup implements ImportGroup {
   private processWorkspaceImport(tsImport: Import): boolean {
     if (
       tsImport instanceof StringImport ||
-      (
-        !tsImport.libraryName.startsWith('.') &&
-        !tsImport.libraryName.startsWith('/')
-      )
+      (!tsImport.libraryName.startsWith('.') &&
+        !tsImport.libraryName.startsWith('/'))
     ) {
       return false;
     }

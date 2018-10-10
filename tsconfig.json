@@ -4,11 +4,6 @@
     "sourceMap": true,
     "watch": true
   },
-  "include": [
-    "./src/**/*",
-    "./test/**/*"
-  ],
-  "exclude": [
-    "./test/etc"
-  ]
+  "include": ["./src/**/*", "./test/**/*"],
+  "exclude": []
 }

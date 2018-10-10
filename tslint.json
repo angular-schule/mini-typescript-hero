@@ -1,6 +1,7 @@
 {
   "extends": "@smartive/tslint-config",
   "rules": {
-    "import-name": false
+    "import-name": false,
+    "ter-arrow-parens": false
   }
 }

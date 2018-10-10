@@ -9,7 +9,10 @@ import { RemainImportGroup } from './remain-import-group';
 /**
  * Inserted setting that is contained in the settings.json of .vscode.
  */
-export type ImportGroupSetting = string | { identifier: string, order: ImportGroupOrder };
+export type ImportGroupSetting =
+  | ImportGroupKeyword
+  | string
+  | { identifier: ImportGroupKeyword | string; order: ImportGroupOrder };
 
 const REGEX_REGEX_GROUP = /^\/.+\/$/;
 
@@ -53,8 +56,8 @@ export class ImportGroupSettingParser {
    * @memberof ImportGroupSettingParser
    */
   public static parseSetting(setting: ImportGroupSetting): ImportGroup {
-    let identifier: string;
-    let order: ImportGroupOrder = 'asc';
+    let identifier: ImportGroupKeyword | string;
+    let order: ImportGroupOrder = ImportGroupOrder.Asc;
 
     if (typeof setting === 'string') {
       identifier = setting;
@@ -67,12 +70,15 @@ export class ImportGroupSettingParser {
       return new RegexImportGroup(identifier, order);
     }
 
-    if (ImportGroupKeyword[identifier] === ImportGroupKeyword.Remaining) {
+    if (identifier === ImportGroupKeyword.Remaining) {
       return new RemainImportGroup(order);
     }
 
-    if (ImportGroupKeyword[identifier] !== undefined) {
-      return new KeywordImportGroup(ImportGroupKeyword[identifier], order);
+    if (ImportGroupKeyword[identifier as any] !== undefined) {
+      return new KeywordImportGroup(
+        (ImportGroupKeyword as any)[identifier as any],
+        order,
+      );
     }
 
     throw new ImportGroupIdentifierInvalidError(identifier);
