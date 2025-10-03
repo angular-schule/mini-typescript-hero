@@ -399,9 +399,10 @@ let x: MyType;
     // EXPECTED: Import should be removed (local declaration shadows the import)
     // WHY: When names conflict, TypeScript uses the local declaration
     //
-    // This was a critical bug found in Session 3:
-    // We were skipping ALL identifiers in declarations, not just the declared name.
-    // Fixed: Only skip the NAME being declared, not usages within the declaration.
+    // CRITICAL EDGE CASE:
+    // We must skip only the NAME being declared, not usages within the declaration.
+    // For example: const x = AngularComponent
+    // We should skip 'x' (the declared name) but detect 'AngularComponent' (usage).
     const content = `import { Component } from '@angular/core';
 
 class Component {
@@ -645,9 +646,8 @@ import { AlsoUnused } from 'other';
     // SCENARIO: Sorting disabled, imports in non-alphabetical order
     // EXPECTED: Original order preserved (rxjs before @angular/core)
     //
-    // This was a bug found in Session 3:
-    // Even with sorting disabled, import groups were calling sortedImports getter
-    // which internally sorted them. Fixed: Use group.imports when sorting disabled.
+    // IMPORTANT: When sorting is disabled, we must use group.imports directly
+    // instead of group.sortedImports (which applies internal sorting).
     config.setConfig('disableImportsSorting', true);
     const content = `import { map } from 'rxjs/operators';
 import { Component } from '@angular/core';
