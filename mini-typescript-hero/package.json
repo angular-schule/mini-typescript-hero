@@ -2,14 +2,44 @@
   "name": "mini-typescript-hero",
   "displayName": "Mini TypeScript Hero",
   "description": "Sorts and organizes TypeScript/JavaScript imports",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "publisher": "angular-schule",
+  "author": {
+    "name": "Johannes Hoppe",
+    "email": "team@angular.schule",
+    "url": "http://angular.schule"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angular-schule/mini-typescript-hero"
+  },
+  "homepage": "https://github.com/angular-schule/mini-typescript-hero",
+  "bugs": {
+    "url": "https://github.com/angular-schule/mini-typescript-hero/issues"
+  },
+  "keywords": [
+    "typescript",
+    "javascript",
+    "imports",
+    "organize",
+    "sort",
+    "formatter"
+  ],
   "engines": {
-    "vscode": "^1.104.0"
+    "vscode": "^1.85.0",
+    "node": ">=18.0.0"
   },
   "categories": [
-    "Other"
+    "Formatters",
+    "Programming Languages"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -34,16 +64,19 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.104.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/vscode": "^1.104.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
-    "eslint": "^9.36.0",
-    "esbuild": "^0.25.10",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.3",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.10",
+    "eslint": "^9.36.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "ts-morph": "^27.0.0"
   }
 }
