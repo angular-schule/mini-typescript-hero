@@ -1,4 +1,4 @@
-import { Project, SourceFile, Node } from 'ts-morph';
+import { Project, SourceFile, Node, SyntaxKind } from 'ts-morph';
 import { OutputChannel, Position, Range, TextDocument, TextEdit } from 'vscode';
 
 import { ImportsConfig } from '../configuration';
@@ -101,58 +101,96 @@ export class ImportManager {
 
   /**
    * Find all identifiers that are actually used in the code.
-   * Uses ts-morph's reference tracking to distinguish between:
-   * - Imported symbols that are used (should keep)
-   * - Imported symbols that are shadowed by local declarations (should remove)
-   * - Locally declared symbols (not relevant for import removal)
+   *
+   * Strategy:
+   * 1. Collect all local declarations (classes, functions, etc.) - these shadow imports
+   * 2. Scan all identifier nodes in the code (excluding imports and local declaration sites)
+   * 3. Only identifiers that:
+   *    - Are NOT local declarations (not shadowed)
+   *    - Are used in the code body
+   *    should be considered "used"
    */
   private findUsedIdentifiers(): void {
     this.usedIdentifiers.clear();
 
-    const importDeclarations = this.sourceFile.getImportDeclarations();
+    // Step 1: Build a set of locally declared identifiers that shadow imports
+    const localDeclarations = new Set<string>();
 
-    for (const importDecl of importDeclarations) {
-      // Check default import (e.g., import React from 'react')
-      const defaultImport = importDecl.getDefaultImport();
-      if (defaultImport) {
-        const references = defaultImport.findReferencesAsNodes();
-        // If referenced anywhere besides the import itself, it's used
-        if (references.length > 0) {
-          this.usedIdentifiers.add(defaultImport.getText());
-        }
+    // Classes, interfaces, type aliases
+    this.sourceFile.getClasses().forEach(c => {
+      const name = c.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getInterfaces().forEach(i => {
+      const name = i.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getTypeAliases().forEach(t => {
+      const name = t.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getFunctions().forEach(f => {
+      const name = f.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getEnums().forEach(e => {
+      const name = e.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getVariableDeclarations().forEach(v => {
+      const name = v.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    // Step 2: Collect all identifier usages in the code (excluding import statements)
+    const allIdentifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
+
+    for (const identifier of allIdentifiers) {
+      const identifierText = identifier.getText();
+
+      // Skip if this identifier is part of an import declaration
+      if (identifier.getFirstAncestorByKind(SyntaxKind.ImportDeclaration)) {
+        continue;
       }
 
-      // Check namespace import (e.g., import * as React from 'react')
-      const namespaceImport = importDecl.getNamespaceImport();
-      if (namespaceImport) {
-        const references = namespaceImport.findReferencesAsNodes();
-        if (references.length > 0) {
-          this.usedIdentifiers.add(namespaceImport.getText());
-        }
+      // Skip if this identifier IS the declaration site itself
+      const parent = identifier.getParent();
+      if (
+        Node.isClassDeclaration(parent) ||
+        Node.isInterfaceDeclaration(parent) ||
+        Node.isTypeAliasDeclaration(parent) ||
+        Node.isFunctionDeclaration(parent) ||
+        Node.isEnumDeclaration(parent) ||
+        Node.isVariableDeclaration(parent)
+      ) {
+        // This is the declaration site, skip it
+        continue;
       }
 
-      // Check named imports (e.g., import { Component, OnInit } from '@angular/core')
-      const namedImports = importDecl.getNamedImports();
-      for (const namedImport of namedImports) {
-        const name = namedImport.getName();
-        const alias = namedImport.getAliasNode()?.getText();
-
-        // The identifier we need to check is the alias if present, otherwise the name
-        const identifierToCheck = alias || name;
-
-        // For aliased imports, check the alias node; otherwise check the name node
-        const nodeToCheck = alias ? namedImport.getAliasNode() : namedImport.getNameNode();
-
-        if (nodeToCheck && Node.isIdentifier(nodeToCheck)) {
-          const references = nodeToCheck.findReferencesAsNodes();
-
-          // If there are any references (findReferencesAsNodes returns usage sites),
-          // the import is used
-          if (references.length > 0) {
-            this.usedIdentifiers.add(identifierToCheck);
-          }
-        }
+      // Skip if this is a locally declared symbol (shadowed import)
+      if (localDeclarations.has(identifierText)) {
+        continue;
       }
+
+      // This is a genuine usage of an imported symbol
+      this.usedIdentifiers.add(identifierText);
     }
   }
 
