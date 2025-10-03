@@ -2,13 +2,23 @@
 
 ## Manual Testing Instructions
 
-### 1. Open Extension in Development Mode
+### 1. Setup Test Environment
+
+**IMPORTANT**: Before testing, ensure test dependencies are installed:
+```bash
+cd test-files
+npm install
+```
+
+This installs real packages (@angular/core, react, rxjs, etc.) so ts-morph can properly resolve imports and test reference tracking.
+
+### 2. Open Extension in Development Mode
 
 1. Open the `mini-typescript-hero` folder in VSCode
 2. Press `F5` to launch the Extension Development Host
 3. A new VSCode window will open with the extension loaded
 
-### 2. Test Basic Functionality
+### 3. Test Basic Functionality
 
 1. In the Extension Development Host window, open `test-files/sample.ts`
 2. Press `Ctrl+Alt+O` (Windows/Linux) or `Cmd+Alt+O` (macOS)
@@ -31,14 +41,14 @@ import { filter, map } from 'rxjs/operators';
 import { UsedClass } from './used-class';
 ```
 
-### 3. Test Command Palette
+### 4. Test Command Palette
 
 1. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
 2. Type "Mini TS Hero"
 3. **Expected result**: Command "Mini TS Hero: Organize imports" appears
 4. Select it and verify imports are organized
 
-### 4. Test Organize on Save
+### 5. Test Organize on Save
 
 1. Open Settings (`Ctrl+,` / `Cmd+,`)
 2. Search for "mini typescript hero"
@@ -46,7 +56,7 @@ import { UsedClass } from './used-class';
 4. Make a change to `test-files/sample.ts` and save
 5. **Expected result**: Imports are automatically organized on save
 
-### 5. Test Configuration Options
+### 6. Test Configuration Options
 
 #### Test Quote Style
 1. Settings → "String Quote Style" → Change to `"`
@@ -63,7 +73,7 @@ import { UsedClass } from './used-class';
 2. Organize imports
 3. **Expected result**: `{foo}` instead of `{ foo }`
 
-### 6. Test Import Grouping
+### 7. Test Import Grouping
 
 #### Test Custom Order
 1. Settings → "Grouping" → Set to:
@@ -80,7 +90,7 @@ import { UsedClass } from './used-class';
    ```
 2. **Expected result**: Angular imports grouped separately, rxjs imports separately
 
-### 7. Test Edge Cases
+### 8. Test Edge Cases
 
 **CRITICAL**: These edge cases test the reference tracking implementation (Approach 1).
 Open each file in `test-files/edge-case-*.ts` and verify the behavior.
@@ -147,7 +157,7 @@ Open each file in `test-files/edge-case-*.ts` and verify the behavior.
 2. Run organize imports
 3. **Expected result**: All imports removed (except ignored ones)
 
-### 8. Test Language Support
+### 9. Test Language Support
 
 Test with:
 - `.ts` files ✓
@@ -155,7 +165,7 @@ Test with:
 - `.js` files
 - `.jsx` files
 
-### 9. Check Output Channel
+### 10. Check Output Channel
 
 1. View → Output → Select "Mini TypeScript Hero"
 2. **Expected result**: Logging messages show extension activity

@@ -1,0 +1,19 @@
+{
+  "name": "mini-typescript-hero-test-files",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test files for Mini TypeScript Hero extension with real dependencies",
+  "dependencies": {
+    "@types/react": "^18.3.18",
+    "@types/node": "^22.10.5"
+  },
+  "devDependencies": {
+    "@angular/core": "^19.1.5",
+    "@angular/common": "^19.1.5",
+    "rxjs": "^7.8.1",
+    "react": "^18.3.1",
+    "vue": "^3.5.13",
+    "lodash": "^4.17.21",
+    "typescript": "^5.7.2"
+  }
+}
