@@ -106,7 +106,20 @@ Group your imports into logical sections with blank lines between groups:
 
 #### Custom Regex Groups
 
-Create custom groups with regex patterns:
+**What are regex groups?** Custom import categories based on pattern matching. They let you organize imports by library name patterns.
+
+**How do they work?** The extension tests each import's module path against your regex pattern. If it matches, the import goes into that group.
+
+**Pattern format:** Wrap your regex in slashes: `/pattern/`
+
+**Common patterns:**
+- `/^@angular/` — Matches any import starting with `@angular` (e.g., `@angular/core`, `@angular/common`)
+- `/^@app/` — Matches path aliases starting with `@app`
+- `/rxjs/` — Matches any import containing `rxjs` anywhere in the path
+- `/^react/` — Matches React and React-related packages
+- `/(^lodash|^ramda)/` — Matches either lodash OR ramda
+
+**Example configuration:**
 
 ```json
 {
@@ -119,6 +132,37 @@ Create custom groups with regex patterns:
   ]
 }
 ```
+
+**Result with this config:**
+
+```typescript
+// Group 1: Plains (string imports)
+import 'zone.js';
+
+// Group 2: /^@angular/ (Angular packages)
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+// Group 3: /^@app/ (app aliases)
+import { AppConfig } from '@app/config';
+import { UserService } from '@app/services';
+
+// Group 4: Modules (everything else from node_modules)
+import { Observable } from 'rxjs';
+import * as React from 'react';
+import * as _ from 'lodash';
+
+// Group 5: Workspace (local files)
+import { MyComponent } from './components';
+import { helper } from '../utils';
+```
+
+**Why use regex groups?**
+- Separate framework imports from your code (e.g., all Angular imports together)
+- Group monorepo packages (e.g., `/@mycompany/`)
+- Organize related libraries (e.g., all testing libraries with `/jest|vitest|mocha/`)
+
+**Order matters!** Regex groups are processed **before** keyword groups, so they can "capture" imports before the broader `Modules` group matches everything.
 
 #### Custom Sort Order
 
