@@ -21,7 +21,7 @@ export function activate(context: ExtensionContext): void {
     const config = new ImportsConfig();
 
     // Create and activate import organizer
-    organizer = new ImportOrganizer(context, config, outputChannel);
+    organizer = new ImportOrganizer(config, outputChannel);
     organizer.activate();
 
     context.subscriptions.push(organizer);

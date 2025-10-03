@@ -1,7 +1,6 @@
 import {
   commands,
   Disposable,
-  ExtensionContext,
   OutputChannel,
   TextDocument,
   TextDocumentWillSaveEvent,
@@ -20,7 +19,6 @@ export class ImportOrganizer implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private readonly context: ExtensionContext,
     private readonly config: ImportsConfig,
     private readonly logger: OutputChannel,
   ) {}

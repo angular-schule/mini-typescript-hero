@@ -61,11 +61,10 @@ export class ImportGroupSettingParser {
       return new RemainImportGroup(order);
     }
 
-    if (ImportGroupKeyword[identifier as any] !== undefined) {
-      return new KeywordImportGroup(
-        (ImportGroupKeyword as any)[identifier as any],
-        order,
-      );
+    if (identifier === ImportGroupKeyword.Modules ||
+        identifier === ImportGroupKeyword.Plains ||
+        identifier === ImportGroupKeyword.Workspace) {
+      return new KeywordImportGroup(identifier, order);
     }
 
     throw new ImportGroupIdentifierInvalidError(identifier);

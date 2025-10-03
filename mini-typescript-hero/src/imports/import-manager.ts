@@ -18,7 +18,7 @@ import { ImportGroup } from './import-grouping';
  * Can organize imports (sort, group, remove unused) and generate TextEdits.
  */
 export class ImportManager {
-  private sourceFile: SourceFile;
+  private sourceFile!: SourceFile;
   private imports: Import[] = [];
   private usedIdentifiers: Set<string> = new Set();
 
