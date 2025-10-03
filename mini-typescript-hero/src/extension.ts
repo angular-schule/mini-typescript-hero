@@ -1,26 +1,45 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import { ExtensionContext, OutputChannel, window } from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+import { ImportsConfig } from './configuration';
+import { ImportOrganizer } from './imports/import-organizer';
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "mini-typescript-hero" is now active!');
+let outputChannel: OutputChannel;
+let organizer: ImportOrganizer;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('mini-typescript-hero.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Mini TypeScript Hero!');
-	});
+/**
+ * Activate the Mini TypeScript Hero extension.
+ */
+export function activate(context: ExtensionContext): void {
+  // Create output channel for logging
+  outputChannel = window.createOutputChannel('Mini TypeScript Hero');
+  context.subscriptions.push(outputChannel);
 
-	context.subscriptions.push(disposable);
+  outputChannel.appendLine('Mini TypeScript Hero: Activating extension');
+
+  try {
+    // Create configuration
+    const config = new ImportsConfig();
+
+    // Create and activate import organizer
+    organizer = new ImportOrganizer(context, config, outputChannel);
+    organizer.activate();
+
+    context.subscriptions.push(organizer);
+
+    outputChannel.appendLine('Mini TypeScript Hero: Extension activated successfully');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    outputChannel.appendLine(`Mini TypeScript Hero: Failed to activate: ${errorMessage}`);
+    window.showErrorMessage(`Mini TypeScript Hero: Failed to activate: ${errorMessage}`);
+  }
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+/**
+ * Deactivate the extension.
+ */
+export function deactivate(): void {
+  if (outputChannel) {
+    outputChannel.appendLine('Mini TypeScript Hero: Deactivating extension');
+    outputChannel.dispose();
+  }
+}
