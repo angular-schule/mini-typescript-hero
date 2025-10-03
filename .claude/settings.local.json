@@ -9,7 +9,12 @@
       "Bash(npm install:*)",
       "Bash(npm run compile:*)",
       "WebFetch(domain:buehler.github.io)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run compile-tests:*)",
+      "Bash(npm test)",
+      "WebFetch(domain:code.visualstudio.com)"
     ],
     "deny": [],
     "ask": []

@@ -172,17 +172,24 @@ export class ImportManager {
         continue;
       }
 
-      // Skip if this identifier IS the declaration site itself
+      // Skip if this identifier IS the name being declared (not usages in the declaration)
       const parent = identifier.getParent();
-      if (
-        Node.isClassDeclaration(parent) ||
-        Node.isInterfaceDeclaration(parent) ||
-        Node.isTypeAliasDeclaration(parent) ||
-        Node.isFunctionDeclaration(parent) ||
-        Node.isEnumDeclaration(parent) ||
-        Node.isVariableDeclaration(parent)
-      ) {
-        // This is the declaration site, skip it
+      if (Node.isClassDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isInterfaceDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isTypeAliasDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isFunctionDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isEnumDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isVariableDeclaration(parent) && identifier === parent.getNameNode()) {
         continue;
       }
 
@@ -333,13 +340,16 @@ export class ImportManager {
 
     // Generate new import text
     const importLines: string[] = [];
+    const useSorting = !this.config.disableImportsSorting(this.document.uri);
 
     for (const group of importGroups) {
       if (group.imports.length === 0) {
         continue;
       }
 
-      const groupLines = group.sortedImports.map(imp => this.generateImportStatement(imp));
+      // Use sortedImports only if sorting is enabled
+      const importsToUse = useSorting ? group.sortedImports : group.imports;
+      const groupLines = importsToUse.map(imp => this.generateImportStatement(imp));
       importLines.push(...groupLines);
 
       // Add blank line between groups
