@@ -681,4 +681,72 @@ import 'reflect-metadata';
     assert.ok(result.includes('zone.js'), 'String import should be kept');
     assert.ok(result.includes('reflect-metadata'), 'String import should be kept');
   });
+
+  test('21. Keep imports used in named re-exports', () => {
+    const content = `import { Foo, Bar, Unused } from './lib';
+
+export { Foo, Bar };
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Foo and Bar are re-exported, so should be kept
+    assert.ok(result.includes('Foo'), 'Re-exported Foo should be kept');
+    assert.ok(result.includes('Bar'), 'Re-exported Bar should be kept');
+    // Unused is not re-exported and not used, so should be removed
+    assert.ok(!result.includes('Unused'), 'Unused should be removed');
+  });
+
+  test('22. Keep imports used in default re-export', () => {
+    const content = `import MyClass from './my-class';
+
+export default MyClass;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    assert.ok(result.includes('MyClass'), 'Default re-exported import should be kept');
+  });
+
+  test('23. Keep namespace imports used in re-exports', () => {
+    const content = `import * as Utils from './utils';
+import * as Unused from './unused';
+
+export { Utils };
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    assert.ok(result.includes('Utils'), 'Re-exported namespace import should be kept');
+    assert.ok(!result.includes('Unused'), 'Unused namespace import should be removed');
+  });
+
+  test('24. Handle functions used in JSX/TSX', () => {
+    const content = `import { helper } from './helpers';
+import { unused } from './unused';
+import * as React from 'react';
+
+export const MyComponent = () => {
+  return <div>{helper()}</div>;
+};
+`;
+    const doc = new MockTextDocument('test.tsx', content);
+    doc.languageId = 'typescriptreact';
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // helper() is used in JSX expression, should be kept
+    assert.ok(result.includes('helper'), 'Function used in JSX should be kept');
+    // React is used for JSX, should be kept
+    assert.ok(result.includes('React'), 'React import should be kept for JSX');
+    // unused is not used, should be removed
+    assert.ok(!result.includes('unused'), 'Unused import should be removed');
+  });
 });

@@ -159,7 +159,26 @@ export class ImportManager {
       }
     });
 
-    // Step 2: Collect all identifier usages in the code (excluding import statements)
+    // Step 2: Handle re-exported symbols (export { Foo } or export default Foo)
+    // These must be kept even if not used in the file itself
+    this.sourceFile.getExportDeclarations().forEach(exportDecl => {
+      const namedExports = exportDecl.getNamedExports();
+      namedExports.forEach(named => {
+        this.usedIdentifiers.add(named.getName());
+      });
+    });
+
+    // Handle default exports that reference an identifier (export default Foo)
+    this.sourceFile.getDefaultExportSymbol()?.getDeclarations().forEach(decl => {
+      if (Node.isExportAssignment(decl)) {
+        const expression = decl.getExpression();
+        if (Node.isIdentifier(expression)) {
+          this.usedIdentifiers.add(expression.getText());
+        }
+      }
+    });
+
+    // Step 3: Collect all identifier usages in the code (excluding import statements)
     const allIdentifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
 
     for (const identifier of allIdentifiers) {
