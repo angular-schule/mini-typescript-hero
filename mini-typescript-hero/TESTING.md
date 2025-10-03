@@ -82,6 +82,56 @@ import { UsedClass } from './used-class';
 
 ### 7. Test Edge Cases
 
+**CRITICAL**: These edge cases test the reference tracking implementation (Approach 1).
+Open each file in `test-files/edge-case-*.ts` and verify the behavior.
+
+#### Edge Case 1: Local Shadowing (`edge-case-local-shadowing.ts`)
+**Scenario**: Import `Component` but also declare `class Component` locally
+1. Open file, run organize imports
+2. **Expected result**:
+   - `Component` import should be REMOVED (shadowed by local declaration)
+   - `Injectable` import should be KEPT (used in decorator)
+
+#### Edge Case 2: Type-Only Usage (`edge-case-type-only.ts`)
+**Scenario**: Imports used only in type annotations
+1. Open file, run organize imports
+2. **Expected result**: ALL imports KEPT (type annotations count as usage)
+
+#### Edge Case 3: Partial Usage (`edge-case-partial-usage.ts`)
+**Scenario**: Some symbols used, some unused from same import
+1. Open file, run organize imports
+2. **Expected result**:
+   - From `@angular/core`: Keep only `Component, OnInit` (sorted alphabetically)
+   - From `rxjs/operators`: Keep only `filter, map` (sorted alphabetically)
+
+#### Edge Case 4: Aliased Imports (`edge-case-aliased-imports.ts`)
+**Scenario**: Imports with `as` aliases
+1. Open file, run organize imports
+2. **Expected result**:
+   - Keep `Component as AngularComponent` (used by alias)
+   - Remove `Injectable as Inject` and `Observable as Obs` (unused)
+
+#### Edge Case 5: Namespace Imports (`edge-case-namespace-usage.ts`)
+**Scenario**: `import * as Name` style imports
+1. Open file, run organize imports
+2. **Expected result**:
+   - Keep `React` and `RxJS` (used)
+   - Remove `Lodash` (unused)
+
+#### Edge Case 6: Default Imports (`edge-case-default-import.ts`)
+**Scenario**: Default import style
+1. Open file, run organize imports
+2. **Expected result**:
+   - Keep `React` (used)
+   - Remove `Vue` and `Angular` (unused)
+
+#### Edge Case 7: Mixed Default + Named (`edge-case-mixed-import.ts`)
+**Scenario**: `import Default, { named } from 'lib'` style
+1. Open file, run organize imports
+2. **Expected result**:
+   - From `react`: Keep `React, { useState }` (both used)
+   - From `vue`: Keep only `{ ref }` (Vue default removed)
+
 #### Empty File
 1. Create new TypeScript file with no imports
 2. Run organize imports
@@ -95,7 +145,7 @@ import { UsedClass } from './used-class';
 #### All Unused
 1. Create file with imports but no usage
 2. Run organize imports
-3. **Expected result**: All imports removed (except ignored ones like 'react')
+3. **Expected result**: All imports removed (except ignored ones)
 
 ### 8. Test Language Support
 
@@ -165,3 +215,14 @@ If the extension doesn't work:
 ✅ Organize on save respects when disabled
 ✅ Configuration changes apply immediately
 ✅ Works in multi-root workspace
+
+### NEW: Edge Cases (CRITICAL - Reference Tracking Implementation)
+These tests verify the fix for local vs. non-local usage detection:
+
+- [ ] Edge Case 1: Local shadowing handled correctly
+- [ ] Edge Case 2: Type-only imports kept
+- [ ] Edge Case 3: Partial usage from same import
+- [ ] Edge Case 4: Aliased imports (with `as`)
+- [ ] Edge Case 5: Namespace imports (`import * as`)
+- [ ] Edge Case 6: Default imports
+- [ ] Edge Case 7: Mixed default + named imports

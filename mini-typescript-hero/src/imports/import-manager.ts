@@ -1,4 +1,4 @@
-import { Project, SourceFile, SyntaxKind } from 'ts-morph';
+import { Project, SourceFile, Node } from 'ts-morph';
 import { OutputChannel, Position, Range, TextDocument, TextEdit } from 'vscode';
 
 import { ImportsConfig } from '../configuration';
@@ -101,18 +101,58 @@ export class ImportManager {
 
   /**
    * Find all identifiers that are actually used in the code.
+   * Uses ts-morph's reference tracking to distinguish between:
+   * - Imported symbols that are used (should keep)
+   * - Imported symbols that are shadowed by local declarations (should remove)
+   * - Locally declared symbols (not relevant for import removal)
    */
   private findUsedIdentifiers(): void {
-    // Get all identifiers in the source file (excluding imports)
-    const identifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
+    this.usedIdentifiers.clear();
 
-    for (const identifier of identifiers) {
-      // Skip identifiers that are part of import declarations
-      if (identifier.getFirstAncestorByKind(SyntaxKind.ImportDeclaration)) {
-        continue;
+    const importDeclarations = this.sourceFile.getImportDeclarations();
+
+    for (const importDecl of importDeclarations) {
+      // Check default import (e.g., import React from 'react')
+      const defaultImport = importDecl.getDefaultImport();
+      if (defaultImport) {
+        const references = defaultImport.findReferencesAsNodes();
+        // If referenced anywhere besides the import itself, it's used
+        if (references.length > 0) {
+          this.usedIdentifiers.add(defaultImport.getText());
+        }
       }
 
-      this.usedIdentifiers.add(identifier.getText());
+      // Check namespace import (e.g., import * as React from 'react')
+      const namespaceImport = importDecl.getNamespaceImport();
+      if (namespaceImport) {
+        const references = namespaceImport.findReferencesAsNodes();
+        if (references.length > 0) {
+          this.usedIdentifiers.add(namespaceImport.getText());
+        }
+      }
+
+      // Check named imports (e.g., import { Component, OnInit } from '@angular/core')
+      const namedImports = importDecl.getNamedImports();
+      for (const namedImport of namedImports) {
+        const name = namedImport.getName();
+        const alias = namedImport.getAliasNode()?.getText();
+
+        // The identifier we need to check is the alias if present, otherwise the name
+        const identifierToCheck = alias || name;
+
+        // For aliased imports, check the alias node; otherwise check the name node
+        const nodeToCheck = alias ? namedImport.getAliasNode() : namedImport.getNameNode();
+
+        if (nodeToCheck && Node.isIdentifier(nodeToCheck)) {
+          const references = nodeToCheck.findReferencesAsNodes();
+
+          // If there are any references (findReferencesAsNodes returns usage sites),
+          // the import is used
+          if (references.length > 0) {
+            this.usedIdentifiers.add(identifierToCheck);
+          }
+        }
+      }
     }
   }
 
