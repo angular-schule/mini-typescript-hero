@@ -1192,7 +1192,60 @@ Added comprehensive documentation to `/src/test/imports/import-manager.test.ts`:
    - Create GitHub release with .vsix attached
    - Update marketplace page with screenshots
 
+### ✅ Additional Compatibility Improvements (Same Session)
+
+**SECOND CRITICAL BUG DISCOVERED - Regex Group Precedence:**
+
+User requested: "Check ALL old tests again, port everything relevant"
+
+**Analysis Results:**
+- Found 7 old test files total
+- Previously ported: 6 files ✅
+- **MISSED**: `utility-functions.test.ts` ❌
+
+**Critical Bug Found in Utilities:**
+- **Problem**: Regex import groups didn't have matching precedence
+- **Example**: Config `["Modules", "/angular/"]` → `/angular/` never matched!
+  - `Modules` keyword group captured all node_modules first
+  - Regex group never got a chance to match
+- **Root Cause**: `importGroupSortForPrecedence` function was missing
+- **Original Code**: Old extension sorted groups: regex first, then keywords
+- **Our Code**: Processed groups in config order (WRONG!)
+
+**Solution Implemented:**
+1. Added `importGroupSortForPrecedence()` to `import-utilities.ts`
+   - Splits groups: regex groups first, keyword groups second
+   - Preserves original order within each category
+2. Updated `ImportManager.organizeImports()`:
+   - Uses `importGroupSortForPrecedence(importGroups)` before processing
+   - Now matches original behavior exactly
+
+**New Tests - Import Utilities (12 tests):**
+- `importGroupSortForPrecedence` (4 tests):
+  - Prioritize regex groups, preserve order
+  - Handle lists with no regex groups
+  - Handle lists with only regex groups
+  - Handle empty lists
+- `importSortByFirstSpecifier` (8 tests):
+  - Sort by specifier/alias/namespace
+  - String imports by basename
+  - Fallback to library name
+  - Case-insensitive locale-aware sorting
+  - Ascending/descending order
+
+**Files Modified:**
+- `src/imports/import-utilities.ts` - Added `importGroupSortForPrecedence()`
+- `src/imports/import-manager.ts` - Use precedence sorting
+- `src/test/imports/import-utilities.test.ts` - Created with 12 tests
+
+**Test Coverage:**
+- Previous: 54 tests
+- Current: 66 tests (all passing ✅)
+
+**Commits:**
+- `91acb13` - fix: ensure regex import groups have matching precedence
+
 ---
 
 **Last Updated**: 2025-10-03
-**Status**: Phase 9 Complete ✅ | 54 tests passing | Full compatibility achieved 🎉
+**Status**: Phase 9 Complete ✅ | 66 tests passing | Full compatibility achieved 🎉
