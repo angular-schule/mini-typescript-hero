@@ -749,4 +749,21 @@ export const MyComponent = () => {
     // unused is not used, should be removed
     assert.ok(!result.includes('unused'), 'Unused import should be removed');
   });
+
+  test('25. Keep default imports re-exported as named exports', () => {
+    const content = `import MyDefault from './my-default';
+import UnusedDefault from './unused';
+
+export { MyDefault };
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // MyDefault is re-exported as named export, should be kept
+    assert.ok(result.includes('MyDefault'), 'Default import re-exported as named should be kept');
+    // UnusedDefault is not used, should be removed
+    assert.ok(!result.includes('UnusedDefault'), 'Unused default import should be removed');
+  });
 });
