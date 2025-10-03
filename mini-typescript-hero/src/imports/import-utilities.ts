@@ -1,6 +1,7 @@
 import { basename } from 'path';
 
 import { ExternalModuleImport, Import, NamedImport, NamespaceImport, StringImport, SymbolSpecifier } from './import-types';
+import { ImportGroup, RegexImportGroup } from './import-grouping';
 
 /**
  * String-Sort function.
@@ -79,4 +80,20 @@ function getImportFirstSpecifier(imp: Import): string {
  */
 export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
   return stringSort(i1.specifier, i2.specifier);
+}
+
+/**
+ * Orders import groups by matching precedence (regex first).
+ * This ensures regex groups can capture imports before keyword groups,
+ * even if they appear later in the configuration.
+ *
+ * Used internally by ImportManager when assigning imports to groups.
+ */
+export function importGroupSortForPrecedence(importGroups: ImportGroup[]): ImportGroup[] {
+  const regexGroups: ImportGroup[] = [];
+  const otherGroups: ImportGroup[] = [];
+  for (const ig of importGroups) {
+    (ig instanceof RegexImportGroup ? regexGroups : otherGroups).push(ig);
+  }
+  return regexGroups.concat(otherGroups);
 }

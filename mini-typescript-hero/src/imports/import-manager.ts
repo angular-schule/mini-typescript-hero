@@ -10,7 +10,7 @@ import {
   StringImport,
   SymbolSpecifier
 } from './import-types';
-import { importSort, importSortByFirstSpecifier, specifierSort } from './import-utilities';
+import { importSort, importSortByFirstSpecifier, specifierSort, importGroupSortForPrecedence } from './import-utilities';
 import { ImportGroup } from './import-grouping';
 
 /**
@@ -299,8 +299,12 @@ export class ImportManager {
       group.reset();
     }
 
+    // Sort groups for precedence: regex groups first, then keyword groups
+    // This ensures regex groups can match imports even if they appear later in the config
+    const groupsWithPrecedence = importGroupSortForPrecedence(importGroups);
+
     for (const imp of keep) {
-      for (const group of importGroups) {
+      for (const group of groupsWithPrecedence) {
         if (group.processImport(imp)) {
           break;
         }
