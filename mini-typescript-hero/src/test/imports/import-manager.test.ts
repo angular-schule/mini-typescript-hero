@@ -1,3 +1,48 @@
+/**
+ * Integration Tests for ImportManager
+ *
+ * TESTING STRATEGY:
+ * ================
+ * These tests validate the core import organization logic of Mini TypeScript Hero.
+ * They use real production code with mocked VSCode dependencies.
+ *
+ * WHAT'S REAL:
+ * - ImportManager: The actual production class being tested
+ * - ts-morph library: Real TypeScript parser analyzing code
+ * - Import grouping logic: Real production code
+ *
+ * WHAT'S MOCKED:
+ * - VSCode APIs: TextDocument, OutputChannel (not available in test environment)
+ * - Configuration: Controllable test values instead of reading VSCode settings
+ *
+ * KEY INSIGHT - IN-MEMORY PARSING:
+ * ================================
+ * The test imports like `import { Component } from '@angular/core'` are NOT real packages.
+ * They're strings parsed by ts-morph into an in-memory AST (Abstract Syntax Tree).
+ *
+ * ts-morph with `useInMemoryFileSystem: true` means:
+ * - No actual @angular/core package is installed or resolved
+ * - The parser just sees "there's an import from '@angular/core'"
+ * - We analyze the STRUCTURE and USAGE patterns, not actual type resolution
+ *
+ * This is perfect for our use case because:
+ * - We're testing import ORGANIZATION logic, not TypeScript type checking
+ * - Tests run fast (no need to install real packages)
+ * - We can test any library name (real or fictional)
+ * - Tests are isolated and don't depend on external dependencies
+ *
+ * WHAT WE TEST:
+ * =============
+ * 1. Unused import detection (including partial removal from named imports)
+ * 2. Respecting excluded libraries (ignoredFromRemoval config)
+ * 3. Type-only import usage (type annotations count as usage)
+ * 4. Local shadowing (local declarations shadow imports with same name)
+ * 5. All import styles: aliased, namespace, default, mixed
+ * 6. Import grouping (Plains → Modules → Workspace)
+ * 7. Sorting (alphabetically by module and specifiers)
+ * 8. All configuration options (quotes, semicolons, spaces, multiline, etc.)
+ */
+
 import * as assert from 'assert';
 import { Uri, Position, Range, TextEdit, TextDocument, OutputChannel } from 'vscode';
 import { ImportManager } from '../../imports/import-manager';
@@ -6,6 +51,14 @@ import { ImportGroup, ImportGroupSettingParser } from '../../imports/import-grou
 
 /**
  * Mock TextDocument for testing
+ *
+ * Implements the VSCode TextDocument interface with in-memory string storage.
+ * This allows us to test document operations without requiring a real VSCode environment.
+ *
+ * Key methods:
+ * - getText(): Returns the full content or a range
+ * - lineAt(): Returns line information for position calculations
+ * - offsetAt/positionAt: Converts between line/column and character offset
  */
 class MockTextDocument implements TextDocument {
   uri: Uri;
@@ -103,6 +156,11 @@ class MockTextDocument implements TextDocument {
 
 /**
  * Mock OutputChannel for testing
+ *
+ * Captures logging output from ImportManager for debugging test failures.
+ * In production, this would be a VSCode OutputChannel shown in the Output panel.
+ *
+ * Note: We removed most logging in Phase 9.6, so this is mainly for future debugging.
  */
 class MockOutputChannel implements OutputChannel {
   name = 'Test';
@@ -135,6 +193,18 @@ class MockOutputChannel implements OutputChannel {
 
 /**
  * Mock ImportsConfig for testing
+ *
+ * Extends the real ImportsConfig class but overrides methods to return test values
+ * instead of reading from VSCode workspace settings.
+ *
+ * Usage in tests:
+ *   config.setConfig('stringQuoteStyle', '"');  // Set a test value
+ *   // Now when ImportManager calls config.stringQuoteStyle(), it returns '"'
+ *
+ * This approach:
+ * - Uses real configuration logic (the actual ImportsConfig class)
+ * - Allows tests to control configuration values
+ * - Tests can verify different configuration combinations
  */
 class MockImportsConfig extends ImportsConfig {
   private mockConfig: Map<string, any> = new Map();
@@ -195,6 +265,16 @@ class MockImportsConfig extends ImportsConfig {
 
 /**
  * Helper function to apply TextEdits to a string
+ *
+ * ImportManager returns TextEdit[] (VSCode's standard format for file modifications).
+ * This helper simulates applying those edits to a string so we can verify the result.
+ *
+ * Algorithm:
+ * 1. Sort edits in reverse order (bottom to top, right to left)
+ * 2. Apply each edit without affecting positions of subsequent edits
+ * 3. Return the final modified content
+ *
+ * This mimics what VSCode does when applying edits to a real document.
  */
 function applyEdits(content: string, edits: TextEdit[]): string {
   // Sort edits by position (descending) to apply them without affecting positions
@@ -246,6 +326,8 @@ suite('ImportManager Tests', () => {
   });
 
   test('1. Remove unused imports', () => {
+    // SCENARIO: Two imports, only one is used in the code
+    // EXPECTED: Unused import should be completely removed
     const content = `import { Unused } from 'lib';
 import { Used } from 'other';
 
@@ -261,6 +343,9 @@ const x = Used;
   });
 
   test('2. Remove unused specifiers from partial imports', () => {
+    // SCENARIO: Import has 4 specifiers (A, B, C, D) but only A and C are used
+    // EXPECTED: Keep only A and C, remove B and D (partial import cleanup)
+    // BONUS: Remaining specifiers should be alphabetically sorted (A, C)
     const content = `import { A, B, C, D } from 'lib';
 
 const x = A;
@@ -294,6 +379,9 @@ import { Unused } from 'other';
   });
 
   test('4. Keep type-only imports', () => {
+    // SCENARIO: MyType is only used in a type annotation, not in runtime code
+    // EXPECTED: Type annotations count as usage, import should be kept
+    // WHY: TypeScript needs the type for compile-time checking
     const content = `import { MyType } from 'lib';
 
 let x: MyType;
@@ -307,6 +395,13 @@ let x: MyType;
   });
 
   test('5. Handle local shadowing correctly', () => {
+    // SCENARIO: Import { Component } but also declare a local class Component
+    // EXPECTED: Import should be removed (local declaration shadows the import)
+    // WHY: When names conflict, TypeScript uses the local declaration
+    //
+    // This was a critical bug found in Session 3:
+    // We were skipping ALL identifiers in declarations, not just the declared name.
+    // Fixed: Only skip the NAME being declared, not usages within the declaration.
     const content = `import { Component } from '@angular/core';
 
 class Component {
@@ -384,6 +479,14 @@ const z = ref;
   });
 
   test('10. Group imports correctly (Plains -> Modules -> Workspace)', () => {
+    // SCENARIO: Mixed import types in random order
+    // EXPECTED: Organized into groups with blank lines between them:
+    //   1. Plains: String-only imports (import 'zone.js')
+    //   2. Modules: External libraries (import { X } from '@angular/core')
+    //   3. Workspace: Local files (import { Y } from './local')
+    //
+    // WHY: This follows the Angular Style Guide and improves readability
+    // Groups are separated by blank lines for visual clarity
     const content = `import { LocalClass } from './local';
 import { Component } from '@angular/core';
 import 'zone.js';
@@ -539,6 +642,12 @@ import { AlsoUnused } from 'other';
   });
 
   test('19. Skip sorting when disabled', () => {
+    // SCENARIO: Sorting disabled, imports in non-alphabetical order
+    // EXPECTED: Original order preserved (rxjs before @angular/core)
+    //
+    // This was a bug found in Session 3:
+    // Even with sorting disabled, import groups were calling sortedImports getter
+    // which internally sorted them. Fixed: Use group.imports when sorting disabled.
     config.setConfig('disableImportsSorting', true);
     const content = `import { map } from 'rxjs/operators';
 import { Component } from '@angular/core';
