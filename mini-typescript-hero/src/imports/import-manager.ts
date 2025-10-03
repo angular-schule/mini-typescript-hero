@@ -159,6 +159,8 @@ export class ImportManager {
       }
     });
 
+    this.logger.appendLine(`[ImportManager] Local declarations: ${Array.from(localDeclarations).join(', ')}`);
+
     // Step 2: Collect all identifier usages in the code (excluding import statements)
     const allIdentifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
 
@@ -192,6 +194,8 @@ export class ImportManager {
       // This is a genuine usage of an imported symbol
       this.usedIdentifiers.add(identifierText);
     }
+
+    this.logger.appendLine(`[ImportManager] Used identifiers: ${Array.from(this.usedIdentifiers).join(', ')}`);
   }
 
   /**
@@ -299,22 +303,33 @@ export class ImportManager {
       return edits;
     }
 
-    // Delete all existing imports
-    for (const importDecl of importDeclarations) {
-      const start = importDecl.getStart();
-      const end = importDecl.getEnd();
+    // Delete all existing imports including any blank lines after the import block
+    const firstImport = importDeclarations[0];
+    const lastImport = importDeclarations[importDeclarations.length - 1];
 
-      const startPos = this.document.positionAt(start);
-      const endPos = this.document.positionAt(end);
+    const startPos = this.document.positionAt(firstImport.getStart());
+    const endPos = this.document.positionAt(lastImport.getEnd());
 
-      // Include the whole line
-      const range = new Range(
-        new Position(startPos.line, 0),
-        new Position(endPos.line + 1, 0),
-      );
+    // Find the line after the last import
+    let endLine = endPos.line + 1;
 
-      edits.push(TextEdit.delete(range));
+    // Skip any blank lines after the import block
+    while (endLine < this.document.lineCount) {
+      const line = this.document.lineAt(endLine);
+      if (line.text.trim() === '') {
+        endLine++;
+      } else {
+        break;
+      }
     }
+
+    // Delete from the first import to the end of blank lines
+    const range = new Range(
+      new Position(startPos.line, 0),
+      new Position(endLine, 0),
+    );
+
+    edits.push(TextEdit.delete(range));
 
     // Generate new import text
     const importLines: string[] = [];
