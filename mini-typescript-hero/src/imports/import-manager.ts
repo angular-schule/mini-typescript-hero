@@ -25,9 +25,9 @@ export class ImportManager {
   constructor(
     private readonly document: TextDocument,
     private readonly config: ImportsConfig,
+    // @ts-expect-error - logger parameter kept for future debugging capabilities
     private readonly logger: OutputChannel,
   ) {
-    this.logger.appendLine(`[ImportManager] Create import manager for ${document.fileName}`);
     this.parseDocument();
   }
 
@@ -159,8 +159,6 @@ export class ImportManager {
       }
     });
 
-    this.logger.appendLine(`[ImportManager] Local declarations: ${Array.from(localDeclarations).join(', ')}`);
-
     // Step 2: Collect all identifier usages in the code (excluding import statements)
     const allIdentifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
 
@@ -201,8 +199,6 @@ export class ImportManager {
       // This is a genuine usage of an imported symbol
       this.usedIdentifiers.add(identifierText);
     }
-
-    this.logger.appendLine(`[ImportManager] Used identifiers: ${Array.from(this.usedIdentifiers).join(', ')}`);
   }
 
   /**
@@ -210,8 +206,6 @@ export class ImportManager {
    * Returns TextEdits to apply the changes.
    */
   public organizeImports(): TextEdit[] {
-    this.logger.appendLine(`[ImportManager] Organizing imports`);
-
     let keep: Import[] = [];
 
     // Filter unused imports (unless disabled)
