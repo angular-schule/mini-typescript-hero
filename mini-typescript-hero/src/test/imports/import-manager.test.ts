@@ -1161,4 +1161,161 @@ const x: typeof MyClass = null as any;
     // Default type import should be preserved when used
     assert.ok(result.includes('MyClass'), 'Default type-only import should be preserved when used');
   });
+
+  test('47. Duplicate specifiers are removed when merging', () => {
+    // Scenario: Same specifier imported twice (shouldn't happen but we handle it)
+    const content = `import { A } from './lib';
+import { A, B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should deduplicate: { A, B } (A appears only once)
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+    assert.ok(lines[0].includes('{ A, B }'), 'Should deduplicate to { A, B }');
+
+    // Count occurrences of 'A' in the import (should be exactly 1)
+    const importLine = lines[0];
+    const matches = importLine.match(/\bA\b/g);
+    assert.strictEqual(matches?.length, 1, 'A should appear only once in import');
+  });
+
+  test('48. Aliased imports merge correctly', () => {
+    // Scenario: Mix of aliased and non-aliased imports
+    const content = `import { A as AliasA } from './lib';
+import { B } from './lib';
+
+console.log(AliasA, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge with alias preserved
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+    assert.ok(lines[0].includes('A as AliasA'), 'Should preserve alias');
+    assert.ok(lines[0].includes('B'), 'Should include B');
+  });
+
+  test('49. Three or more imports from same module merge correctly', () => {
+    // Scenario: Multiple imports that should all merge
+    const content = `import { A } from './lib';
+import { B } from './lib';
+import { C } from './lib';
+import Default from './lib';
+
+console.log(A, B, C, Default);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge all into: import Default, { A, B, C } from './lib'
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+    assert.ok(lines[0].includes('Default'), 'Should have default');
+    assert.ok(lines[0].includes('A'), 'Should have A');
+    assert.ok(lines[0].includes('B'), 'Should have B');
+    assert.ok(lines[0].includes('C'), 'Should have C');
+    assert.ok(lines[0].includes('Default, { A, B, C }'), 'Should be merged as Default, { A, B, C }');
+  });
+
+  test('50. Merging preserves alphabetical order of specifiers', () => {
+    // Scenario: Imports in random order should be sorted after merge
+    const content = `import { Z } from './lib';
+import { A } from './lib';
+import { M } from './lib';
+
+console.log(Z, A, M);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge and sort: { A, M, Z }
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+    assert.ok(lines[0].includes('{ A, M, Z }'), 'Should be alphabetically sorted: { A, M, Z }');
+  });
+
+  test('51. Merging works with multiline formatting', () => {
+    // Scenario: Merged import exceeds multiline threshold
+    const content = `import { VeryLongNameOne } from './lib';
+import { VeryLongNameTwo } from './lib';
+
+console.log(VeryLongNameOne, VeryLongNameTwo);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 30); // Force multiline
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should merge and format as multiline
+    assert.ok(result.includes('VeryLongNameOne'), 'Should include first name');
+    assert.ok(result.includes('VeryLongNameTwo'), 'Should include second name');
+    // Should be multiline (contains newline within braces)
+    const hasMultiline = result.match(/import\s*\{[^}]*\n[^}]*\}/);
+    assert.ok(hasMultiline, 'Should format as multiline import when threshold exceeded');
+  });
+
+  test('52. Merging works with custom import grouping', () => {
+    // Scenario: Ensure merging happens before grouping
+    const content = `import { A } from '@angular/core';
+import { B } from '@angular/core';
+import { C } from './local';
+import { D } from './local';
+
+console.log(A, B, C, D);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('grouping', ['/angular/', 'Workspace']);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should have 2 merged imports (one per group)
+    assert.strictEqual(lines.length, 2, 'Should have 2 imports (one per group)');
+    assert.ok(lines[0].includes('@angular/core'), 'First should be Angular');
+    assert.ok(lines[0].includes('{ A, B }'), 'Angular imports should be merged');
+    assert.ok(lines[1].includes('./local'), 'Second should be local');
+    assert.ok(lines[1].includes('{ C, D }'), 'Local imports should be merged');
+  });
+
+  test('53. Merging disabled works with sorting by first specifier', () => {
+    // Scenario: When merging is off + sorting by first specifier
+    const content = `import { Z } from './z';
+import { A } from './a';
+
+console.log(Z, A);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('mergeImportsFromSameModule', false);
+    config.setConfig('organizeSortsByFirstSpecifier', true);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should keep separate AND sort by first specifier (A before Z)
+    assert.strictEqual(lines.length, 2, 'Should keep imports separate');
+    assert.ok(lines[0].includes('A'), 'First should be A (sorted by specifier)');
+    assert.ok(lines[1].includes('Z'), 'Second should be Z');
+  });
 });
