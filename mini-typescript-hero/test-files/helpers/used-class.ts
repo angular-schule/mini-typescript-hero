@@ -1,3 +1,3 @@
 export class UsedClass {
-  constructor() {}
+  name = 'UsedClass';
 }
