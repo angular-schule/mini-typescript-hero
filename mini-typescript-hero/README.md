@@ -1,6 +1,6 @@
-<p align="center">
+<div align="center">
   <img src="logo.png" alt="Mini TypeScript Hero Logo" width="200">
-</p>
+</div>
 
 # Mini TypeScript Hero
 
