@@ -1,5 +1,49 @@
 # Mini TypeScript Hero - Implementation Plan
 
+## 📁 Repository Structure (IMPORTANT!)
+
+**Current Working Directory**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/`
+
+**Structure**:
+```
+/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/  (REPOSITORY ROOT)
+├── .git/                       # Git repository
+├── .gitignore                  # Git ignore file
+├── CLAUDE.md                   # Claude instructions (for old extension)
+├── CLAUDE_TODO.md             # This file - implementation plan
+├── src/                        # ⚠️ OLD TypeScript Hero extension source
+├── test/                       # ⚠️ OLD TypeScript Hero tests
+├── config/                     # ⚠️ OLD extension config
+├── package.json                # ⚠️ OLD extension package.json
+├── node_modules/               # ⚠️ OLD dependencies
+├── ... (other old files)       # ⚠️ OLD extension files
+│
+└── mini-typescript-hero/       # ✅ NEW EXTENSION (being developed here!)
+    ├── .github/                # GitHub Actions (tests on Ubuntu/macOS/Windows)
+    ├── src/                    # ✅ NEW extension source code
+    │   ├── configuration/      # Config system
+    │   ├── imports/            # Import management & grouping
+    │   └── test/               # ✅ 67 tests (all passing!)
+    ├── test-files/             # Manual test files
+    ├── package.json            # ✅ NEW extension package.json
+    ├── node_modules/           # ✅ NEW dependencies (ts-morph, etc.)
+    ├── README.md               # ✅ NEW documentation
+    ├── CHANGELOG.md            # ✅ NEW changelog
+    ├── LICENSE                 # ✅ NEW license (dual copyright)
+    └── ... (all new files)
+```
+
+**Phase 10 Migration Plan**:
+1. Keep: `.git/`, `.gitignore`, `CLAUDE_TODO.md` (updated)
+2. Delete: Old `src/`, `test/`, `config/`, old `package.json`, old `node_modules/`, etc.
+3. Move: Everything from `mini-typescript-hero/*` → root
+4. Clean up: Remove empty `mini-typescript-hero/` folder
+5. Result: Root contains the new mini-typescript-hero extension
+
+**All development work (Sessions 1-4) is in**: `mini-typescript-hero/` subfolder
+
+---
+
 ## Project Overview
 
 **Goal**: Extract and modernize the "Sort and organize your imports" feature from TypeScript Hero into a new, minimal extension called `mini-typescript-hero`.
