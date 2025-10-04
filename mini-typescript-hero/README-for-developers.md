@@ -50,7 +50,7 @@ The `manual-test-cases/` folder contains 10 test scenarios:
 **Expected:**
 - Group 1: Plains (`import 'zone.js'`)
 - Group 2: Modules (`@angular/core`, `react`, `rxjs/operators`)
-- Group 3: Workspace (`./helpers/...`, `../utils/...`)
+- Group 3: Workspace (`./helpers/...`, `./utils/...`)
 - Blank lines between groups
 - Alphabetical order within each group
 

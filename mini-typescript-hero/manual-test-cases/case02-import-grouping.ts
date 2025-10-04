@@ -7,7 +7,7 @@ import { map, filter } from 'rxjs/operators';
 import { Component, OnInit } from '@angular/core';
 import 'zone.js';
 import * as React from 'react';
-import { helper } from '../utils/helper';
+import { helper } from './utils/helper';
 
 class MyComponent implements OnInit {
   private used: UsedClass;
