@@ -1039,4 +1039,41 @@ MyHelper;
 
     assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
   });
+
+  test('41. Duplicate imports from same module are NOT merged (matches original behavior)', () => {
+    // Scenario: Multiple imports from the same library
+    // TypeScript Hero kept them separate (didn't merge), so we do too
+    const content = `import { A } from './lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Original TypeScript Hero kept imports separate, so we do too
+    // Both imports should exist (sorted alphabetically by specifier: A before B)
+    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
+    assert.ok(lines[0].includes('A'), 'First import should have A');
+    assert.ok(lines[1].includes('B'), 'Second import should have B');
+  });
+
+  test('42. TypeScript default type-only imports work correctly', () => {
+    // TS 3.8+: import type Foo from 'lib' (default type import)
+    const content = `import type MyClass from './types';
+
+const x: typeof MyClass = null as any;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Default type import should be preserved when used
+    assert.ok(result.includes('MyClass'), 'Default type-only import should be preserved when used');
+  });
 });
