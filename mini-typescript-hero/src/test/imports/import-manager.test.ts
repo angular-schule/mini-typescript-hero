@@ -1405,4 +1405,130 @@ const b: TypeB = null as any;
     assert.ok(lines[0].includes('TypeA'), 'Should include TypeA');
     assert.ok(lines[0].includes('TypeB'), 'Should include TypeB');
   });
+
+  test('58. String import + Named import from same module kept separate', () => {
+    // Scenario: String import (side effects) cannot merge with named import
+    const content = `import './lib';
+import { Named } from './lib';
+
+console.log(Named);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // String and named imports both kept (2 separate lines)
+    assert.strictEqual(lines.length, 2, 'Should keep string and named separate');
+    assert.ok(result.includes("import './lib'"), 'Should have string import');
+    assert.ok(result.includes('{ Named }'), 'Should have named import');
+  });
+
+  test('59. String + Namespace + Named from same module all kept separate', () => {
+    // Scenario: Mix of all three types - none can merge with each other
+    const content = `import './lib';
+import * as Lib from './lib';
+import { Named } from './lib';
+
+console.log(Lib, Named);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // All three kept separate
+    assert.strictEqual(lines.length, 3, 'Should keep all three separate');
+    assert.ok(result.includes("import './lib'"), 'Should have string import');
+    assert.ok(result.includes('* as Lib'), 'Should have namespace import');
+    assert.ok(result.includes('{ Named }'), 'Should have named import');
+  });
+
+  test('60. Case-sensitive module names NOT merged', () => {
+    // Scenario: Different casing = different modules
+    const content = `import { A } from './Lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Different case = different modules, not merged
+    assert.strictEqual(lines.length, 2, 'Should keep separate (case-sensitive)');
+    assert.ok(result.includes('./Lib'), 'Should have ./Lib (capital L)');
+    assert.ok(result.includes('./lib'), 'Should have ./lib (lowercase l)');
+  });
+
+  test('61. Multiple namespace imports from same module kept separate', () => {
+    // Scenario: Multiple namespace imports cannot merge
+    const content = `import * as Lib1 from './lib';
+import * as Lib2 from './lib';
+
+console.log(Lib1, Lib2);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Both namespace imports kept separate
+    assert.strictEqual(lines.length, 2, 'Should keep both namespace imports separate');
+    assert.ok(result.includes('* as Lib1'), 'Should have Lib1');
+    assert.ok(result.includes('* as Lib2'), 'Should have Lib2');
+  });
+
+  test('62. /index removal disabled - imports NOT merged', () => {
+    // Scenario: When /index removal is OFF, './lib/index' and './lib' are different
+    const content = `import { A } from './lib/index';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('removeTrailingIndex', false);
+    config.setConfig('mergeImportsFromSameModule', true);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should NOT merge (different module names)
+    assert.strictEqual(lines.length, 2, 'Should keep separate when /index not removed');
+    assert.ok(result.includes('./lib/index'), 'Should keep /index');
+    assert.ok(result.includes("'./lib'"), 'Should have ./lib');
+  });
+
+  test('63. Two defaults from same module both used - first wins', () => {
+    // Scenario: Invalid TS but both defaults actually used
+    const content = `import Default1 from './lib';
+import Default2 from './lib';
+
+console.log(Default1, Default2);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Both used, so should merge but only keep first default
+    // Second default becomes a regular specifier or gets dropped
+    // Let's see what actually happens
+    assert.strictEqual(lines.length, 1, 'Should merge into one import');
+    assert.ok(lines[0].includes('Default1'), 'Should have Default1');
+    // Default2 might be kept as named or dropped - depends on parser
+  });
 });
