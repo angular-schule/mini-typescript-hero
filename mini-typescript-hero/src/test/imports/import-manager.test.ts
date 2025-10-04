@@ -766,4 +766,65 @@ export { MyDefault };
     // UnusedDefault is not used, should be removed
     assert.ok(!result.includes('UnusedDefault'), 'Unused default import should be removed');
   });
+
+  test('26. Support JavaScript files (.js)', () => {
+    const content = `import { used } from './helpers';
+import { unused } from './unused';
+
+function myFunction() {
+  return used();
+}
+`;
+    const doc = new MockTextDocument('test.js', content);
+    doc.languageId = 'javascript';
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // JavaScript should work like TypeScript
+    assert.ok(result.includes('used'), 'Used import should be kept in .js file');
+    assert.ok(!result.includes('unused'), 'Unused import should be removed from .js file');
+  });
+
+  test('27. Support JSX files (.jsx)', () => {
+    const content = `import React from 'react';
+import { Button } from './components';
+import { unused } from './unused';
+
+export default function MyComponent() {
+  return <Button>Click me</Button>;
+}
+`;
+    const doc = new MockTextDocument('test.jsx', content);
+    doc.languageId = 'javascriptreact';
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // JSX should detect usage correctly
+    assert.ok(result.includes('React'), 'React import should be kept in JSX');
+    assert.ok(result.includes('Button'), 'Component import should be kept in JSX');
+    assert.ok(!result.includes('unused'), 'Unused import should be removed from JSX');
+  });
+
+  test('28. Support complex JavaScript with destructuring and arrow functions', () => {
+    const content = `import { map, filter, unused } from 'lodash';
+import { UsedClass } from './classes';
+
+const data = [1, 2, 3];
+const result = map(data, x => filter([x], y => y > 0));
+const instance = new UsedClass();
+`;
+    const doc = new MockTextDocument('test.js', content);
+    doc.languageId = 'javascript';
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // All modern JS features should work
+    assert.ok(result.includes('map'), 'map should be kept');
+    assert.ok(result.includes('filter'), 'filter should be kept');
+    assert.ok(result.includes('UsedClass'), 'UsedClass should be kept');
+    assert.ok(!result.includes('unused'), 'unused should be removed');
+  });
 });
