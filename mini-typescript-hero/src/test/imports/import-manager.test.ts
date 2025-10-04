@@ -886,11 +886,10 @@ const c = VeryLongSymbolNameThree;
     assert.ok(hasNoTrailingComma, 'Multiline import should NOT have trailing comma when disabled');
   });
 
-  // Note: organizeSortsByFirstSpecifier is currently not fully functional
-  // because groups re-sort imports internally using library name sorting.
-  // This is a known limitation that would require refactoring the group interface.
-  // Keeping a simple test to ensure the config at least doesn't break anything.
-  test('32. organizeSortsByFirstSpecifier configuration accepted', () => {
+  test('32. organizeSortsByFirstSpecifier sorts by first specifier, not library name', () => {
+    // Scenario: Two imports with different first specifiers
+    // When sorted by first specifier: bar < foo (alphabetical)
+    // When sorted by library name: ./a < ./z (alphabetical)
     const content = `import { foo } from './z';
 import { bar } from './a';
 
@@ -902,9 +901,15 @@ console.log(foo, bar);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
-    // Just verify it doesn't crash and produces valid output
-    assert.ok(result.includes('foo'), 'Should include foo');
-    assert.ok(result.includes('bar'), 'Should include bar');
+    // Expected: sorted by first specifier (bar < foo), not by library name
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+    assert.strictEqual(lines.length, 2, 'Should have 2 import lines');
+    assert.ok(lines[0].includes('bar'), 'First import should be bar (sorted by specifier)');
+    assert.ok(lines[1].includes('foo'), 'Second import should be foo (sorted by specifier)');
+
+    // Verify it's NOT sorted by library name (./a would come before ./z)
+    assert.ok(lines[0].includes('./a'), 'bar import should be from ./a');
+    assert.ok(lines[1].includes('./z'), 'foo import should be from ./z');
   });
 
   test('33. Single-line import stays single-line when under threshold', () => {

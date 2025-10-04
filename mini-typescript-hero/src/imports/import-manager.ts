@@ -358,14 +358,18 @@ export class ImportManager {
     // Generate new import text
     const importLines: string[] = [];
     const useSorting = !this.config.disableImportsSorting(this.document.uri);
+    const useFirstSpecifierSort = this.config.organizeSortsByFirstSpecifier(this.document.uri);
 
     for (const group of importGroups) {
       if (group.imports.length === 0) {
         continue;
       }
 
-      // Use sortedImports only if sorting is enabled
-      const importsToUse = useSorting ? group.sortedImports : group.imports;
+      // If sorting by first specifier, preserve pre-sorted order
+      // Otherwise, re-sort by library name within each group
+      const importsToUse = (useSorting && !useFirstSpecifierSort)
+        ? group.sortedImports
+        : group.imports;
       const groupLines = importsToUse.map(imp => this.generateImportStatement(imp));
       importLines.push(...groupLines);
 
