@@ -10,6 +10,7 @@
 - Intelligent import sorting (by module path or first specifier)
 - Configurable import grouping (Plains, Modules, Workspace, Regex patterns)
 - Organize on save functionality (optional)
+- **Automatic settings migration** from original TypeScript Hero extension (runs once on first startup)
 - Support for TypeScript, JavaScript, TSX, and JSX files
 - Comprehensive configuration options:
   - Quote style (single/double)

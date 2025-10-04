@@ -1,6 +1,6 @@
 import { ExtensionContext, OutputChannel, window } from 'vscode';
 
-import { ImportsConfig } from './configuration';
+import { ImportsConfig, migrateSettings } from './configuration';
 import { ImportOrganizer } from './imports/import-organizer';
 
 let outputChannel: OutputChannel;
@@ -9,7 +9,7 @@ let organizer: ImportOrganizer;
 /**
  * Activate the Mini TypeScript Hero extension.
  */
-export function activate(context: ExtensionContext): void {
+export async function activate(context: ExtensionContext): Promise<void> {
   // Create output channel for logging
   outputChannel = window.createOutputChannel('Mini TypeScript Hero');
   context.subscriptions.push(outputChannel);
@@ -17,6 +17,9 @@ export function activate(context: ExtensionContext): void {
   outputChannel.appendLine('Mini TypeScript Hero: Activating extension');
 
   try {
+    // Migrate settings from old TypeScript Hero extension (runs once)
+    await migrateSettings(context);
+
     // Create configuration
     const config = new ImportsConfig();
 

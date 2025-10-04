@@ -36,6 +36,40 @@ Enable automatic import organization on file save:
 }
 ```
 
+## Migrating from TypeScript Hero
+
+**Good news!** If you're upgrading from the original TypeScript Hero extension, your settings will be **automatically migrated** on first startup.
+
+### What Gets Migrated
+
+All import-related settings from `typescriptHero.imports.*` are automatically copied to `miniTypescriptHero.imports.*`:
+
+- ✅ All formatting settings (quotes, semicolons, spaces, etc.)
+- ✅ Organize on save preference
+- ✅ Sorting and removal settings
+- ✅ Ignored libraries configuration
+- ✅ Custom import grouping rules
+
+### Migration Behavior
+
+- **Runs once:** Migration happens automatically the first time you activate Mini TypeScript Hero
+- **Preserves all levels:** User, workspace, and workspace folder settings are all migrated
+- **Safe:** Your original TypeScript Hero settings remain untouched
+- **Notification:** You'll see a message confirming how many settings were migrated
+
+### After Migration
+
+Once your settings are migrated, you have two options:
+
+1. **Keep both extensions:** Both extensions can coexist, but you may want to disable one to avoid conflicts
+2. **Uninstall TypeScript Hero:** If you only need the import organization feature, you can safely uninstall the original extension
+
+If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
+
+### No Old Settings?
+
+If you've never used TypeScript Hero before, the migration simply won't run — no action needed!
+
 ## Configuration
 
 ### Basic Settings
