@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="Mini TypeScript Hero Logo" width="200">
+</p>
+
 # Mini TypeScript Hero
 
 **Sorts and organizes TypeScript/JavaScript imports** — A lightweight, modern VSCode extension that automatically manages your import statements.
