@@ -827,4 +827,100 @@ const instance = new UsedClass();
     assert.ok(result.includes('UsedClass'), 'UsedClass should be kept');
     assert.ok(!result.includes('unused'), 'unused should be removed');
   });
+
+  test('29. Multiline wrapping when threshold exceeded', () => {
+    const content = `import { VeryLongSymbolName, AnotherLongSymbol, YetAnotherSymbol, FourthSymbol, FifthSymbol } from './helpers';
+
+const a = VeryLongSymbolName;
+const b = AnotherLongSymbol;
+const c = YetAnotherSymbol;
+const d = FourthSymbol;
+const e = FifthSymbol;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 50); // Very low threshold to force multiline
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should be multiline (contains line breaks in import)
+    assert.ok(result.includes('{\n'), 'Import should be multiline');
+    assert.ok(result.includes(',\n'), 'Should have comma + newline between specifiers');
+  });
+
+  test('30. Multiline trailing comma configuration', () => {
+    const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
+
+const a = VeryLongSymbolNameOne;
+const b = VeryLongSymbolNameTwo;
+const c = VeryLongSymbolNameThree;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 40); // Force multiline
+    config.setConfig('multiLineTrailingComma', true);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should have trailing comma on last specifier (which will be "Two" after alphabetical sort)
+    const hasTrailingComma = result.includes('VeryLongSymbolNameTwo,');
+    assert.ok(hasTrailingComma, 'Multiline import should have trailing comma when configured');
+  });
+
+  test('31. No trailing comma when multiLineTrailingComma is false', () => {
+    const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
+
+const a = VeryLongSymbolNameOne;
+const b = VeryLongSymbolNameTwo;
+const c = VeryLongSymbolNameThree;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 40); // Force multiline
+    config.setConfig('multiLineTrailingComma', false);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should NOT have trailing comma on last specifier (which will be "Two" after alphabetical sort)
+    const hasNoTrailingComma = result.match(/VeryLongSymbolNameTwo\s*\n\s*\}/);
+    assert.ok(hasNoTrailingComma, 'Multiline import should NOT have trailing comma when disabled');
+  });
+
+  // Note: organizeSortsByFirstSpecifier is currently not fully functional
+  // because groups re-sort imports internally using library name sorting.
+  // This is a known limitation that would require refactoring the group interface.
+  // Keeping a simple test to ensure the config at least doesn't break anything.
+  test('32. organizeSortsByFirstSpecifier configuration accepted', () => {
+    const content = `import { foo } from './z';
+import { bar } from './a';
+
+console.log(foo, bar);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('organizeSortsByFirstSpecifier', true);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Just verify it doesn't crash and produces valid output
+    assert.ok(result.includes('foo'), 'Should include foo');
+    assert.ok(result.includes('bar'), 'Should include bar');
+  });
+
+  test('33. Single-line import stays single-line when under threshold', () => {
+    const content = `import { short, names } from './helpers';
+
+const a = short;
+const b = names;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 125); // Default high threshold
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should stay single line
+    assert.ok(!result.includes('{\n'), 'Short import should stay single-line');
+    assert.ok(result.includes('{ names, short }'), 'Should be single line with sorted specifiers');
+  });
 });
