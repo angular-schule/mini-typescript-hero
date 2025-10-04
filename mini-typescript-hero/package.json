@@ -4,6 +4,7 @@
   "description": "Sorts and organizes TypeScript/JavaScript imports",
   "version": "1.0.0",
   "publisher": "angular-schule",
+  "icon": "icon.png",
   "author": {
     "name": "Johannes Hoppe",
     "email": "team@angular.schule",
