@@ -286,6 +286,14 @@ export class ImportManager {
       ];
     }
 
+    // Remove trailing /index (if configured)
+    // IMPORTANT: Must happen BEFORE merging so that './lib/index' and './lib' become the same
+    if (this.config.removeTrailingIndex(this.document.uri)) {
+      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
+        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
+      }
+    }
+
     // Merge imports from same module (if configured)
     if (this.config.mergeImportsFromSameModule(this.document.uri)) {
       const merged: Import[] = [];
@@ -348,13 +356,6 @@ export class ImportManager {
       }
 
       keep = merged;
-    }
-
-    // Remove trailing /index (if configured)
-    if (this.config.removeTrailingIndex(this.document.uri)) {
-      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
-        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
-      }
     }
 
     // Group imports

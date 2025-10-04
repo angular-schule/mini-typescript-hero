@@ -1318,4 +1318,91 @@ console.log(Z, A);
     assert.ok(lines[0].includes('A'), 'First should be A (sorted by specifier)');
     assert.ok(lines[1].includes('Z'), 'Second should be Z');
   });
+
+  test('54. Same specifier with different aliases are both preserved', () => {
+    // Scenario: Import same symbol with different aliases (valid TypeScript!)
+    const content = `import { Component as Comp1 } from '@angular/core';
+import { Component as Comp2 } from '@angular/core';
+
+console.log(Comp1, Comp2);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge but preserve BOTH aliases (different identifiers in code)
+    assert.strictEqual(lines.length, 1, 'Should merge into one import');
+    assert.ok(lines[0].includes('Component as Comp1'), 'Should preserve first alias');
+    assert.ok(lines[0].includes('Component as Comp2'), 'Should preserve second alias');
+  });
+
+  test('55. Multiple defaults from same module - first one wins', () => {
+    // Scenario: Invalid TypeScript but we handle gracefully
+    const content = `import Default1 from './lib';
+import Default2 from './lib';
+import { Named } from './lib';
+
+console.log(Default1, Named);
+// Default2 is unused, will be removed
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge, keeping only the USED default (Default1)
+    assert.strictEqual(lines.length, 1, 'Should merge into one import');
+    assert.ok(lines[0].includes('Default1'), 'Should keep first default');
+    assert.ok(lines[0].includes('Named'), 'Should include named import');
+    assert.ok(!lines[0].includes('Default2'), 'Should not include unused default');
+  });
+
+  test('56. FIXED: Merging + removeTrailingIndex order of operations', () => {
+    // Previously this was a bug: /index removal happened AFTER merging
+    // Fixed: /index removal now happens BEFORE merging
+    const content = `import { A } from './lib/index';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('removeTrailingIndex', true);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge to single import from './lib'
+    assert.strictEqual(lines.length, 1, 'Should merge into one import');
+    assert.ok(lines[0].includes('{ A, B }'), 'Should merge to { A, B }');
+    assert.ok(lines[0].includes('./lib'), 'Should be from ./lib');
+    assert.ok(!lines[0].includes('/index'), 'Should have /index removed');
+  });
+
+  test('57. Type-only imports merge together', () => {
+    // Scenario: TypeScript 3.8+ type-only imports
+    const content = `import type { TypeA } from './types';
+import type { TypeB } from './types';
+
+const a: TypeA = null as any;
+const b: TypeB = null as any;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Type-only imports should merge
+    assert.strictEqual(lines.length, 1, 'Should merge type-only imports');
+    assert.ok(lines[0].includes('TypeA'), 'Should include TypeA');
+    assert.ok(lines[0].includes('TypeB'), 'Should include TypeB');
+  });
 });
