@@ -257,6 +257,10 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
   }
 
+  mergeImportsFromSameModule(_resource: Uri): boolean {
+    return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
+  }
+
   grouping(_resource: Uri): ImportGroup[] {
     const groupSettings = this.mockConfig.get('grouping') ?? ['Plains', 'Modules', 'Workspace'];
     return groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
@@ -1040,13 +1044,56 @@ MyHelper;
     assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
   });
 
-  test('41. Duplicate imports from same module are NOT merged (matches original behavior)', () => {
+  test('41. Imports from same module are merged by default', () => {
     // Scenario: Multiple imports from the same library
-    // TypeScript Hero kept them separate (didn't merge), so we do too
+    // By default (new behavior), we merge them into a single import
     const content = `import { A } from './lib';
 import { B } from './lib';
 
 console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    // mergeImportsFromSameModule is true by default
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should merge into single import
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
+    assert.ok(lines[0].includes('A'), 'Merged import should have A');
+    assert.ok(lines[0].includes('B'), 'Merged import should have B');
+    assert.ok(lines[0].includes('{ A, B }'), 'Should be merged as { A, B }');
+  });
+
+  test('43. Imports NOT merged when disabled (preserves old TypeScript Hero behavior)', () => {
+    // Scenario: When mergeImportsFromSameModule is false (old behavior for migrated users)
+    const content = `import { A } from './lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('mergeImportsFromSameModule', false);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should keep imports separate
+    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
+    assert.ok(lines[0].includes('A'), 'First import should have A');
+    assert.ok(lines[1].includes('B'), 'Second import should have B');
+  });
+
+  test('44. Merge default and named imports from same module', () => {
+    // Scenario: Default import + named import from same module
+    const content = `import DefaultExport from './lib';
+import { Named } from './lib';
+
+console.log(DefaultExport, Named);
 `;
     const doc = new MockTextDocument('test.ts', content);
     const manager = new ImportManager(doc, config, logger);
@@ -1055,11 +1102,49 @@ console.log(A, B);
 
     const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Original TypeScript Hero kept imports separate, so we do too
-    // Both imports should exist (sorted alphabetically by specifier: A before B)
-    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
-    assert.ok(lines[0].includes('A'), 'First import should have A');
-    assert.ok(lines[1].includes('B'), 'Second import should have B');
+    // Should merge into: import DefaultExport, { Named } from './lib'
+    assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
+    assert.ok(lines[0].includes('DefaultExport'), 'Should have default');
+    assert.ok(lines[0].includes('Named'), 'Should have named');
+    assert.ok(lines[0].includes('DefaultExport, { Named }'), 'Should be merged as default + named');
+  });
+
+  test('45. Namespace imports cannot be merged', () => {
+    // Scenario: Namespace import + named import from same module
+    const content = `import * as Lib from './lib';
+import { Named } from './lib';
+
+console.log(Lib, Named);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Namespace imports cannot be merged - should keep separate
+    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (namespace cannot merge)');
+    assert.ok(result.includes('* as Lib'), 'Should have namespace import');
+    assert.ok(result.includes('{ Named }'), 'Should have named import');
+  });
+
+  test('46. String imports never merge', () => {
+    // Scenario: Multiple string imports from same module (side effects)
+    const content = `import './lib';
+import './lib';
+
+console.log('side effects');
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // String imports have side effects - keep all separate
+    assert.strictEqual(lines.length, 2, 'Should keep both string imports (side effects)');
   });
 
   test('42. TypeScript default type-only imports work correctly', () => {

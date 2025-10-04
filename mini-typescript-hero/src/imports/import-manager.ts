@@ -286,6 +286,70 @@ export class ImportManager {
       ];
     }
 
+    // Merge imports from same module (if configured)
+    if (this.config.mergeImportsFromSameModule(this.document.uri)) {
+      const merged: Import[] = [];
+      const byLibrary = new Map<string, Import[]>();
+
+      // Group imports by library name
+      for (const imp of keep) {
+        const lib = imp.libraryName;
+        if (!byLibrary.has(lib)) {
+          byLibrary.set(lib, []);
+        }
+        byLibrary.get(lib)!.push(imp);
+      }
+
+      // Merge each group
+      for (const [, imports] of byLibrary) {
+        if (imports.length === 1) {
+          // Single import, keep as-is
+          merged.push(imports[0]);
+          continue;
+        }
+
+        // Multiple imports from same module
+        const stringImports = imports.filter(i => i instanceof StringImport);
+        const namespaceImports = imports.filter(i => i instanceof NamespaceImport);
+        const namedImports = imports.filter(i => i instanceof NamedImport) as NamedImport[];
+
+        // String imports and namespace imports cannot be merged - keep separate
+        merged.push(...stringImports);
+        merged.push(...namespaceImports);
+
+        // Merge named imports
+        if (namedImports.length > 0) {
+          const allSpecifiers: SymbolSpecifier[] = [];
+          let mergedDefault: string | undefined;
+
+          for (const namedImp of namedImports) {
+            allSpecifiers.push(...namedImp.specifiers);
+            if (namedImp.defaultAlias && !mergedDefault) {
+              mergedDefault = namedImp.defaultAlias;
+            }
+          }
+
+          // Remove duplicate specifiers (same name and alias)
+          const uniqueSpecifiers = allSpecifiers.filter((spec, index, self) =>
+            index === self.findIndex(s =>
+              s.specifier === spec.specifier && s.alias === spec.alias
+            )
+          );
+
+          // Sort specifiers
+          uniqueSpecifiers.sort(specifierSort);
+
+          merged.push(new NamedImport(
+            namedImports[0].libraryName,
+            uniqueSpecifiers,
+            mergedDefault,
+          ));
+        }
+      }
+
+      keep = merged;
+    }
+
     // Remove trailing /index (if configured)
     if (this.config.removeTrailingIndex(this.document.uri)) {
       for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {

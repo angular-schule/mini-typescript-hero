@@ -66,6 +66,8 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
+**Import Merging Behavior:** For migrated users, `mergeImportsFromSameModule` is automatically set to `false` to preserve the original TypeScript Hero behavior. New users get `true` by default (modern best practice). You can change this setting anytime in your configuration.
+
 ### No Old Settings?
 
 If you've never used TypeScript Hero before, the migration simply won't run — no action needed!
@@ -105,6 +107,11 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
 
   // Sort by first imported name instead of module path
   "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
+
+  // Merge multiple imports from the same module (default: true)
+  // When true: import { A, B } from './lib'
+  // When false: import { A } from './lib'; import { B } from './lib';
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
 
   // Libraries that should never be removed (even if unused)
   "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],

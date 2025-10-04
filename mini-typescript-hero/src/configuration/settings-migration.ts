@@ -107,6 +107,20 @@ async function performMigration(): Promise<number> {
     }
   }
 
+  // For migrated users: Set mergeImportsFromSameModule to false to preserve old behavior
+  // (Old TypeScript Hero never merged imports from same module)
+  if (migratedCount > 0) {
+    // Set at global level for migrated users
+    const mergeInspect = newConfig.inspect('mergeImportsFromSameModule');
+    // Only set if not already configured by user
+    if (mergeInspect?.globalValue === undefined &&
+        mergeInspect?.workspaceValue === undefined &&
+        mergeInspect?.workspaceFolderValue === undefined) {
+      await newConfig.update('mergeImportsFromSameModule', false, ConfigurationTarget.Global);
+      // Don't increment migratedCount - this is a compatibility setting, not a migrated setting
+    }
+  }
+
   return migratedCount;
 }
 

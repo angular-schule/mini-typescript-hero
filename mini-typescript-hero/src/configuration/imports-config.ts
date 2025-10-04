@@ -71,6 +71,12 @@ export class ImportsConfig {
       .get('ignoredFromRemoval', ['react']);
   }
 
+  public mergeImportsFromSameModule(resource: Uri): boolean {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('mergeImportsFromSameModule', true);
+  }
+
   public grouping(resource: Uri): ImportGroup[] {
     const groups = workspace
       .getConfiguration(sectionKey, resource)
