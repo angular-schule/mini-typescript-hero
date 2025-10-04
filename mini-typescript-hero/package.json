@@ -5,6 +5,10 @@
   "version": "1.0.0",
   "publisher": "angular-schule",
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#3277bd",
+    "theme": "dark"
+  },
   "author": {
     "name": "Johannes Hoppe",
     "email": "team@angular.schule",
