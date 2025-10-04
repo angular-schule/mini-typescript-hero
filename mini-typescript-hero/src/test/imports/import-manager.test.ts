@@ -928,4 +928,115 @@ const b = names;
     assert.ok(!result.includes('{\n'), 'Short import should stay single-line');
     assert.ok(result.includes('{ names, short }'), 'Should be single line with sorted specifiers');
   });
+
+  test('34. Empty file produces no edits', () => {
+    const content = '';
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+
+    assert.strictEqual(edits.length, 0, 'Empty file should produce no edits');
+  });
+
+  test('35. File with no imports produces no edits', () => {
+    const content = `const x = 42;
+console.log(x);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+
+    assert.strictEqual(edits.length, 0, 'File with no imports should produce no edits');
+  });
+
+  test('36. All imports unused - removes everything', () => {
+    const content = `import { Unused1 } from './a';
+import { Unused2 } from './b';
+import { Unused3 } from './c';
+
+const x = 42;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should remove all imports
+    assert.ok(!result.includes('import'), 'All unused imports should be removed');
+    assert.ok(result.includes('const x = 42'), 'Code should remain');
+  });
+
+  test('37. TypeScript type-only imports are preserved when used', () => {
+    // TypeScript 3.8+ syntax: import type { Foo }
+    const content = `import type { MyType } from './types';
+
+const x: MyType = { value: 42 };
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Type import should be preserved (used in type annotation)
+    assert.ok(result.includes('MyType'), 'Type-only import should be preserved when used');
+  });
+
+  test('38. TypeScript type-only imports are removed when unused', () => {
+    const content = `import type { UnusedType } from './types';
+
+const x = 42;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Unused type import should be removed
+    assert.ok(!result.includes('UnusedType'), 'Unused type-only import should be removed');
+  });
+
+  test('39. Multiple custom regex groups work together', () => {
+    // Scenario: Custom grouping with multiple regex patterns
+    const content = `import { Component } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { MyHelper } from './helper';
+
+const comp: Component = null as any;
+const obs: Observable<any> = null as any;
+map(x => x);
+MyHelper;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+
+    // Custom grouping: Angular first, then RxJS, then Remaining, then Workspace
+    config.setConfig('grouping', [
+      '/angular/',        // Regex group 1: Angular
+      '/^rxjs/',          // Regex group 2: RxJS (starts with rxjs)
+      'Modules',          // Remaining modules
+      'Workspace'         // Local files
+    ]);
+
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Expected order: Angular -> RxJS -> Workspace
+    assert.strictEqual(lines.length, 4, 'Should have 4 imports');
+    assert.ok(lines[0].includes('@angular/core'), 'First should be Angular (regex group 1)');
+    assert.ok(lines[1].includes('rxjs/operators') || lines[1].includes('from \'rxjs\''), 'Second should be RxJS');
+    assert.ok(lines[2].includes('from \'rxjs\'') || lines[2].includes('rxjs/operators'), 'Third should be RxJS');
+    assert.ok(lines[3].includes('./helper'), 'Last should be workspace');
+  });
+
+  test('40. File with only whitespace produces no edits', () => {
+    const content = '\n\n  \n\t\n';
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+
+    assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
+  });
 });
