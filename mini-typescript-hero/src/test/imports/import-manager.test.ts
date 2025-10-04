@@ -1531,4 +1531,28 @@ console.log(Default1, Default2);
     assert.ok(lines[0].includes('Default1'), 'Should have Default1');
     // Default2 might be kept as named or dropped - depends on parser
   });
+
+  test('64. Property access should not count as import usage', () => {
+    // Scenario: import { reduce } from 'lodash' but only use arr.reduce() (Array method)
+    // The identifier "reduce" appears in .reduce() but is NOT using the import
+    const content = `import { filter, map, reduce } from 'lodash';
+
+const data = [1, 2, 3];
+const doubled = map(data, x => x * 2);
+const result = filter(doubled, x => x > 5)
+  .reduce((acc, val) => acc + val, 0);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should keep map and filter (used as functions), remove reduce (only used as method)
+    assert.strictEqual(lines.length, 1, 'Should have one import line');
+    assert.ok(lines[0].includes('filter'), 'Should keep filter');
+    assert.ok(lines[0].includes('map'), 'Should keep map');
+    assert.ok(!lines[0].includes('reduce'), 'Should remove reduce (not used as function)');
+  });
 });

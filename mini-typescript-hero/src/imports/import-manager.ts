@@ -215,6 +215,12 @@ export class ImportManager {
         continue;
       }
 
+      // Skip if this identifier is a property name in a property access (e.g., obj.reduce)
+      // This is NOT a usage of an imported identifier
+      if (Node.isPropertyAccessExpression(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+
       // This is a genuine usage of an imported symbol
       this.usedIdentifiers.add(identifierText);
     }
