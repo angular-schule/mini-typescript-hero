@@ -97,6 +97,26 @@ export class ImportManager {
         defaultImport?.getText(),
       ));
     }
+
+    // Extract old-style TypeScript imports (import = require)
+    // This syntax is deprecated but still used in legacy codebases
+    const statements = this.sourceFile.getStatements();
+    for (const stmt of statements) {
+      if (Node.isImportEqualsDeclaration(stmt)) {
+        const moduleRef = stmt.getModuleReference();
+        if (Node.isExternalModuleReference(moduleRef)) {
+          const expression = moduleRef.getExpression();
+          if (expression) {
+            // Remove quotes from require('module-name')
+            const moduleSpecifier = expression.getText().slice(1, -1);
+            this.imports.push(new ExternalModuleImport(
+              moduleSpecifier,
+              stmt.getName()
+            ));
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -186,6 +206,11 @@ export class ImportManager {
 
       // Skip if this identifier is part of an import declaration
       if (identifier.getFirstAncestorByKind(SyntaxKind.ImportDeclaration)) {
+        continue;
+      }
+
+      // Skip if this identifier is part of an old-style import equals declaration
+      if (identifier.getFirstAncestorByKind(SyntaxKind.ImportEqualsDeclaration)) {
         continue;
       }
 
@@ -392,15 +417,23 @@ export class ImportManager {
   private generateTextEdits(importGroups: ImportGroup[]): TextEdit[] {
     const edits: TextEdit[] = [];
 
-    // Get the range of all import declarations
+    // Get the range of all import declarations (both modern and old-style)
     const importDeclarations = this.sourceFile.getImportDeclarations();
-    if (importDeclarations.length === 0) {
+    const importEquals = this.sourceFile.getStatements()
+      .filter(stmt => Node.isImportEqualsDeclaration(stmt));
+
+    const allImports = [...importDeclarations, ...importEquals as any[]];
+
+    if (allImports.length === 0) {
       return edits;
     }
 
+    // Sort by position to find first and last
+    allImports.sort((a, b) => a.getStart() - b.getStart());
+
     // Delete all existing imports including any blank lines after the import block
-    const firstImport = importDeclarations[0];
-    const lastImport = importDeclarations[importDeclarations.length - 1];
+    const firstImport = allImports[0];
+    const lastImport = allImports[allImports.length - 1];
 
     const startPos = this.document.positionAt(firstImport.getStart());
     const endPos = this.document.positionAt(lastImport.getEnd());

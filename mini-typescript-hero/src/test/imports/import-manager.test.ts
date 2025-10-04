@@ -1555,4 +1555,102 @@ const result = filter(doubled, x => x > 5)
     assert.ok(lines[0].includes('map'), 'Should keep map');
     assert.ok(!lines[0].includes('reduce'), 'Should remove reduce (not used as function)');
   });
+
+  test('65. Old TypeScript syntax: import = require (used)', () => {
+    // Scenario: Old TypeScript syntax that's still used in legacy codebases
+    // This is import foo = require('lib') syntax (deprecated but must not break)
+    const content = `import foo = require('old-lib');
+import { bar } from 'new-lib';
+
+console.log(foo, bar);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.trim().length > 0);
+
+    // Both imports should be kept (both used)
+    assert.ok(result.includes('import foo = require'), 'Should keep import equals (used)');
+    assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep modern import');
+    assert.strictEqual(lines.filter(l => l.startsWith('import')).length, 2, 'Should have 2 imports');
+  });
+
+  test('66. Old TypeScript syntax: import = require (unused)', () => {
+    // Scenario: Unused import equals should be removed like any other unused import
+    const content = `import foo = require('old-lib');
+import { bar } from 'new-lib';
+
+console.log(bar);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Only bar should remain
+    assert.strictEqual(lines.length, 1, 'Should have only 1 import');
+    assert.ok(!result.includes('import foo = require'), 'Should remove unused import equals');
+    assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep used import');
+  });
+
+  test('67. Old TypeScript syntax: Mixed with grouping', () => {
+    // Scenario: import equals should be grouped like namespace imports
+    const content = `import { Component } from '@angular/core';
+import oldLib = require('old-lib');
+import 'zone.js';
+import { MyClass } from './my-class';
+
+const component = Component;
+const lib = oldLib;
+const local = MyClass;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should be grouped: Plains, Modules (including import equals), Workspace
+    const lines = result.split('\n');
+    const zoneIndex = lines.findIndex(l => l.includes('zone.js'));
+    const angularIndex = lines.findIndex(l => l.includes('@angular/core'));
+    const oldLibIndex = lines.findIndex(l => l.includes('old-lib'));
+    const localIndex = lines.findIndex(l => l.includes('./my-class'));
+
+    assert.ok(zoneIndex !== -1, 'Should have zone.js');
+    assert.ok(angularIndex !== -1, 'Should have angular');
+    assert.ok(oldLibIndex !== -1, 'Should have old-lib');
+    assert.ok(localIndex !== -1, 'Should have local import');
+
+    // Verify order: Plains < Modules < Workspace
+    assert.ok(zoneIndex < angularIndex, 'Plains before Modules');
+    assert.ok(zoneIndex < oldLibIndex, 'Plains before old-lib');
+    assert.ok(angularIndex < localIndex, 'Modules before Workspace');
+    assert.ok(oldLibIndex < localIndex, 'Old-lib before Workspace');
+  });
+
+  test('68. Old TypeScript syntax: Formatting matches config', () => {
+    // Scenario: import equals should respect quote and semicolon settings
+    const content = `import foo = require("old-lib");
+
+console.log(foo);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('stringQuoteStyle', "'");
+    config.setConfig('insertSemicolons', false);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should use single quotes and no semicolon
+    assert.ok(result.includes("import foo = require('old-lib')"), 'Should use single quotes');
+    assert.ok(!result.includes("import foo = require('old-lib');"), 'Should not have semicolon');
+
+    // Reset config
+    config.setConfig('stringQuoteStyle', "'");
+    config.setConfig('insertSemicolons', true);
+  });
 });
