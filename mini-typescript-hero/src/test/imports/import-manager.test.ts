@@ -2116,4 +2116,37 @@ console.log(A, B);
 
     assert.ok(!threw, 'Should not throw on invalid config - must fall back gracefully');
   });
+
+  test('86. Blank lines after imports: Exactly one blank line', () => {
+    // CRITICAL: Should have exactly ONE blank line after imports, not zero, not two
+    // Scenario: Remove some imports, check spacing
+    const content = `import { UsedClass } from './used-class';
+import { unused } from './unused';
+import { AnotherUnused } from './another-unused';
+
+const instance = new UsedClass();
+console.log(instance);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // Should have exactly one blank line between import and code
+    const importLine = lines.findIndex(l => l.includes("import { UsedClass }"));
+    const codeLine = lines.findIndex(l => l.includes('const instance'));
+
+    assert.ok(importLine !== -1, 'Should have import');
+    assert.ok(codeLine !== -1, 'Should have code');
+
+    // There should be exactly ONE blank line between import and code
+    // That means: codeLine = importLine + 2 (importLine, blank line, codeLine)
+    assert.strictEqual(codeLine - importLine, 2, `Should have exactly one blank line after imports (got ${codeLine - importLine - 1} blank lines)`);
+
+    // Verify the line between is actually blank
+    const blankLine = lines[importLine + 1];
+    assert.strictEqual(blankLine.trim(), '', 'Line after import should be blank');
+  });
 });

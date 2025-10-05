@@ -489,7 +489,10 @@ export class ImportManager {
     if (importLines.length > 0) {
       // Insert at the beginning (or after 'use strict', shebang, etc.)
       const insertPosition = this.getImportInsertPosition();
-      edits.push(TextEdit.insert(insertPosition, importLines.join('\n') + '\n\n'));
+      // Join import lines with \n, then add one final \n to end the last import.
+      // This creates exactly one blank line before the code (which starts on its own line after deletion).
+      const importText = importLines.join('\n') + '\n';
+      edits.push(TextEdit.insert(insertPosition, importText));
     }
 
     return edits;
