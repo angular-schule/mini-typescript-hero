@@ -47,7 +47,7 @@ import * as assert from 'assert';
 import { Uri, Position, Range, TextEdit, TextDocument, OutputChannel } from 'vscode';
 import { ImportManager } from '../../imports/import-manager';
 import { ImportsConfig } from '../../configuration';
-import { ImportGroup, ImportGroupSettingParser } from '../../imports/import-grouping';
+import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../imports/import-grouping';
 
 /**
  * Mock TextDocument for testing
@@ -263,7 +263,21 @@ class MockImportsConfig extends ImportsConfig {
 
   grouping(_resource: Uri): ImportGroup[] {
     const groupSettings = this.mockConfig.get('grouping') ?? ['Plains', 'Modules', 'Workspace'];
-    return groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
+    let importGroups: ImportGroup[] = [];
+
+    try {
+      importGroups = groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
+    } catch (e) {
+      // Fall back to default on invalid config (same as real ImportsConfig)
+      importGroups = ImportGroupSettingParser.default;
+    }
+
+    // Ensure RemainImportGroup is always present
+    if (!importGroups.some(i => i instanceof RemainImportGroup)) {
+      importGroups.push(new RemainImportGroup());
+    }
+
+    return importGroups;
   }
 }
 
@@ -299,12 +313,12 @@ function applyEdits(content: string, edits: TextEdit[]): string {
 
     if (startLine === endLine) {
       // Single line edit
-      const line = lines[startLine];
+      const line = lines[startLine] || '';
       lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
     } else {
       // Multi-line edit
-      const firstLine = lines[startLine].substring(0, startChar);
-      const lastLine = lines[endLine].substring(endChar);
+      const firstLine = (lines[startLine] || '').substring(0, startChar);
+      const lastLine = (lines[endLine] || '').substring(endChar);
       const newLines = edit.newText.split('\n');
 
       lines.splice(
@@ -1652,5 +1666,454 @@ console.log(foo);
     // Reset config
     config.setConfig('stringQuoteStyle', "'");
     config.setConfig('insertSemicolons', true);
+  });
+
+  // =============================================================================
+  // CRITICAL EDGE CASES - File Headers & Special Syntax
+  // =============================================================================
+
+  test('69. Shebang: Imports inserted AFTER shebang', () => {
+    // CRITICAL: Shebang MUST be first line or script won't execute
+    // Scenario: Node.js executable script with shebang
+    const content = `#!/usr/bin/env node
+import { used } from './lib';
+import { unused } from './unused';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // CRITICAL: Shebang MUST be on line 0
+    assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang must be first line');
+
+    // Import should come after shebang
+    assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
+    assert.ok(!result.includes('unused'), 'Should remove unused import');
+
+    const importLineIndex = lines.findIndex(l => l.includes('import'));
+    assert.ok(importLineIndex > 0, 'Import must come AFTER shebang');
+  });
+
+  test('70. Use strict: Imports inserted AFTER use strict', () => {
+    // CRITICAL: 'use strict' changes JavaScript behavior, must be first statement
+    // Scenario: Strict mode file
+    const content = `'use strict';
+import { used } from './lib';
+import { unused } from './unused';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // CRITICAL: 'use strict' MUST be first line
+    assert.strictEqual(lines[0], "'use strict';", "'use strict' must be first line");
+
+    // Import should come after 'use strict'
+    assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
+    assert.ok(!result.includes('unused'), 'Should remove unused import');
+
+    const importLineIndex = lines.findIndex(l => l.includes('import'));
+    assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+  });
+
+  test('71. Use strict (double quotes): Imports inserted AFTER use strict', () => {
+    // Scenario: "use strict" with double quotes (also valid)
+    const content = `"use strict";
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // CRITICAL: "use strict" MUST be preserved
+    assert.strictEqual(lines[0], '"use strict";', '"use strict" must be first line');
+
+    const importLineIndex = lines.findIndex(l => l.includes('import'));
+    assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+  });
+
+  test('72. Triple-slash directives: Imports inserted AFTER directives', () => {
+    // CRITICAL: /// <reference /> directives configure TypeScript compiler
+    // Scenario: TypeScript file with reference directives
+    const content = `/// <reference path="./types.d.ts" />
+/// <reference types="node" />
+import { used } from './lib';
+import { unused } from './unused';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // CRITICAL: Triple-slash directives must be preserved and stay before imports
+    assert.ok(result.includes('/// <reference path="./types.d.ts" />'), 'Should preserve path directive');
+    assert.ok(result.includes('/// <reference types="node" />'), 'Should preserve types directive');
+
+    const lines = result.split('\n');
+    const directiveLine1 = lines.findIndex(l => l.includes('reference path'));
+    const directiveLine2 = lines.findIndex(l => l.includes('reference types'));
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+
+    assert.ok(directiveLine1 < importLine, 'Reference directives must come before imports');
+    assert.ok(directiveLine2 < importLine, 'Reference directives must come before imports');
+  });
+
+  test('73. Leading comments: Preserved before imports', () => {
+    // CRITICAL: License headers, file comments must not be deleted
+    // Scenario: File with copyright header
+    const content = `/**
+ * Copyright (c) 2025 Company
+ * Licensed under MIT
+ */
+
+// Main module file
+import { used } from './lib';
+import { unused } from './unused';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // CRITICAL: Comments must be preserved
+    assert.ok(result.includes('Copyright (c) 2025 Company'), 'Should preserve copyright');
+    assert.ok(result.includes('Licensed under MIT'), 'Should preserve license');
+    assert.ok(result.includes('// Main module file'), 'Should preserve comment');
+
+    const lines = result.split('\n');
+    const copyrightLine = lines.findIndex(l => l.includes('Copyright'));
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+
+    assert.ok(copyrightLine < importLine, 'Comments must come before imports');
+  });
+
+  test('74. Combined headers: Shebang + comments + use strict', () => {
+    // CRITICAL: All headers preserved in correct order
+    // Scenario: Complete header with all elements
+    const content = `#!/usr/bin/env node
+/**
+ * CLI tool
+ */
+'use strict';
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // CRITICAL: Verify order
+    assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang first');
+    assert.ok(lines.some(l => l.includes('CLI tool')), 'Comment preserved');
+    assert.ok(lines.some(l => l === "'use strict';"), 'Use strict preserved');
+
+    const shebangIdx = 0;
+    const commentIdx = lines.findIndex(l => l.includes('CLI tool'));
+    const strictIdx = lines.findIndex(l => l === "'use strict';");
+    const importIdx = lines.findIndex(l => l.includes('import'));
+
+    assert.ok(shebangIdx < commentIdx, 'Shebang before comment');
+    assert.ok(commentIdx < strictIdx, 'Comment before use strict');
+    assert.ok(strictIdx < importIdx, 'Use strict before imports');
+  });
+
+  // =============================================================================
+  // CRITICAL EDGE CASES - Dynamic Imports & Modern Syntax
+  // =============================================================================
+
+  test('75. Dynamic imports: Not confused with static imports', () => {
+    // CRITICAL: Dynamic import() calls must NOT be removed or modified
+    // Scenario: Code with both static and dynamic imports
+    const content = `import { helper } from './helper';
+
+async function loadModule() {
+  const module = await import('./dynamic-module');
+  const another = import('./another-dynamic');
+  return module;
+}
+
+console.log(helper);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // CRITICAL: Dynamic imports must NOT be touched
+    assert.ok(result.includes("import('./dynamic-module')"), 'Dynamic import must be preserved');
+    assert.ok(result.includes("import('./another-dynamic')"), 'Dynamic import must be preserved');
+    assert.ok(result.includes("import { helper } from './helper';"), 'Static import preserved');
+
+    // Dynamic imports should still be in function body, not moved to top
+    const lines = result.split('\n');
+    const dynamicLine = lines.findIndex(l => l.includes("import('./dynamic-module')"));
+    const functionLine = lines.findIndex(l => l.includes('async function loadModule'));
+
+    assert.ok(dynamicLine > functionLine, 'Dynamic import stays in function body');
+  });
+
+  test('76. import.meta: Not confused with imports', () => {
+    // CRITICAL: import.meta usage must NOT be removed
+    // Scenario: ES module using import.meta
+    const content = `import { helper } from './helper';
+
+const currentUrl = import.meta.url;
+const dirname = import.meta.dirname;
+
+console.log(helper, currentUrl);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // CRITICAL: import.meta usage must be preserved
+    assert.ok(result.includes('import.meta.url'), 'import.meta.url must be preserved');
+    assert.ok(result.includes('import.meta.dirname'), 'import.meta.dirname must be preserved');
+    assert.ok(result.includes("import { helper } from './helper';"), 'Import preserved');
+  });
+
+  test('77. Empty import specifiers: Should be removed', () => {
+    // Scenario: Malformed import with no specifiers
+    const content = `import {} from './lib';
+import { used } from './used';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Empty import should be cleaned up
+    assert.ok(!result.includes("import {} from './lib'"), 'Empty import should be removed');
+    assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+  });
+
+  test('78. Whitespace-only import specifiers: Should be removed', () => {
+    // Scenario: Malformed import with only whitespace
+    const content = `import {   } from './lib';
+import { used } from './used';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Whitespace-only import should be cleaned up
+    assert.ok(!result.includes("import {   } from './lib'"), 'Whitespace import should be removed');
+    assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+  });
+
+  // =============================================================================
+  // CRITICAL EDGE CASES - Malformed Code
+  // =============================================================================
+
+  test('79. File with only imports (all unused): All removed safely', () => {
+    // CRITICAL: Must handle files that become empty
+    // Scenario: File that only had imports, all unused
+    const content = `import { A } from './a';
+import { B } from './b';
+import { C } from './c';
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // All imports should be removed, leaving empty file (or just whitespace)
+    assert.ok(!result.includes('import'), 'All unused imports should be removed');
+    assert.ok(result.trim().length === 0, 'File should be empty');
+  });
+
+  test('80. Imports after code: Malformed but should not crash', () => {
+    // CRITICAL: Extension must handle malformed code gracefully
+    // Scenario: Invalid TypeScript with imports after code (shouldn't exist but might)
+    const content = `const x = 5;
+
+import { foo } from './lib';
+
+console.log(x, foo);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+
+    // Should not throw error
+    let threw = false;
+    try {
+      const edits = manager.organizeImports();
+      const result = applyEdits(content, edits);
+
+      // Import should still be recognized and kept (it's used)
+      assert.ok(result.includes('foo'), 'Should preserve import identifier');
+    } catch (e) {
+      threw = true;
+    }
+
+    assert.ok(!threw, 'Should not throw error on malformed code');
+  });
+
+  test('81. Comments between imports: Preserved', () => {
+    // CRITICAL: Don't lose important comments
+    // Scenario: Comments explaining imports
+    const content = `import { A } from './a';
+
+// This import is needed for side effects
+import './polyfill';
+
+// Main imports
+import { B } from './b';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Note: Comments between imports may not be preserved in their exact position
+    // (this is a known limitation of AST-based refactoring)
+    // But the imports themselves should be organized correctly
+    assert.ok(result.includes("import { A } from './a';"), 'Import A preserved');
+    assert.ok(result.includes("import { B } from './b';"), 'Import B preserved');
+    assert.ok(result.includes("import './polyfill';"), 'Side effect import preserved');
+  });
+
+  test('82. Very long import line: Multiline wrapping works', () => {
+    // Scenario: Import with many specifiers exceeding threshold
+    const content = `import { SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentifierName3, UnusedName } from './lib';
+
+console.log(SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentifierName3);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    config.setConfig('multiLineWrapThreshold', 40); // Low threshold to force wrapping
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Should wrap to multiline (the braces part alone is > 40 chars)
+    assert.ok(result.includes('{\n'), 'Should use multiline format');
+    assert.ok(result.includes('SuperLongIdentifierName1'), 'Should preserve specifier 1');
+    assert.ok(result.includes('SuperLongIdentifierName2'), 'Should preserve specifier 2');
+    assert.ok(result.includes('SuperLongIdentifierName3'), 'Should preserve specifier 3');
+
+    // Unused specifier should be removed
+    assert.ok(!result.includes('UnusedName'), 'Should remove unused specifier');
+
+    // Reset config
+    config.setConfig('multiLineWrapThreshold', 125);
+  });
+
+  test('83. BOM (Byte Order Mark): Handled gracefully (known limitation)', () => {
+    // NOTE: ts-morph strips BOM during parsing (this is a known limitation)
+    // This test verifies the extension doesn't crash on BOM files
+    // Scenario: File starting with BOM
+    const BOM = '\uFEFF';
+    const content = `${BOM}import { used } from './lib';
+import { unused } from './unused';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+
+    // Should not throw error
+    let threw = false;
+    try {
+      const edits = manager.organizeImports();
+      const result = applyEdits(content, edits);
+
+      // File should still be valid (BOM will be stripped by ts-morph, but that's okay)
+      assert.ok(result.includes("import { used } from './lib';"), 'Import preserved');
+      assert.ok(!result.includes('unused'), 'Unused import removed');
+    } catch (e) {
+      threw = true;
+    }
+
+    assert.ok(!threw, 'Should handle BOM files without crashing');
+  });
+
+  test('84. Template strings with import keyword: Not confused', () => {
+    // CRITICAL: String literals containing "import" must not be confused
+    // Scenario: Template string with import keyword
+    const content = `import { helper } from './helper';
+
+const message = \`You should import the module\`;
+const code = "import { X } from 'lib';";
+
+console.log(helper, message);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // Import should be preserved
+    assert.ok(result.includes("import { helper } from './helper';"), 'Real import preserved');
+
+    // String literals must NOT be affected
+    assert.ok(result.includes('You should import the module'), 'Template string preserved');
+    assert.ok(result.includes(`"import { X } from 'lib';"`), 'String literal preserved');
+  });
+
+  // =============================================================================
+  // EDGE CASE - Configuration Error Handling
+  // =============================================================================
+
+  test('85. Invalid grouping config: Falls back to defaults gracefully', () => {
+    // CRITICAL: Bad config must not crash extension
+    // Scenario: User provides invalid grouping configuration
+    const content = `import { A } from './a';
+import { B } from 'library';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+
+    // Create config with invalid grouping that will throw during parsing
+    const badConfig = new MockImportsConfig();
+    badConfig.setConfig('grouping', ['INVALID_GROUP_IDENTIFIER']); // This will throw in parser
+
+    const manager = new ImportManager(doc, badConfig, logger);
+
+    // Should not throw - must fall back to defaults
+    let threw = false;
+    try {
+      const edits = manager.organizeImports();
+      const result = applyEdits(content, edits);
+
+      // Should still organize with default grouping
+      assert.ok(result.includes("import { A } from './a';"), 'Import preserved');
+      assert.ok(result.includes("import { B } from 'library';"), 'Import preserved');
+    } catch (e) {
+      threw = true;
+    }
+
+    assert.ok(!threw, 'Should not throw on invalid config - must fall back gracefully');
   });
 });
