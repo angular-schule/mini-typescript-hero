@@ -91,7 +91,7 @@ This extension is **MIT licensed and free for everyone**.
 
 I'm incredibly grateful to Christoph Bühler for creating TypeScript Hero in the first place, and for being so generous in allowing this work to continue. The original code, the design decisions, the thoughtful features: all of that came from Christoph.
 
-I'm known for being a lazy maintainer. Feel free to fork it when I ever abandon it.
+I'm just keeping the lights on and making sure it stays maintained, though I'm known for being a lazy maintainer. Feel free to fork it when I ever abandon it.
 
 ## Install Mini TypeScript Hero Now
 
