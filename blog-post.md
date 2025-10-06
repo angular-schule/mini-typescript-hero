@@ -7,7 +7,6 @@
 I use TypeScript Hero every single day. Multiple times per hour, actually. One keyboard shortcut (`Ctrl+Alt+O`) and my messy imports transform into a perfectly organized, alphabetically sorted list. Unused imports? Gone. Proper grouping? Done. Consistent formatting? Check.
 
 Then one day, VSCode hit me with a warning I couldn't ignore: **"This extension is deprecated as it is no longer being maintained."**
-
 My heart sank. Not another one.
 
 ## The Problem
@@ -37,7 +36,7 @@ import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
 ```
 
-Angular libraries grouped together and **merged into one import**. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
+Angular libraries grouped together and merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
 
 **I literally can't imagine working without this.**
 
@@ -46,9 +45,7 @@ Angular libraries grouped together and **merged into one import**. RxJS separate
 [Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair. We all have our seasons with different technologies.
 
 But I needed this feature. Every. Single. Day.
-
 So I reached out to Christoph with a simple question: Could I rescue the import organizer and release it as a new extension?
-
 His response was incredibly kind and supportive. He gave me his blessing, shared what code he still had, and even said he'd be excited to see the work continue.
 
 **My mission was simple**: Preserve this feature for myself. And hopefully, other people will like it too.
@@ -69,6 +66,9 @@ For a tool I rely on daily, that was a ticking time bomb.
 - TypeScript 5.7 with strict mode
 - Simpler, cleaner architecture
 - No deprecated dependencies
+
+**New feature:**
+- **Import merging**: Automatically combines duplicate imports from the same module (e.g., two separate `@angular/core` imports become one). This is enabled by default for new users, while migrated users keep the original behavior.
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.
 
