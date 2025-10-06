@@ -2,7 +2,7 @@
   "name": "mini-typescript-hero",
   "displayName": "Mini TypeScript Hero",
   "description": "Sorts and organizes TypeScript/JavaScript imports",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.0",
   "publisher": "angular-schule",
   "icon": "icon.png",
   "galleryBanner": {

@@ -1,6 +1,14 @@
 # Changelog
 
-## [1.0.0] - 2025-10-03
+## [1.0.0-rc.0] - 2025-10-06
+
+### Release Candidate
+
+This is the first release candidate for Mini TypeScript Hero v1.0.0. All features are complete and tested (153 tests passing on Ubuntu, macOS, Windows).
+
+**Testing Period:** Please test this RC version and report any issues before the final 1.0.0 release.
+
+## [1.0.0] - TBD
 
 ### Added
 
@@ -37,4 +45,5 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - TypeScript 5.7+ with strict mode
 - VSCode engine 1.85.0+
 
+[1.0.0-rc.0]: https://github.com/angular-schule/mini-typescript-hero/releases/tag/v1.0.0-rc.0
 [1.0.0]: https://github.com/angular-schule/mini-typescript-hero/releases/tag/v1.0.0

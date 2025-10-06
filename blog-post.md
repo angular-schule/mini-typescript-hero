@@ -4,7 +4,7 @@
 
 ---
 
-I use TypeScript Hero every single day. Multiple times per hour, actually. One keyboard shortcut – `Ctrl+Alt+O` – and my messy imports transform into a perfectly organized, alphabetically sorted list. Unused imports? Gone. Proper grouping? Done. Consistent formatting? Check.
+I use TypeScript Hero every single day. Multiple times per hour, actually. One keyboard shortcut (`Ctrl+Alt+O`) and my messy imports transform into a perfectly organized, alphabetically sorted list. Unused imports? Gone. Proper grouping? Done. Consistent formatting? Check.
 
 Then one day, VSCode hit me with a warning I couldn't ignore: **"This extension is deprecated as it is no longer being maintained."**
 
@@ -42,7 +42,7 @@ Angular libraries grouped together. RxJS separate. Then local imports. Unused im
 
 ## The Mission
 
-[Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair – we all have our seasons with different technologies.
+[Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair. We all have our seasons with different technologies.
 
 But I needed this feature. Every. Single. Day.
 
@@ -54,7 +54,7 @@ His response was incredibly kind and supportive. He gave me his blessing, shared
 
 ## What Changed Under the Hood
 
-The original TypeScript Hero used Christoph's own `typescript-parser` ([node-typescript-parser](https://github.com/buehler/node-typescript-parser) on GitHub) library – a great piece of software that did its job well. But like the extension itself, it hasn't been maintained in years. Updating it to work with modern TypeScript versions would become increasingly challenging.
+The original TypeScript Hero used Christoph's own `typescript-parser` library ([node-typescript-parser](https://github.com/buehler/node-typescript-parser) on GitHub), a great piece of software that did its job well. But like the extension itself, it hasn't been maintained in years. Updating it to work with modern TypeScript versions would become increasingly challenging.
 
 For a tool I rely on daily, that was a ticking time bomb.
 
@@ -80,7 +80,7 @@ If you're already using TypeScript Hero, switching is painless:
 3. Your settings automatically migrate (one-time, on first startup)
 4. Done.
 
-All your custom configurations – quote style, semicolons, import grouping rules, everything – transfers automatically. You can even keep both extensions installed if you want. But I highly recommend deactivating the old hero, because both extensions will fight for the same shortcut.
+All your custom configurations transfer automatically. This includes quote style, semicolons, import grouping rules, and everything else. You can even keep both extensions installed if you want. But I highly recommend deactivating the old hero, because both extensions will fight for the same shortcut.
 
 The keyboard shortcut works exactly the same: `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
 
@@ -88,7 +88,7 @@ The keyboard shortcut works exactly the same: `Ctrl+Alt+O` (or `Cmd+Alt+O` on ma
 
 This extension is **MIT licensed and free for everyone**.
 
-I'm incredibly grateful to Christoph Bühler for creating TypeScript Hero in the first place, and for being so generous in allowing this work to continue. The original code, the design decisions, the thoughtful features – all of that came from Christoph.
+I'm incredibly grateful to Christoph Bühler for creating TypeScript Hero in the first place, and for being so generous in allowing this work to continue. The original code, the design decisions, the thoughtful features: all of that came from Christoph.
 
 I'm just keeping the lights on and making sure it stays maintained.
 
