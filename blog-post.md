@@ -68,7 +68,7 @@ For a tool I rely on daily, that was a ticking time bomb.
 - No deprecated dependencies
 
 **New feature:**
-- **Import merging**: Automatically combines duplicate imports from the same module (e.g., two separate `@angular/core` imports become one). This is enabled by default for new users, while migrated users keep the original behavior.
+- **Import merging**: Automatically combines duplicate imports from the same module (e.g., two separate `@angular/core` imports become one). I always wanted to have this. This is enabled by default for new users, while migrated users keep the original behavior.
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.
 
@@ -97,18 +97,18 @@ I'm just keeping the lights on and making sure it stays maintained.
 
 Ready to organize your imports with a single keystroke?
 
-**Install from VSCode Marketplace:**
-Search for "Mini TypeScript Hero" or visit:
-👉 [marketplace.visualstudio.com/items?itemName=angular-schule.mini-typescript-hero](https://marketplace.visualstudio.com/items?itemName=angular-schule.mini-typescript-hero)
+* **Install from VSCode Marketplace:**
+    Search for "Mini TypeScript Hero" or visit:
+    👉 [marketplace.visualstudio.com/items?itemName=angular-schule.mini-typescript-hero](https://marketplace.visualstudio.com/items?itemName=angular-schule.mini-typescript-hero)
 
-**Keyboard shortcut:**
-`Ctrl+Alt+O` (Windows/Linux) | `Cmd+Alt+O` (macOS)
+* **Keyboard shortcut:**
+    `Ctrl+Alt+O` (Windows/Linux) | `Cmd+Alt+O` (macOS)
 
-**Works with:**
-TypeScript, JavaScript, TSX, JSX
+* **Works with:**
+    TypeScript, JavaScript, TSX, JSX
 
-**Found a bug or have a feature request?**
-👉 [github.com/angular-schule/mini-typescript-hero](https://github.com/angular-schule/mini-typescript-hero)
+* **Found a bug or have a feature request?**
+    👉 [github.com/angular-schule/mini-typescript-hero](https://github.com/angular-schule/mini-typescript-hero)
 
 ---
 
