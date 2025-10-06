@@ -17,27 +17,26 @@ Here's what TypeScript Hero does for me (and hopefully for you too):
 **Before** (the chaos):
 
 ```typescript
-import { UsedComponent } from './components';
-import { UnusedService } from './services';
-import * as React from 'react';
-import {Component, OnInit} from "@angular/core"
-import 'zone.js';
-import { map } from 'rxjs/operators';
+import { UserDetailComponent } from './components/user-detail';
+import { UnusedService } from './services/unused';
+import {Router} from "@angular/router"
+import { map, switchMap } from 'rxjs/operators';
+import {Component, OnInit, inject} from "@angular/core"
+import { CommonModule } from '@angular/common';
 ```
 
 **After** pressing `Ctrl+Alt+O`:
 
 ```typescript
-import 'zone.js';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { map, switchMap } from 'rxjs/operators';
 
-import { Component, OnInit } from '@angular/core';
-import * as React from 'react';
-import { map } from 'rxjs/operators';
-
-import { UsedComponent } from './components';
+import { UserDetailComponent } from './components/user-detail';
 ```
 
-Side effects first. Then external libraries. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
+Angular libraries grouped together. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
 
 **I literally can't imagine working without this.**
 
