@@ -1,6 +1,6 @@
 # TypeScript Hero is dead (is yet another VS Code extension gone forever?)
 
-**Nope, long live Mini TypeScript Hero** 🦸‍♂️
+**Nope, long live Mini TypeScript Hero!** 🦸‍♂️
 
 ---
 
@@ -18,10 +18,11 @@ Here's what TypeScript Hero does for me (and hopefully for you too):
 
 ```typescript
 import { UserDetail } from './components/user-detail';
+import { Component } from '@angular/core';
 import { UnusedService } from './services/unused';
 import {Router} from "@angular/router"
 import { map, switchMap } from 'rxjs/operators';
-import {Component, OnInit, inject} from "@angular/core"
+import {OnInit, inject} from "@angular/core"
 import { BookList } from './components/book-list';
 ```
 
@@ -36,7 +37,7 @@ import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
 ```
 
-Angular libraries grouped together. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
+Angular libraries grouped together and **merged into one import**. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
 
 **I literally can't imagine working without this.**
 
