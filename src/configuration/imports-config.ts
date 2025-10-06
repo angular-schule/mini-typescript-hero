@@ -2,7 +2,7 @@ import { Uri, workspace } from 'vscode';
 
 import { ImportGroup, ImportGroupSetting, ImportGroupSettingParser, RemainImportGroup } from '../imports/import-grouping';
 
-const sectionKey = 'typescriptHero.imports';
+const sectionKey = 'miniTypescriptHero.imports';
 
 export class ImportsConfig {
   public insertSpaceBeforeAndAfterImportBraces(resource: Uri): boolean {
@@ -69,6 +69,12 @@ export class ImportsConfig {
     return workspace
       .getConfiguration(sectionKey, resource)
       .get('ignoredFromRemoval', ['react']);
+  }
+
+  public mergeImportsFromSameModule(resource: Uri): boolean {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('mergeImportsFromSameModule', true);
   }
 
   public grouping(resource: Uri): ImportGroup[] {

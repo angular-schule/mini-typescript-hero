@@ -1,40 +1,48 @@
-import 'reflect-metadata';
+import { ExtensionContext, OutputChannel, window } from 'vscode';
 
-import { ExtensionContext } from 'vscode';
+import { ImportsConfig, migrateSettings } from './configuration';
+import { ImportOrganizer } from './imports/import-organizer';
 
-import { Activatable } from './activatable';
-import { ioc } from './ioc';
-import { iocSymbols } from './ioc-symbols';
-import { TypescriptHero } from './typescript-hero';
-
-let extension: Activatable;
+let outputChannel: OutputChannel;
+let organizer: ImportOrganizer;
 
 /**
- * Activates TypeScript Hero
- *
- * @export
- * @param {ExtensionContext} context
+ * Activate the Mini TypeScript Hero extension.
  */
 export async function activate(context: ExtensionContext): Promise<void> {
-  if (ioc.isBound(iocSymbols.extensionContext)) {
-    ioc.unbind(iocSymbols.extensionContext);
+  // Create output channel for logging
+  outputChannel = window.createOutputChannel('Mini TypeScript Hero');
+  context.subscriptions.push(outputChannel);
+
+  outputChannel.appendLine('Mini TypeScript Hero: Activating extension');
+
+  try {
+    // Migrate settings from old TypeScript Hero extension (runs once)
+    await migrateSettings(context);
+
+    // Create configuration
+    const config = new ImportsConfig();
+
+    // Create and activate import organizer
+    organizer = new ImportOrganizer(config, outputChannel);
+    organizer.activate();
+
+    context.subscriptions.push(organizer);
+
+    outputChannel.appendLine('Mini TypeScript Hero: Extension activated successfully');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    outputChannel.appendLine(`Mini TypeScript Hero: Failed to activate: ${errorMessage}`);
+    window.showErrorMessage(`Mini TypeScript Hero: Failed to activate: ${errorMessage}`);
   }
-  ioc
-    .bind<ExtensionContext>(iocSymbols.extensionContext)
-    .toConstantValue(context);
-
-  extension = ioc.get(TypescriptHero);
-
-  extension.setup();
-  extension.start();
 }
 
 /**
- * Deactivates TypeScript Hero
- *
- * @export
+ * Deactivate the extension.
  */
 export function deactivate(): void {
-  extension.stop();
-  extension.dispose();
+  if (outputChannel) {
+    outputChannel.appendLine('Mini TypeScript Hero: Deactivating extension');
+    outputChannel.dispose();
+  }
 }

@@ -1,15 +1,10 @@
-import { Import, StringImport } from 'typescript-parser';
-
-import { importSort } from '../../utilities/utility-functions';
+import { Import, StringImport } from '../import-types';
+import { importSort } from '../import-utilities';
 import { ImportGroup } from './import-group';
 import { ImportGroupOrder } from './import-group-order';
 
 /**
- * Importgroup that processes all imports that match a certain regex (the lib name).
- *
- * @export
- * @class RegexImportGroup
- * @implements {ImportGroup}
+ * Import group that processes all imports that match a certain regex (the lib name).
  */
 export class RegexImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
@@ -27,10 +22,8 @@ export class RegexImportGroup implements ImportGroup {
   /**
    * Creates an instance of RegexImportGroup.
    *
-   * @param {string} regex The regex that is matched against the imports library name.
-   * @param {ImportGroupOrder} [order='asc']
-   *
-   * @memberof RegexImportGroup
+   * @param regex The regex that is matched against the imports library name.
+   * @param order Sort order (asc/desc)
    */
   constructor(
     public readonly regex: string,

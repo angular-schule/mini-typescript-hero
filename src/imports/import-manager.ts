@@ -1,216 +1,313 @@
+import { Project, SourceFile, Node, SyntaxKind } from 'ts-morph';
+import { OutputChannel, Position, Range, TextDocument, TextEdit } from 'vscode';
+
+import { ImportsConfig } from '../configuration';
 import {
-  DeclarationInfo,
-  DefaultDeclaration,
   ExternalModuleImport,
-  File,
   Import,
-  ModuleDeclaration,
   NamedImport,
   NamespaceImport,
   StringImport,
-  SymbolSpecifier,
-  TypescriptCodeGenerator,
-  TypescriptParser,
-} from 'typescript-parser';
-import { Position, Range, TextDocument, TextEdit, window, workspace, WorkspaceEdit } from 'vscode';
-
-import { Configuration } from '../configuration';
-import { TypescriptCodeGeneratorFactory } from '../ioc-symbols';
-import { Logger } from '../utilities/logger';
-import {
-  getAbsolutLibraryName,
-  getImportInsertPosition,
-  getRelativeLibraryName,
-  getScriptKind,
-  importGroupSortForPrecedence,
-  importSort,
-  importSortByFirstSpecifier,
-  specifierSort,
-} from '../utilities/utility-functions';
+  SymbolSpecifier
+} from './import-types';
+import { importSort, importSortByFirstSpecifier, specifierSort, importGroupSortForPrecedence } from './import-utilities';
 import { ImportGroup } from './import-grouping';
 
-function sameSpecifiers(
-  specs1: SymbolSpecifier[],
-  specs2: SymbolSpecifier[],
-): boolean {
-  for (const spec of specs1) {
-    const spec2 = specs2[specs1.indexOf(spec)];
-    if (
-      !spec2 ||
-      spec.specifier !== spec2.specifier ||
-      spec.alias !== spec2.alias
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
-
 /**
- * Function that calculates the range object for an import.
- *
- * @export
- * @param {TextDocument} document
- * @param {number} [start]
- * @param {number} [end]
- * @returns {Range}
- */
-export function importRange(
-  document: TextDocument,
-  start?: number,
-  end?: number,
-): Range {
-  return start !== undefined && end !== undefined
-    ? new Range(
-        document.lineAt(
-          document.positionAt(start).line,
-        ).rangeIncludingLineBreak.start,
-        document.lineAt(
-          document.positionAt(end).line,
-        ).rangeIncludingLineBreak.end,
-      )
-    : new Range(new Position(0, 0), new Position(0, 0));
-}
-
-/**
- * Management class for the imports of a document. Can add and remove imports to the document
- * and commit the virtual document to the TextEditor.
- *
- * @export
- * @class ImportManager
+ * Management class for the imports of a document.
+ * Can organize imports (sort, group, remove unused) and generate TextEdits.
  */
 export class ImportManager {
-  private importGroups: ImportGroup[] = [];
+  private sourceFile!: SourceFile;
   private imports: Import[] = [];
-  private organize: boolean = false;
+  private usedIdentifiers: Set<string> = new Set();
 
-  private get rootPath(): string | undefined {
-    const rootFolder = workspace.getWorkspaceFolder(this.document.uri);
-    return rootFolder ? rootFolder.uri.fsPath : undefined;
-  }
-
-  private get generator(): TypescriptCodeGenerator {
-    return this.generatorFactory(this.document.uri);
-  }
-
-  /**
-   * Document resource for this controller. Contains the parsed document.
-   *
-   * @readonly
-   * @type {File}
-   * @memberof ImportManager
-   */
-  public get parsedDocument(): File {
-    return this._parsedDocument;
-  }
-
-  public constructor(
-    public readonly document: TextDocument,
-    private _parsedDocument: File,
-    private readonly parser: TypescriptParser,
-    private readonly config: Configuration,
-    private readonly logger: Logger,
-    private readonly generatorFactory: TypescriptCodeGeneratorFactory,
+  constructor(
+    private readonly document: TextDocument,
+    private readonly config: ImportsConfig,
+    // @ts-expect-error - logger parameter kept for future debugging capabilities
+    private readonly logger: OutputChannel,
   ) {
-    this.logger.debug(`[ImportManager] Create import manager`, {
-      file: document.fileName,
-    });
-    this.reset();
+    this.parseDocument();
   }
 
   /**
-   * Resets the imports and the import groups back to the initial state of the parsed document.
-   *
-   * @memberof ImportManager
+   * Parse the document with ts-morph.
    */
-  public reset(): void {
-    this.imports = this._parsedDocument.imports.map(o => o.clone());
-    this.importGroups = this.config.imports.grouping(this.document.uri);
-    this.addImportsToGroups(this.imports);
+  private parseDocument(): void {
+    const project = new Project({
+      useInMemoryFileSystem: true,
+      compilerOptions: {
+        allowJs: true,
+        jsx: 2, // React JSX
+      },
+    });
+
+    this.sourceFile = project.createSourceFile(
+      this.document.fileName,
+      this.document.getText(),
+    );
+
+    // Extract imports
+    this.extractImports();
+
+    // Find used identifiers
+    this.findUsedIdentifiers();
   }
 
   /**
-   * Organizes the imports of the document. Orders all imports and removes unused imports.
-   * Order:
-   * 1. string-only imports (e.g. import 'reflect-metadata')
-   * 2. rest, but in alphabetical order
-   *
-   * @returns {ImportManager}
-   *
-   * @memberof ImportManager
+   * Extract all imports from the source file.
    */
-  public organizeImports(): this {
-    this.logger.debug('[ImportManager] Organize the imports', {
-      file: this.document.fileName,
+  private extractImports(): void {
+    const importDeclarations = this.sourceFile.getImportDeclarations();
+
+    for (const importDecl of importDeclarations) {
+      const moduleSpecifier = importDecl.getModuleSpecifierValue();
+
+      // String-only import (e.g., import 'reflect-metadata')
+      if (!importDecl.getNamedImports().length &&
+          !importDecl.getDefaultImport() &&
+          !importDecl.getNamespaceImport()) {
+        this.imports.push(new StringImport(moduleSpecifier));
+        continue;
+      }
+
+      // Namespace import (e.g., import * as foo from 'lib')
+      const namespaceImport = importDecl.getNamespaceImport();
+      if (namespaceImport) {
+        this.imports.push(new NamespaceImport(
+          moduleSpecifier,
+          namespaceImport.getText(),
+        ));
+        continue;
+      }
+
+      // Named import (e.g., import { foo, bar } from 'lib')
+      const defaultImport = importDecl.getDefaultImport();
+      const namedImports = importDecl.getNamedImports();
+
+      const specifiers: SymbolSpecifier[] = namedImports.map(named => ({
+        specifier: named.getName(),
+        alias: named.getAliasNode()?.getText(),
+      }));
+
+      this.imports.push(new NamedImport(
+        moduleSpecifier,
+        specifiers,
+        defaultImport?.getText(),
+      ));
+    }
+
+    // Extract old-style TypeScript imports (import = require)
+    // This syntax is deprecated but still used in legacy codebases
+    const statements = this.sourceFile.getStatements();
+    for (const stmt of statements) {
+      if (Node.isImportEqualsDeclaration(stmt)) {
+        const moduleRef = stmt.getModuleReference();
+        if (Node.isExternalModuleReference(moduleRef)) {
+          const expression = moduleRef.getExpression();
+          if (expression) {
+            // Remove quotes from require('module-name')
+            const moduleSpecifier = expression.getText().slice(1, -1);
+            this.imports.push(new ExternalModuleImport(
+              moduleSpecifier,
+              stmt.getName()
+            ));
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Find all identifiers that are actually used in the code.
+   *
+   * Strategy:
+   * 1. Collect all local declarations (classes, functions, etc.) - these shadow imports
+   * 2. Scan all identifier nodes in the code (excluding imports and local declaration sites)
+   * 3. Only identifiers that:
+   *    - Are NOT local declarations (not shadowed)
+   *    - Are used in the code body
+   *    should be considered "used"
+   */
+  private findUsedIdentifiers(): void {
+    this.usedIdentifiers.clear();
+
+    // Step 1: Build a set of locally declared identifiers that shadow imports
+    const localDeclarations = new Set<string>();
+
+    // Classes, interfaces, type aliases
+    this.sourceFile.getClasses().forEach(c => {
+      const name = c.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
     });
-    this.organize = true;
+
+    this.sourceFile.getInterfaces().forEach(i => {
+      const name = i.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getTypeAliases().forEach(t => {
+      const name = t.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getFunctions().forEach(f => {
+      const name = f.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getEnums().forEach(e => {
+      const name = e.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    this.sourceFile.getVariableDeclarations().forEach(v => {
+      const name = v.getName();
+      if (name) {
+        localDeclarations.add(name);
+      }
+    });
+
+    // Step 2: Handle re-exported symbols (export { Foo } or export default Foo)
+    // These must be kept even if not used in the file itself
+    this.sourceFile.getExportDeclarations().forEach(exportDecl => {
+      const namedExports = exportDecl.getNamedExports();
+      namedExports.forEach(named => {
+        this.usedIdentifiers.add(named.getName());
+      });
+    });
+
+    // Handle default exports that reference an identifier (export default Foo)
+    this.sourceFile.getDefaultExportSymbol()?.getDeclarations().forEach(decl => {
+      if (Node.isExportAssignment(decl)) {
+        const expression = decl.getExpression();
+        if (Node.isIdentifier(expression)) {
+          this.usedIdentifiers.add(expression.getText());
+        }
+      }
+    });
+
+    // Step 3: Collect all identifier usages in the code (excluding import statements)
+    const allIdentifiers = this.sourceFile.getDescendantsOfKind(SyntaxKind.Identifier);
+
+    for (const identifier of allIdentifiers) {
+      const identifierText = identifier.getText();
+
+      // Skip if this identifier is part of an import declaration
+      if (identifier.getFirstAncestorByKind(SyntaxKind.ImportDeclaration)) {
+        continue;
+      }
+
+      // Skip if this identifier is part of an old-style import equals declaration
+      if (identifier.getFirstAncestorByKind(SyntaxKind.ImportEqualsDeclaration)) {
+        continue;
+      }
+
+      // Skip if this identifier IS the name being declared (not usages in the declaration)
+      const parent = identifier.getParent();
+      if (Node.isClassDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isInterfaceDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isTypeAliasDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isFunctionDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isEnumDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+      if (Node.isVariableDeclaration(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+
+      // Skip if this is a locally declared symbol (shadowed import)
+      if (localDeclarations.has(identifierText)) {
+        continue;
+      }
+
+      // Skip if this identifier is a property name in a property access (e.g., obj.reduce)
+      // This is NOT a usage of an imported identifier
+      if (Node.isPropertyAccessExpression(parent) && identifier === parent.getNameNode()) {
+        continue;
+      }
+
+      // This is a genuine usage of an imported symbol
+      this.usedIdentifiers.add(identifierText);
+    }
+  }
+
+  /**
+   * Organize imports: remove unused, sort, and group.
+   * Returns TextEdits to apply the changes.
+   */
+  public organizeImports(): TextEdit[] {
     let keep: Import[] = [];
 
-    if (this.config.imports.disableImportRemovalOnOrganize(this.document.uri)) {
+    // Filter unused imports (unless disabled)
+    if (this.config.disableImportRemovalOnOrganize(this.document.uri)) {
       keep = this.imports;
     } else {
-      for (const actImport of this.imports) {
-        if (
-          this.config.imports
-            .ignoredFromRemoval(this.document.uri)
-            .indexOf(actImport.libraryName) >= 0
-        ) {
-          keep.push(actImport);
+      for (const imp of this.imports) {
+        // Check if import is in the ignore list
+        if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName)) {
+          keep.push(imp);
           continue;
         }
-        if (
-          actImport instanceof NamespaceImport ||
-          actImport instanceof ExternalModuleImport
-        ) {
-          if (
-            this._parsedDocument.nonLocalUsages.indexOf(actImport.alias) > -1
-          ) {
-            keep.push(actImport);
+
+        // String imports are always kept
+        if (imp instanceof StringImport) {
+          keep.push(imp);
+          continue;
+        }
+
+        // Check namespace/external module imports
+        if (imp instanceof NamespaceImport || imp instanceof ExternalModuleImport) {
+          if (this.usedIdentifiers.has(imp.alias)) {
+            keep.push(imp);
           }
-        } else if (actImport instanceof NamedImport) {
-          actImport.specifiers = actImport.specifiers
-            .filter(
-              o =>
-                this._parsedDocument.nonLocalUsages.indexOf(
-                  o.alias || o.specifier,
-                ) > -1,
-            )
-            .sort(specifierSort);
-          const defaultSpec = actImport.defaultAlias;
-          const libraryAlreadyImported = keep.find(
-            d => d.libraryName === actImport.libraryName,
+          continue;
+        }
+
+        // Check named imports
+        if (imp instanceof NamedImport) {
+          const usedSpecifiers = imp.specifiers.filter(spec =>
+            this.usedIdentifiers.has(spec.alias || spec.specifier)
           );
-          if (
-            actImport.specifiers.length ||
-            (!!defaultSpec &&
-              [
-                ...this._parsedDocument.nonLocalUsages,
-                ...this._parsedDocument.usages,
-              ].indexOf(defaultSpec) >= 0)
-          ) {
-            if (libraryAlreadyImported) {
-              if (actImport.defaultAlias) {
-                (<NamedImport>libraryAlreadyImported).defaultAlias =
-                  actImport.defaultAlias;
-              }
-              (<NamedImport>libraryAlreadyImported).specifiers = [
-                ...(<NamedImport>libraryAlreadyImported).specifiers,
-                ...actImport.specifiers,
-              ];
-            } else {
-              keep.push(actImport);
-            }
+
+          const defaultUsed = imp.defaultAlias && this.usedIdentifiers.has(imp.defaultAlias);
+
+          if (usedSpecifiers.length || defaultUsed) {
+            // Sort specifiers
+            usedSpecifiers.sort(specifierSort);
+
+            keep.push(new NamedImport(
+              imp.libraryName,
+              usedSpecifiers,
+              defaultUsed ? imp.defaultAlias : undefined,
+            ));
           }
-        } else if (actImport instanceof StringImport) {
-          keep.push(actImport);
         }
       }
     }
 
-    if (!this.config.imports.disableImportsSorting(this.document.uri)) {
-      const sorter = this.config.imports.organizeSortsByFirstSpecifier(
-        this.document.uri,
-      )
+    // Sort imports (unless disabled)
+    if (!this.config.disableImportsSorting(this.document.uri)) {
+      const sorter = this.config.organizeSortsByFirstSpecifier(this.document.uri)
         ? importSortByFirstSpecifier
         : importSort;
 
@@ -220,237 +317,263 @@ export class ImportManager {
       ];
     }
 
-    if (this.config.imports.removeTrailingIndex(this.document.uri)) {
-      for (const imp of keep.filter(lib =>
-        lib.libraryName.endsWith('/index'),
-      )) {
+    // Remove trailing /index (if configured)
+    // IMPORTANT: Must happen BEFORE merging so that './lib/index' and './lib' become the same
+    if (this.config.removeTrailingIndex(this.document.uri)) {
+      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
         imp.libraryName = imp.libraryName.replace(/\/index$/, '');
       }
     }
 
-    for (const group of this.importGroups) {
-      group.reset();
-    }
-    this.imports = keep;
-    this.addImportsToGroups(this.imports);
+    // Merge imports from same module (if configured)
+    if (this.config.mergeImportsFromSameModule(this.document.uri)) {
+      const merged: Import[] = [];
+      const byLibrary = new Map<string, Import[]>();
 
-    return this;
-  }
-
-  /**
-   * Adds an import for a declaration to the documents imports.
-   * This index is merged and commited during the commit() function.
-   * If it's a default import or there is a duplicate identifier, the controller will ask for the name on commit().
-   *
-   * @param {DeclarationInfo} declarationInfo The import that should be added to the document
-   * @returns {ImportManager}
-   *
-   * @memberof ImportManager
-   */
-  public addDeclarationImport(declarationInfo: DeclarationInfo): this {
-    this.logger.debug('[ImportManager] Add declaration as import', {
-      file: this.document.fileName,
-      specifier: declarationInfo.declaration.name,
-      library: declarationInfo.from,
-    });
-    // If there is something already imported, it must be a NamedImport
-    const alreadyImported: NamedImport = this.imports.find(
-      o =>
-        declarationInfo.from ===
-          getAbsolutLibraryName(
-            o.libraryName,
-            this.document.fileName,
-            this.rootPath,
-          ) && o instanceof NamedImport,
-    ) as NamedImport;
-
-    if (alreadyImported) {
-      // If we found an import for this declaration, it's named import (with a possible default declaration)
-      if (declarationInfo.declaration instanceof DefaultDeclaration) {
-        delete alreadyImported.defaultAlias;
-        alreadyImported.defaultAlias = declarationInfo.declaration.name;
-      } else if (
-        !alreadyImported.specifiers.some(
-          o => o.specifier === declarationInfo.declaration.name,
-        )
-      ) {
-        alreadyImported.specifiers.push(
-          new SymbolSpecifier(declarationInfo.declaration.name),
-        );
-      }
-    } else {
-      let imp: Import = new NamedImport(
-        getRelativeLibraryName(
-          declarationInfo.from,
-          this.document.fileName,
-          this.rootPath,
-        ),
-      );
-
-      if (declarationInfo.declaration instanceof ModuleDeclaration) {
-        imp = new NamespaceImport(
-          declarationInfo.from,
-          declarationInfo.declaration.name,
-        );
-      } else if (declarationInfo.declaration instanceof DefaultDeclaration) {
-        (imp as NamedImport).defaultAlias = declarationInfo.declaration.name;
-      } else {
-        (imp as NamedImport).specifiers.push(
-          new SymbolSpecifier(declarationInfo.declaration.name),
-        );
-      }
-      this.imports.push(imp);
-      this.addImportsToGroups([imp]);
-    }
-
-    return this;
-  }
-
-  /**
-   * Does commit the currently virtual document to the TextEditor.
-   * Returns a promise that resolves to a boolean if all changes
-   * could be applied.
-   *
-   * @returns {Promise<boolean>}
-   *
-   * @memberof ImportManager
-   */
-  public async commit(): Promise<boolean> {
-    const edits: TextEdit[] = this.calculateTextEdits();
-    const workspaceEdit = new WorkspaceEdit();
-
-    workspaceEdit.set(this.document.uri, edits);
-
-    this.logger.debug('[ImportManager] Commit the file', {
-      file: this.document.fileName,
-    });
-
-    const result = await workspace.applyEdit(workspaceEdit);
-
-    if (result) {
-      delete this.organize;
-      this._parsedDocument = await this.parser.parseSource(
-        this.document.getText(),
-        getScriptKind(this.document.fileName),
-      );
-      this.imports = this._parsedDocument.imports.map(o => o.clone());
-      for (const group of this.importGroups) {
-        group.reset();
-      }
-      this.addImportsToGroups(this.imports);
-    }
-
-    return result;
-  }
-
-  /**
-   * Calculate the needed {@link TextEdit} array for the actual changes in the imports.
-   *
-   * @returns {TextEdit[]}
-   *
-   * @memberof ImportManager
-   */
-  public calculateTextEdits(): TextEdit[] {
-    const edits: TextEdit[] = [];
-
-    if (this.organize) {
-      // since the imports should be organized:
-      // delete all imports and the following lines (if empty)
-      // newly generate all groups.
-      for (const imp of this._parsedDocument.imports) {
-        edits.push(
-          TextEdit.delete(importRange(this.document, imp.start, imp.end)),
-        );
-        if (imp.end !== undefined) {
-          const nextLine = this.document.lineAt(
-            this.document.positionAt(imp.end).line + 1,
-          );
-          if (nextLine.text === '') {
-            edits.push(TextEdit.delete(nextLine.rangeIncludingLineBreak));
-          }
+      // Group imports by library name
+      for (const imp of keep) {
+        const lib = imp.libraryName;
+        if (!byLibrary.has(lib)) {
+          byLibrary.set(lib, []);
         }
+        byLibrary.get(lib)!.push(imp);
       }
-      const imports = this.importGroups
-        .map(group => this.generator.generate(group as any))
-        .filter(Boolean)
-        .join('\n');
-      if (!!imports) {
-        edits.push(
-          TextEdit.insert(
-            getImportInsertPosition(window.activeTextEditor),
-            `${imports}\n`,
-          ),
-        );
-      }
-    } else {
-      // Commit the documents imports:
-      // 1. Remove imports that are in the document, but not anymore
-      // 2. Update existing / insert new ones
-      for (const imp of this._parsedDocument.imports) {
-        if (!this.imports.some(o => o.libraryName === imp.libraryName)) {
-          edits.push(
-            TextEdit.delete(importRange(this.document, imp.start, imp.end)),
-          );
-        }
-      }
-      const actualDocumentsNamed = this._parsedDocument.imports.filter(
-        o => o instanceof NamedImport,
-      ) as NamedImport[];
-      for (const imp of this.imports) {
-        if (
-          imp instanceof NamedImport &&
-          actualDocumentsNamed.some(
-            o =>
-              o.libraryName === imp.libraryName &&
-              o.defaultAlias === imp.defaultAlias &&
-              o.specifiers.length === imp.specifiers.length &&
-              sameSpecifiers(o.specifiers, imp.specifiers),
-          )
-        ) {
+
+      // Merge each group
+      for (const [, imports] of byLibrary) {
+        if (imports.length === 1) {
+          // Single import, keep as-is
+          merged.push(imports[0]);
           continue;
         }
-        if (imp.isNew) {
-          edits.push(
-            TextEdit.insert(
-              getImportInsertPosition(window.activeTextEditor),
-              this.generator.generate(imp) + '\n',
-            ),
+
+        // Multiple imports from same module
+        const stringImports = imports.filter(i => i instanceof StringImport);
+        const namespaceImports = imports.filter(i => i instanceof NamespaceImport);
+        const namedImports = imports.filter(i => i instanceof NamedImport) as NamedImport[];
+
+        // String imports and namespace imports cannot be merged - keep separate
+        merged.push(...stringImports);
+        merged.push(...namespaceImports);
+
+        // Merge named imports
+        if (namedImports.length > 0) {
+          const allSpecifiers: SymbolSpecifier[] = [];
+          let mergedDefault: string | undefined;
+
+          for (const namedImp of namedImports) {
+            allSpecifiers.push(...namedImp.specifiers);
+            if (namedImp.defaultAlias && !mergedDefault) {
+              mergedDefault = namedImp.defaultAlias;
+            }
+          }
+
+          // Remove duplicate specifiers (same name and alias)
+          const uniqueSpecifiers = allSpecifiers.filter((spec, index, self) =>
+            index === self.findIndex(s =>
+              s.specifier === spec.specifier && s.alias === spec.alias
+            )
           );
-        } else {
-          edits.push(
-            TextEdit.replace(
-              new Range(
-                this.document.positionAt(imp.start!),
-                this.document.positionAt(imp.end!),
-              ),
-              this.generator.generate(imp),
-            ),
-          );
+
+          // Sort specifiers
+          uniqueSpecifiers.sort(specifierSort);
+
+          merged.push(new NamedImport(
+            namedImports[0].libraryName,
+            uniqueSpecifiers,
+            mergedDefault,
+          ));
         }
       }
+
+      keep = merged;
+    }
+
+    // Group imports
+    const importGroups = this.config.grouping(this.document.uri);
+    for (const group of importGroups) {
+      group.reset();
+    }
+
+    // Sort groups for precedence: regex groups first, then keyword groups
+    // This ensures regex groups can match imports even if they appear later in the config
+    const groupsWithPrecedence = importGroupSortForPrecedence(importGroups);
+
+    for (const imp of keep) {
+      for (const group of groupsWithPrecedence) {
+        if (group.processImport(imp)) {
+          break;
+        }
+      }
+    }
+
+    // Generate import text
+    return this.generateTextEdits(importGroups);
+  }
+
+  /**
+   * Generate TextEdits to replace the old imports with the new organized imports.
+   */
+  private generateTextEdits(importGroups: ImportGroup[]): TextEdit[] {
+    const edits: TextEdit[] = [];
+
+    // Get the range of all import declarations (both modern and old-style)
+    const importDeclarations = this.sourceFile.getImportDeclarations();
+    const importEquals = this.sourceFile.getStatements()
+      .filter(stmt => Node.isImportEqualsDeclaration(stmt));
+
+    const allImports = [...importDeclarations, ...importEquals as any[]];
+
+    if (allImports.length === 0) {
+      return edits;
+    }
+
+    // Sort by position to find first and last
+    allImports.sort((a, b) => a.getStart() - b.getStart());
+
+    // Delete all existing imports including any blank lines after the import block
+    const firstImport = allImports[0];
+    const lastImport = allImports[allImports.length - 1];
+
+    const startPos = this.document.positionAt(firstImport.getStart());
+    const endPos = this.document.positionAt(lastImport.getEnd());
+
+    // Find the line after the last import
+    let endLine = endPos.line + 1;
+
+    // Skip any blank lines after the import block
+    while (endLine < this.document.lineCount) {
+      const line = this.document.lineAt(endLine);
+      if (line.text.trim() === '') {
+        endLine++;
+      } else {
+        break;
+      }
+    }
+
+    // Delete from the first import to the end of blank lines
+    const range = new Range(
+      new Position(startPos.line, 0),
+      new Position(endLine, 0),
+    );
+
+    edits.push(TextEdit.delete(range));
+
+    // Generate new import text
+    const importLines: string[] = [];
+    const useSorting = !this.config.disableImportsSorting(this.document.uri);
+    const useFirstSpecifierSort = this.config.organizeSortsByFirstSpecifier(this.document.uri);
+
+    for (const group of importGroups) {
+      if (group.imports.length === 0) {
+        continue;
+      }
+
+      // If sorting by first specifier, preserve pre-sorted order
+      // Otherwise, re-sort by library name within each group
+      const importsToUse = (useSorting && !useFirstSpecifierSort)
+        ? group.sortedImports
+        : group.imports;
+      const groupLines = importsToUse.map(imp => this.generateImportStatement(imp));
+      importLines.push(...groupLines);
+
+      // Add blank line between groups
+      importLines.push('');
+    }
+
+    // Remove trailing blank lines
+    while (importLines.length > 0 && importLines[importLines.length - 1] === '') {
+      importLines.pop();
+    }
+
+    if (importLines.length > 0) {
+      // Insert at the beginning (or after 'use strict', shebang, etc.)
+      const insertPosition = this.getImportInsertPosition();
+      // Join import lines with \n, then add one final \n to end the last import.
+      // This creates exactly one blank line before the code (which starts on its own line after deletion).
+      const importText = importLines.join('\n') + '\n';
+      edits.push(TextEdit.insert(insertPosition, importText));
     }
 
     return edits;
   }
 
   /**
-   * Add a list of imports to the groups of the ImportManager.
-   *
-   * @private
-   * @param {Import[]} imports
-   *
-   * @memberof ImportManager
+   * Generate a single import statement string.
    */
-  private addImportsToGroups(imports: Import[]): void {
-    const importGroupsWithPrecedence = importGroupSortForPrecedence(
-      this.importGroups,
-    );
-    for (const tsImport of imports) {
-      for (const group of importGroupsWithPrecedence) {
-        if (group.processImport(tsImport)) {
-          break;
+  private generateImportStatement(imp: Import): string {
+    const quote = this.config.stringQuoteStyle(this.document.uri);
+    const semi = this.config.insertSemicolons(this.document.uri) ? ';' : '';
+    const spaceInBraces = this.config.insertSpaceBeforeAndAfterImportBraces(this.document.uri);
+
+    if (imp instanceof StringImport) {
+      return `import ${quote}${imp.libraryName}${quote}${semi}`;
+    }
+
+    if (imp instanceof NamespaceImport) {
+      return `import * as ${imp.alias} from ${quote}${imp.libraryName}${quote}${semi}`;
+    }
+
+    if (imp instanceof ExternalModuleImport) {
+      return `import ${imp.alias} = require(${quote}${imp.libraryName}${quote})${semi}`;
+    }
+
+    if (imp instanceof NamedImport) {
+      const parts: string[] = [];
+
+      // Default import
+      if (imp.defaultAlias) {
+        parts.push(imp.defaultAlias);
+      }
+
+      // Named imports
+      if (imp.specifiers.length > 0) {
+        const specifierStrings = imp.specifiers.map(spec =>
+          spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier
+        );
+
+        const specifiersText = specifierStrings.join(', ');
+        const braceOpen = spaceInBraces ? '{ ' : '{';
+        const braceClose = spaceInBraces ? ' }' : '}';
+
+        // Check if it should be multiline
+        const threshold = this.config.multiLineWrapThreshold(this.document.uri);
+        const singleLine = `${braceOpen}${specifiersText}${braceClose}`;
+
+        if (singleLine.length > threshold && imp.specifiers.length > 1) {
+          // Multiline
+          const trailingComma = this.config.multiLineTrailingComma(this.document.uri) ? ',' : '';
+          const namedPart = `{\n  ${specifierStrings.join(',\n  ')}${trailingComma}\n}`;
+          parts.push(namedPart);
+        } else {
+          parts.push(singleLine);
         }
       }
+
+      return `import ${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${semi}`;
     }
+
+    return '';
+  }
+
+  /**
+   * Get the position where imports should be inserted.
+   */
+  private getImportInsertPosition(): Position {
+    const text = this.document.getText();
+    const lines = text.split('\n');
+
+    // Skip shebang, 'use strict', and other header comments
+    const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
+
+    let insertLine = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (!REGEX_IGNORED_LINE.test(lines[i])) {
+        insertLine = i;
+        break;
+      }
+    }
+
+    return new Position(insertLine, 0);
   }
 }

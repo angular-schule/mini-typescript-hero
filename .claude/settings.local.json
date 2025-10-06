@@ -14,7 +14,12 @@
       "Bash(mkdir:*)",
       "Bash(npm run compile-tests:*)",
       "Bash(npm test)",
-      "WebFetch(domain:code.visualstudio.com)"
+      "WebFetch(domain:code.visualstudio.com)",
+      "Bash(cat:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
