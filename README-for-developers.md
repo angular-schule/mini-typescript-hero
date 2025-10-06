@@ -174,7 +174,7 @@ mini-typescript-hero/
 │   │   ├── import-organizer.ts # VSCode integration
 │   │   ├── import-types.ts     # Import representations
 │   │   └── import-utilities.ts # Sorting/precedence
-│   ├── test/                   # Unit tests (76 tests)
+│   ├── test/                   # Unit tests
 │   │   ├── configuration/      # Migration tests
 │   │   └── imports/            # Import logic tests
 │   └── extension.ts            # Extension entry point
