@@ -17,23 +17,23 @@ Here's what TypeScript Hero does for me (and hopefully for you too):
 **Before** (the chaos):
 
 ```typescript
-import { UserDetailComponent } from './components/user-detail';
+import { UserDetail } from './components/user-detail';
 import { UnusedService } from './services/unused';
 import {Router} from "@angular/router"
 import { map, switchMap } from 'rxjs/operators';
 import {Component, OnInit, inject} from "@angular/core"
-import { CommonModule } from '@angular/common';
+import { BookList } from './components/book-list';
 ```
 
 **After** pressing `Ctrl+Alt+O`:
 
 ```typescript
-import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { map, switchMap } from 'rxjs/operators';
 
-import { UserDetailComponent } from './components/user-detail';
+import { BookList } from './components/book-list';
+import { UserDetail } from './components/user-detail';
 ```
 
 Angular libraries grouped together. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
@@ -42,7 +42,7 @@ Angular libraries grouped together. RxJS separate. Then local imports. Unused im
 
 ## The Mission
 
-Christoph Bühler, the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair – we all have our seasons with different technologies.
+[Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair – we all have our seasons with different technologies.
 
 But I needed this feature. Every. Single. Day.
 
@@ -54,17 +54,17 @@ His response was incredibly kind and supportive. He gave me his blessing, shared
 
 ## What Changed Under the Hood
 
-The original TypeScript Hero used Christoph's own `typescript-parser` library – a great piece of software that did its job well. But like the extension itself, it hasn't been maintained in years. Updating it to work with modern TypeScript versions became increasingly challenging.
+The original TypeScript Hero used Christoph's own `typescript-parser` ([node-typescript-parser](https://github.com/buehler/node-typescript-parser) on GitHub) library – a great piece of software that did its job well. But like the extension itself, it hasn't been maintained in years. Updating it to work with modern TypeScript versions would become increasingly challenging.
 
 For a tool I rely on daily, that was a ticking time bomb.
 
 **The old engine:**
 - `typescript-parser` (Christoph's library, great but unmaintained)
 - InversifyJS for dependency injection
-- Complex architecture from 2018
+- Complex codebase from 2018
 
 **The new engine:**
-- `ts-morph` v27 (actively maintained, modern)
+- [`ts-morph`](https://github.com/dsherret/ts-morph) v27 (actively maintained, modern)
 - TypeScript 5.7 with strict mode
 - Simpler, cleaner architecture
 - No deprecated dependencies
@@ -80,7 +80,7 @@ If you're already using TypeScript Hero, switching is painless:
 3. Your settings automatically migrate (one-time, on first startup)
 4. Done.
 
-All your custom configurations – quote style, semicolons, import grouping rules, everything – transfers automatically. You can even keep both extensions installed if you want.
+All your custom configurations – quote style, semicolons, import grouping rules, everything – transfers automatically. You can even keep both extensions installed if you want. But I highly recommend deactivating the old hero, because both extensions will fight for the same shortcut.
 
 The keyboard shortcut works exactly the same: `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
 
@@ -111,9 +111,6 @@ TypeScript, JavaScript, TSX, JSX
 
 ---
 
-TypeScript Hero isn't dead. It's just been upgraded for 2025.
+**TL;DR:** TypeScript Hero isn't dead. It's just been upgraded for 2025 with a new name. The most important feature was preserved. All other features are now directly integrated in VSCode.
 
 Happy coding! ✨
-
-*— Johannes Hoppe*
-*[Angular.Schule](https://angular.schule)*
