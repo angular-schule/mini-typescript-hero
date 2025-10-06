@@ -8,6 +8,8 @@
 
 This extension is a modernized extraction of the "Organize Imports" feature from the original [TypeScript Hero](https://github.com/buehler/typescript-hero) extension, rebuilt with 2025 best practices.
 
+**📖 Read the story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
+
 ## Features
 
 - ✨ **Sort imports** alphabetically (by module path or first specifier)

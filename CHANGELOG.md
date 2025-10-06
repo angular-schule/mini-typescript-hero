@@ -8,6 +8,8 @@ This is the first release candidate for Mini TypeScript Hero v1.0.0. All feature
 
 **Testing Period:** Please test this RC version and report any issues before the final 1.0.0 release.
 
+**Read the announcement:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
+
 ## [1.0.0] - TBD
 
 ### Added
