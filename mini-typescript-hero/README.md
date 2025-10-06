@@ -206,63 +206,9 @@ import { helper } from '../utils';
 - Separate framework imports from your code (e.g., all Angular imports together)
 - Group monorepo packages (e.g., `/@mycompany/`)
 - Organize related libraries (e.g., all testing libraries with `/jest|vitest|mocha/`)
-- **Handle TypeScript path aliases** (see Path Aliases section below)
+- Organize TypeScript path aliases separately from other modules
 
 **Order matters!** Regex groups are processed **before** keyword groups, so they can "capture" imports before the broader `Modules` group matches everything.
-
-#### TypeScript Path Aliases
-
-**⚠️ Known Limitation:** TypeScript path aliases like `@components/*`, `@utils/*`, or `~/*` (defined in `tsconfig.json`) are treated as external modules (in the `Modules` group) rather than workspace imports.
-
-**Why?** The extension classifies imports based on their import path:
-- Starts with `.` or `/` → **Workspace** (local files)
-- Everything else → **Modules** (external packages)
-
-Path aliases like `@app/utils` don't start with `.` or `/`, so they're grouped with npm packages.
-
-**Workaround: Use custom regex groups**
-
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@app/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@utils/*": ["src/utils/*"]
-    }
-  }
-}
-```
-
-Configure custom grouping in `settings.json`:
-
-```json
-{
-  "miniTypescriptHero.imports.grouping": [
-    "Plains",
-    "Modules",                               // External libraries first
-    "/^@(app|components|utils)/",            // Your path aliases
-    "Workspace"                              // Relative imports last
-  ]
-}
-```
-
-**Result:**
-
-```typescript
-// Group 1: External modules
-import { Component } from '@angular/core';
-import axios from 'axios';
-
-// Group 2: Path aliases (custom group)
-import { Button } from '@components/Button';
-import { helper } from '@utils/helper';
-
-// Group 3: Relative imports
-import { local } from './local';
-```
-
-This gives you full control over how path aliases are organized!
 
 #### Custom Sort Order
 
