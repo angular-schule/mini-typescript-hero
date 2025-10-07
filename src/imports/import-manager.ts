@@ -1,5 +1,5 @@
 import { Project, SourceFile, Node, SyntaxKind } from 'ts-morph';
-import { OutputChannel, Position, Range, TextDocument, TextEdit } from 'vscode';
+import { EndOfLine, OutputChannel, Position, Range, TextDocument, TextEdit } from 'vscode';
 
 import { ImportsConfig } from '../configuration';
 import {
@@ -21,6 +21,7 @@ export class ImportManager {
   private sourceFile!: SourceFile;
   private imports: Import[] = [];
   private usedIdentifiers: Set<string> = new Set();
+  private readonly eol: string;
 
   constructor(
     private readonly document: TextDocument,
@@ -28,6 +29,8 @@ export class ImportManager {
     // @ts-expect-error - logger parameter kept for future debugging capabilities
     private readonly logger: OutputChannel,
   ) {
+    // Detect and use the document's line ending style (LF or CRLF)
+    this.eol = document.eol === EndOfLine.CRLF ? '\r\n' : '\n';
     this.parseDocument();
   }
 
@@ -494,20 +497,20 @@ export class ImportManager {
     if (importLines.length > 0) {
       // Insert at the deletionStartLine position (where we started deleting, which accounts for blank lines before imports)
       // Preserve blank lines between comments and imports
-      const leadingBlankLines = '\n'.repeat(blankLinesBefore);
+      const leadingBlankLines = this.eol.repeat(blankLinesBefore);
 
       // Preserve blank lines after imports
-      // importLines.join('\n') puts newlines between imports but not after the last one
+      // importLines.join(eol) puts newlines between imports but not after the last one
       // We need to add: one newline to end the last import line, plus additional newlines for blank lines
       // However, when we insert at deletionStartLine (column 0), the text will be on its own line
       // So we only need newlines for the blank lines themselves, not to end the import
       // - 0 blank lines = 0 additional newlines (import ends, code starts next line)
       // - 1 blank line = 1 newline (creates one blank line before code)
       // - 2 blank lines = 2 newlines (creates two blank lines before code)
-      const trailingNewlines = '\n'.repeat(blankLinesAfter);
+      const trailingNewlines = this.eol.repeat(blankLinesAfter);
 
-      // Join import lines with \n, then add one \n to end last import, then blank lines
-      const importText = leadingBlankLines + importLines.join('\n') + '\n' + trailingNewlines;
+      // Join import lines with eol, then add one eol to end last import, then blank lines
+      const importText = leadingBlankLines + importLines.join(this.eol) + this.eol + trailingNewlines;
 
       // Use a single REPLACE edit instead of DELETE + INSERT to avoid position shifts
       edits.push(TextEdit.replace(deletionRange, importText));
@@ -564,7 +567,7 @@ export class ImportManager {
         if (singleLine.length > threshold && imp.specifiers.length > 1) {
           // Multiline
           const trailingComma = this.config.multiLineTrailingComma(this.document.uri) ? ',' : '';
-          const namedPart = `{\n  ${specifierStrings.join(',\n  ')}${trailingComma}\n}`;
+          const namedPart = `{${this.eol}  ${specifierStrings.join(`,${this.eol}  `)}${trailingComma}${this.eol}}`;
           parts.push(namedPart);
         } else {
           parts.push(singleLine);

@@ -68,13 +68,14 @@ class MockTextDocument implements TextDocument {
   version = 1;
   isDirty = false;
   isClosed = false;
-  eol = 1; // LF
+  eol: number;
   encoding: string = 'utf-8';
   lineCount: number;
 
-  constructor(fileName: string, private content: string) {
+  constructor(fileName: string, private content: string, eol: number = 1) {
     this.fileName = fileName;
     this.uri = Uri.file(fileName);
+    this.eol = eol; // 1 = LF, 2 = CRLF
     this.lineCount = content.split('\n').length;
   }
 
@@ -2500,5 +2501,36 @@ console.log(used);
 
     // Should preserve TWO blank lines after imports
     assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
+  });
+
+  test('88. Windows line endings (CRLF): Respected in generated imports', () => {
+    // CRITICAL: Windows uses CRLF (\r\n), not LF (\n)
+    // Scenario: Document with CRLF line endings
+    const content = `import { Component } from '@angular/core';\nimport { used } from '@angular/core';\n\nconsole.log(Component, used);\n`;
+
+    // Create document with CRLF (EndOfLine = 2)
+    const doc = new MockTextDocument('test.ts', content, 2);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+
+    // CRITICAL: The edit newText should contain CRLF, not LF
+    // (Note: applyEdits mock uses LF, but real VSCode preserves document EOL)
+    assert.strictEqual(edits.length, 1, 'Should have one edit');
+    const editText = edits[0].newText;
+    assert.ok(editText.includes('\r\n'), 'Generated imports should use CRLF on Windows');
+    assert.ok(editText.includes("import { Component, used } from '@angular/core';"), 'Imports should be merged');
+
+    // Verify multiline imports also use CRLF
+    config.setConfig('multiLineWrapThreshold', 10); // Force multiline
+    const content2 = `import { VeryLongNameA, VeryLongNameB } from './lib';\n\nconsole.log(VeryLongNameA, VeryLongNameB);\n`;
+    const doc2 = new MockTextDocument('test.ts', content2, 2);
+    const manager2 = new ImportManager(doc2, config, logger);
+    const edits2 = manager2.organizeImports();
+
+    // Multiline import should have CRLF after opening brace and before closing brace
+    assert.strictEqual(edits2.length, 1, 'Should have one edit');
+    const editText2 = edits2[0].newText;
+    assert.ok(editText2.includes('{\r\n'), 'Multiline imports should use CRLF for line breaks');
+    config.setConfig('multiLineWrapThreshold', 125); // Reset
   });
 });
