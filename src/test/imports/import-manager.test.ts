@@ -214,6 +214,10 @@ class MockImportsConfig extends ImportsConfig {
     this.mockConfig.set(key, value);
   }
 
+  override(key: string, value: any): void {
+    this.mockConfig.set(key, value);
+  }
+
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
     return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
   }
@@ -260,6 +264,10 @@ class MockImportsConfig extends ImportsConfig {
 
   mergeImportsFromSameModule(_resource: Uri): boolean {
     return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
+  }
+
+  blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+    return this.mockConfig.get('blankLinesAfterImports') ?? 'one';
   }
 
   grouping(_resource: Uri): ImportGroup[] {
@@ -2350,12 +2358,14 @@ console.log(instance);
   test('86a. Blank lines after imports: TWO blank lines preserved', () => {
     // CRITICAL: Should preserve exactly TWO blank lines after imports
     // Scenario: Two blank lines after imports
+    // NOTE: Requires blankLinesAfterImports="preserve" mode
     const content = `import { used } from './lib';
 
 
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
+    config.override('blankLinesAfterImports', 'preserve');
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
@@ -2374,6 +2384,7 @@ console.log(used);
   test('86b. Blank lines after imports: THREE blank lines preserved', () => {
     // CRITICAL: Should preserve exactly THREE blank lines after imports
     // Scenario: Three blank lines after imports
+    // NOTE: Requires blankLinesAfterImports="preserve" mode
     const content = `import { used } from './lib';
 
 
@@ -2381,6 +2392,7 @@ console.log(used);
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
+    config.override('blankLinesAfterImports', 'preserve');
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
@@ -2404,6 +2416,7 @@ console.log(used);
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
+    config.override('blankLinesAfterImports', 'preserve');
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
@@ -2418,6 +2431,9 @@ console.log(used);
   });
 
   test('86e. Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', () => {
+    // NOTE: Requires blankLinesAfterImports="preserve" mode
+    config.override('blankLinesAfterImports', 'preserve');
+
     // Test ZERO blank lines after imports
     const content0 = `import { used } from './lib';
 console.log(used);
@@ -2476,6 +2492,7 @@ console.log(used);
   test('86d. Combined spacing: THREE blank lines before, TWO blank lines after', () => {
     // CRITICAL: Both before and after blank lines preserved independently
     // Scenario: Multiple blank lines on both sides
+    // NOTE: Requires blankLinesAfterImports="preserve" mode
     const content = `// Header comment
 
 
@@ -2486,6 +2503,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
+    config.override('blankLinesAfterImports', 'preserve');
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);

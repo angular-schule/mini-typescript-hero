@@ -15,9 +15,47 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - ✨ **Sort imports** alphabetically (by module path or first specifier)
 - 🧹 **Remove unused imports** automatically
 - 📦 **Group imports** into customizable categories (Plains, Modules, Workspace, Regex patterns)
+- 📏 **Smart blank line handling** — Choose your preferred spacing: 1 line (standard from ESLint), 2 lines, preserve existing, or legacy mode
 - ⚙️ **Highly configurable** formatting (quotes, semicolons, spaces, multiline thresholds)
 - 💾 **Organize on save** (optional)
 - 🎯 **Works with TypeScript, JavaScript, TSX, and JSX**
+
+## Example
+
+**Before** organizing imports:
+
+```typescript
+import { UserDetail } from './components/user-detail';
+import { Component } from '@angular/core';
+import { UnusedService } from './services/unused';
+import {Router} from "@angular/router"
+import { map, switchMap } from 'rxjs/operators';
+import {OnInit, inject} from "@angular/core"
+import { BookList } from './components/book-list';
+
+
+```
+
+**After** pressing `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS):
+
+```typescript
+import { Component, OnInit, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { map, switchMap } from 'rxjs/operators';
+
+import { BookList } from './components/book-list';
+import { UserDetail } from './components/user-detail';
+
+```
+
+✨ **What happened:**
+- Angular imports merged into one import
+- RxJS operators in separate group
+- Local imports grouped together with blank line separator
+- Unused `UnusedService` removed automatically
+- Everything sorted alphabetically
+- Consistent quotes and semicolons
+- Exactly 1 blank line after imports (configurable)
 
 ## Usage
 
@@ -44,7 +82,7 @@ Enable automatic import organization on file save:
 
 ## Migrating from TypeScript Hero
 
-**Good news!** If you're upgrading from the original TypeScript Hero extension, your settings will be **automatically migrated** on first startup.
+**Good news!** If you're upgrading from the original TypeScript Hero extension, your settings will be automatically migrated on first startup.
 
 ### What Gets Migrated
 
@@ -72,7 +110,9 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Import Merging Behavior:** For migrated users, `mergeImportsFromSameModule` is automatically set to `false` to preserve the original TypeScript Hero behavior. New users get `true` by default (modern best practice). You can change this setting anytime in your configuration.
+**Import Merging Behavior:** For migrated users, `mergeImportsFromSameModule` is automatically set to `false` to preserve the original TypeScript Hero behavior. New users get `true` by default (cleaner, more concise imports). You can change this setting anytime in your configuration.
+
+**Blank Line Behavior:** For migrated users, `blankLinesAfterImports` is automatically set to `"legacy"` to preserve the original TypeScript Hero behavior. New users get `"one"` by default (ESLint standard: 1 blank line after imports). You can change this setting anytime in your configuration.
 
 ### No Old Settings?
 
@@ -87,6 +127,9 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
   // Automatically organize imports when saving a file
   "miniTypescriptHero.imports.organizeOnSave": false,
 
+  // Blank lines after imports: "one" (default), "two", "preserve", or "legacy"
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+
   // Use single quotes (') or double quotes (")
   "miniTypescriptHero.imports.stringQuoteStyle": "'",
 
@@ -100,6 +143,17 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
   "miniTypescriptHero.imports.removeTrailingIndex": true
 }
 ```
+
+#### Blank Line Modes
+
+Control spacing after imports with `blankLinesAfterImports`:
+
+- **`"one"`** (default) — Always exactly 1 blank line (ESLint standard) **RECOMMENDED**
+- **`"two"`** — Always exactly 2 blank lines (for teams preferring more visual separation)
+- **`"preserve"`** — Keep existing blank lines (0, 1, 2, 3+) as they are
+- **`"legacy"`** — Match original TypeScript Hero behavior (for migration only)
+
+📖 **Detailed documentation:** [README-how-we-handle-blank-lines.md](README-how-we-handle-blank-lines.md)
 
 ### Advanced Settings
 
@@ -224,31 +278,6 @@ Control ascending or descending sort per group:
     "Workspace"
   ]
 }
-```
-
-## Example
-
-**Before:**
-
-```typescript
-import { UsedComponent } from './components';
-import { UnusedService } from './services';
-import * as React from 'react';
-import {Component, OnInit} from "@angular/core"
-import 'zone.js';
-import { map } from 'rxjs/operators';
-```
-
-**After (with default settings):**
-
-```typescript
-import 'zone.js';
-
-import { Component, OnInit } from '@angular/core';
-import * as React from 'react';
-import { map } from 'rxjs/operators';
-
-import { UsedComponent } from './components';
 ```
 
 ## Requirements

@@ -3453,6 +3453,231 @@ const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
 
 ---
 
+## ✅ Session 11: Blank Line Configuration Implementation (COMPLETE)
+
+**Date**: 2025-10-07
+**Status**: ✅ All 212 tests passing (100%)
+**Duration**: Extended session with comprehensive implementation and debugging
+
+### Summary
+
+Implemented bullet-proof blank line handling with 4 configurable modes, comprehensive test coverage (54 new tests), settings migration, and full documentation updates.
+
+### Implementation Details
+
+#### 1. Configuration System
+
+**File**: `package.json`
+- Added `blankLinesAfterImports` enum configuration with 4 modes:
+  - `"one"` (default): Always 1 blank line (ESLint/Google standard) **RECOMMENDED**
+  - `"two"`: Always 2 blank lines (for teams preferring more visual separation)
+  - `"preserve"`: Keep existing blank lines (0, 1, 2, 3+) as they are
+  - `"legacy"`: Match original TypeScript Hero behavior (for migration only)
+
+**File**: `src/configuration/imports-config.ts`
+- Added `blankLinesAfterImports()` method to read configuration
+- Returns typed union: `'one' | 'two' | 'preserve' | 'legacy'`
+
+#### 2. Core Import Manager Changes
+
+**File**: `src/imports/import-manager.ts`
+
+**A. Header Detection Logic** (lines 593-663):
+- Detects comments, shebangs, `'use strict'` statements
+- Removes leading blank lines (before any header)
+- Preserves blank lines between header and imports
+- Returns:
+  - `position`: Where to insert imports
+  - `blankLinesBefore`: Count of blanks between header and imports
+  - `hasHeader`: Whether file has header comments
+  - `hasLeadingBlanks`: Whether file had pointless leading blanks
+
+**B. Blank Line Calculation** (lines 665-691):
+- Mode `"one"`: Always return 1
+- Mode `"two"`: Always return 2
+- Mode `"preserve"`: Return existing count
+- Mode `"legacy"`: Use formula `blankLinesBefore + 1 + max(existingAfter - 1, 0)`
+  - This replicates the old TypeScript Hero "moving blanks" behavior
+
+**C. Deletion Range Logic** (lines 467-472):
+```typescript
+// If no header: delete from line 0 (remove any leading blanks)
+// If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
+// If header WITHOUT leading blanks: delete from first import line (preserve header + blanks after header)
+const firstImportLine = allImports[0].getStartLineNumber() - 1;  // 1-indexed → 0-indexed
+const deletionStartLine = (hasHeader && !hasLeadingBlanks) ? firstImportLine : 0;
+```
+
+**D. Header Re-addition** (lines 510-532):
+- When deleting from line 0, extract and re-add header
+- Preserves original header text exactly
+- Re-adds blank lines between header and imports (if they existed)
+
+**E. Files with Only Imports** (lines 462-467):
+- Detect if there's code after imports
+- If no code: don't add blank lines (avoid trailing blanks)
+- If code exists: apply mode-specific blank line count
+
+**F. Line Ending Detection** (line 439):
+- Auto-detect CRLF vs LF from document
+- Respect Windows line endings throughout
+
+#### 3. Settings Migration
+
+**File**: `src/configuration/settings-migration.ts` (lines 121-128)
+- Auto-set `blankLinesAfterImports` to `"legacy"` for migrated users
+- Only set if user has no existing configuration at any level
+- Preserves exact old TypeScript Hero behavior
+- Users can manually switch to `"one"` anytime
+
+#### 4. Test Suite
+
+**File**: `src/test/imports/blank-lines.test.ts` (NEW - 789 lines)
+- **54 comprehensive test cases** covering all scenarios
+- **7 test suites**:
+  1. Mode: "one" (12 tests)
+  2. Mode: "two" (12 tests)
+  3. Mode: "preserve" (12 tests)
+  4. Mode: "legacy" (12 tests)
+  5. Header Handling (3 tests)
+  6. Files with Only Imports (2 tests)
+  7. CRLF Line Endings (1 test)
+
+**Critical Test Helper**: `applyTextEdits()`
+- Simulates VSCode's TextEdit application
+- Handles line-based replacement
+- Respects line ending behavior
+
+**File**: `src/test/imports/import-manager.test.ts`
+- Added `blankLinesAfterImports()` to MockImportsConfig
+- Added `override()` method for test configuration
+- Updated tests 86a-e to explicitly use `"preserve"` mode
+- Fixed test 86d to properly configure preserve mode
+
+### Major Bugs Fixed
+
+#### Bug 1: MockTextDocument.positionAt() Always Returning {line:0, character:0}
+**Impact**: Wrong endLine calculation, causing duplicate imports
+**Fix**: Implemented proper position calculation from offset
+
+#### Bug 2: 1-indexed vs 0-indexed Line Numbers
+**Impact**: Wrong deletion range, imports not being removed
+**Fix**: Added `-1` conversion: `getStartLineNumber() - 1`
+
+#### Bug 3: Header Not Preserved When Removing Leading Blanks
+**Impact**: Comments deleted when organizing imports
+**Fix**: Continue loop for blank lines instead of breaking
+
+#### Bug 4: Header Not Re-added After Deletion from Line 0
+**Impact**: Header comments lost when organizing
+**Fix**: Extract and re-add header text with spacing
+
+#### Bug 5: applyTextEdits Adding Extra Newlines
+**Impact**: Duplicate imports in test output
+**Fix**: Only add connecting newline when necessary
+
+#### Bug 6: Files with Only Imports Adding Trailing Blanks
+**Impact**: Unwanted blank lines at end of import-only files
+**Fix**: Check if code exists after imports, skip blanks if not
+
+#### Bug 7: Test 86d Not Configuring Preserve Mode
+**Impact**: Test failure (expected 2 blanks, got 1)
+**Fix**: Added `config.override('blankLinesAfterImports', 'preserve')`
+
+### Documentation Updates
+
+#### File: `README.md`
+- Added blank line handling to Features list
+- Added comprehensive before/after Example section early in document
+- Added Blank Line Modes section in Basic Settings with detailed explanations
+- Added link to README-how-we-handle-blank-lines.md for extended info
+- Updated migration documentation:
+  - Import Merging Behavior paragraph
+  - Blank Line Behavior paragraph
+- Fixed grammar: "standard from ESLint" → "ESLint standard"
+- Changed "modern best practice" → "cleaner, more concise imports"
+- Merged migration paragraphs into coherent, flowing text
+
+#### File: `blog-post.md`
+- Updated example to match demo-for-video.ts
+- Added "Smart blank line handling" to New Features section
+- Added positive messaging: "I always felt that 1 line would be better than the old behavior where blank lines would sometimes 'move' around unpredictably. Now everyone can decide what preference they have!"
+- Documented that migrated users get `"legacy"` mode automatically
+- Documented that new users get `"one"` mode (ESLint standard)
+- Merged migration paragraphs for better flow
+
+#### File: `manual-test-cases/demo-for-video.ts`
+- Added comprehensive before/after example
+- Added detailed "What happened" section with 8 bullet points
+- Shows all key features: merging, grouping, removal, sorting, formatting, blank lines
+
+### Test Results
+
+**Final Status**: ✅ 212/212 tests passing (100%)
+
+**Progress Timeline**:
+1. Initial: 197 passing, 15 failing
+2. After positionAt() fix: 209 passing, 3 failing
+3. After header detection fix: 210 passing, 2 failing
+4. After hasCodeAfter fix: 211 passing, 1 failing
+5. After test 86d fix: **212 passing, 0 failing** ✅
+
+### Key Technical Concepts
+
+1. **Header Detection**: Comments, shebangs, 'use strict' preserved at file start
+2. **Leading Blank Lines**: Removed (pointless whitespace before header/imports)
+3. **Header Blank Lines**: Preserved (intentional spacing after header)
+4. **Import Group Separation**: Always 1 blank line (existing feature maintained)
+5. **After Import Blank Lines**: Configurable (1, 2, preserve, or legacy)
+6. **Line Ending Respect**: Auto-detect and preserve CRLF vs LF
+7. **TypeScript AST**: ts-morph uses 1-indexed lines, VSCode Position uses 0-indexed
+8. **Backward Compatibility**: Legacy mode replicates old formula exactly
+
+### User Feedback During Session
+
+1. "nope, updating happens when we know that the code is 100% perfect! continue with debugging + testing!" - Held off on docs until tests passed
+2. Requested comprehensive example early in README (added before/after section)
+3. Requested positive vibe in blog post about 1-line preference (added)
+4. Requested merging migration paragraphs into coherent text (done)
+5. Questioned "modern best practice" wording → changed to "cleaner, more concise imports"
+6. Verified sorting is OR not AND (by module path OR by first specifier)
+7. Requested grammar/typo check (completed)
+8. **Explicitly requested**: Document this session to CLAUDE_TODO.md for continuation
+
+### Files Modified
+
+**Core Implementation**:
+1. `package.json` - Added blankLinesAfterImports configuration
+2. `src/configuration/imports-config.ts` - Added blankLinesAfterImports() method
+3. `src/imports/import-manager.ts` - Major changes (header detection, blank line calculation, deletion logic, header re-addition, CRLF handling)
+4. `src/configuration/settings-migration.ts` - Auto-set legacy mode for migrated users
+
+**Testing**:
+5. `src/test/imports/blank-lines.test.ts` - NEW FILE (789 lines, 54 tests)
+6. `src/test/imports/import-manager.test.ts` - Updated MockImportsConfig, fixed test 86d
+
+**Documentation**:
+7. `README.md` - Comprehensive updates (example, modes, migration)
+8. `blog-post.md` - New feature section, positive messaging
+9. `manual-test-cases/demo-for-video.ts` - Comprehensive example
+
+### Next Steps
+
+User indicated: **"I have more details to solve"**
+
+The session ended with all 212 tests passing, all documentation updated, and the user requesting to continue with additional work.
+
+### References
+
+- **Specification**: `README-how-we-handle-blank-lines.md`
+- **Test Case Document**: All 54 test cases documented in specification
+- **Key Methods**:
+  - `ImportManager.getImportInsertPosition()` - Header detection
+  - `ImportManager.calculateBlankLinesAfter()` - Mode-based calculation
+  - `ImportManager.generateTextEdits()` - Main orchestration logic
+
+---
+
 **Last Updated**: 2025-10-07
-**Status**: ✅ Phase 10 Complete (153/153 Tests) | 📝 Session 10 Complete (Blank Line Documentation)
-**Next Session**: Phase 11 - Implement blank line configuration (91 new test cases)
+**Status**: ✅ Session 11 Complete (212/212 Tests) | All blank line implementation complete
+**Next Session**: Continue with additional details the user wants to address

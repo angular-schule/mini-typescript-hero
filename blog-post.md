@@ -25,7 +25,7 @@ import {OnInit, inject} from "@angular/core"
 import { BookList } from './components/book-list';
 ```
 
-**After** pressing `Ctrl+Alt+O`:
+**After** pressing `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS):
 
 ```typescript
 import { Component, OnInit, inject } from '@angular/core';
@@ -36,7 +36,7 @@ import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
 ```
 
-Angular libraries grouped together and merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Beautiful.
+Angular libraries grouped together and merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Exactly one blank line after imports. Beautiful.
 
 **I literally can't imagine working without this.**
 
@@ -67,8 +67,9 @@ For a tool I rely on daily, that was a ticking time bomb.
 - Simpler, cleaner architecture
 - No deprecated dependencies
 
-**New feature:**
+**New features:**
 - **Import merging**: Automatically combines duplicate imports from the same module (e.g., two separate `@angular/core` imports become one). I always wanted to have this. This is enabled by default for new users, while migrated users keep the original behavior.
+- **Smart blank line handling**: Choose how many blank lines you want after imports. The new default is 1 blank line (standard from ESLint), but you can configure it to 2 lines, preserve existing spacing, or use the old TypeScript Hero behavior. Honestly, I always felt that 1 line would be better than the old behavior where blank lines would sometimes "move" around unpredictably. Now everyone can decide what preference they have!
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.
 
@@ -81,9 +82,7 @@ If you're already using TypeScript Hero, switching is painless:
 3. Your settings automatically migrate (one-time, on first startup)
 4. Done.
 
-All your custom configurations transfer automatically. This includes quote style, semicolons, import grouping rules, and everything else. You can even keep both extensions installed if you want. But I highly recommend deactivating the old hero, because both extensions will fight for the same shortcut.
-
-The keyboard shortcut works exactly the same: `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
+All your custom configurations transfer automatically — quote style, semicolons, import grouping rules, blank line handling, everything. The extension preserves your exact behavior by setting migrated settings to match the old TypeScript Hero (like `blankLinesAfterImports: "legacy"`). You can switch to the new defaults anytime you want cleaner, more consistent spacing. You can even keep both extensions installed if you want, but I highly recommend deactivating the old hero because both will fight for the same shortcut. Speaking of which: the keyboard shortcut works exactly the same, `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
 
 ## A Quick Thank You
 

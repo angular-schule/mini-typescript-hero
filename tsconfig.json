@@ -16,6 +16,7 @@
 	"exclude": [
 		"node_modules",
 		".vscode-test",
-		"manual-test-cases"
+		"manual-test-cases",
+		"old-typescript-hero"
 	]
 }

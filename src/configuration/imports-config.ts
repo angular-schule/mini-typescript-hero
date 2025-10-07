@@ -77,6 +77,12 @@ export class ImportsConfig {
       .get('mergeImportsFromSameModule', true);
   }
 
+  public blankLinesAfterImports(resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('blankLinesAfterImports', 'one');
+  }
+
   public grouping(resource: Uri): ImportGroup[] {
     const groups = workspace
       .getConfiguration(sectionKey, resource)

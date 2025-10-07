@@ -435,7 +435,7 @@ export class ImportManager {
     allImports.sort((a, b) => a.getStart() - b.getStart());
 
     // Get the position info including blank lines before imports
-    const { position: insertPosition, blankLinesBefore } = this.getImportInsertPosition();
+    const { blankLinesBefore, hasHeader, hasLeadingBlanks } = this.getImportInsertPosition();
 
     // Delete all existing imports including any blank lines before and after the import block
     const lastImport = allImports[allImports.length - 1];
@@ -444,23 +444,34 @@ export class ImportManager {
 
     // Find the line after the last import and count blank lines after
     let endLine = endPos.line + 1;
-    let blankLinesAfter = 0;
+    let existingBlankLinesAfter = 0;
 
-    // Count blank lines after the import block (preserve them)
+    // Count blank lines after the import block
     while (endLine < this.document.lineCount) {
       const line = this.document.lineAt(endLine);
       if (line.text.trim() === '') {
-        blankLinesAfter++;
+        existingBlankLinesAfter++;
         endLine++;
       } else {
         break;
       }
     }
 
-    // Delete from the insert position (before blank lines) to the end of blank lines after
-    // The insert position already points to where the first import starts,
-    // but we want to delete the blank lines before it too
-    const deletionStartLine = insertPosition.line - blankLinesBefore;
+    // Calculate how many blank lines to insert after imports based on mode
+    // But if there's no code after imports, don't add blank lines
+    const hasCodeAfter = endLine < this.document.lineCount;
+    const finalBlankLinesAfter = hasCodeAfter ? this.calculateBlankLinesAfter(
+      existingBlankLinesAfter,
+      blankLinesBefore,
+      hasHeader
+    ) : 0;
+
+    // Calculate deletion range:
+    // - If no header: delete from line 0 (remove any leading blanks)
+    // - If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
+    // - If header WITHOUT leading blanks: delete from first import line (preserve header + blanks after header)
+    const firstImportLine = allImports[0].getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
+    const deletionStartLine = (hasHeader && !hasLeadingBlanks) ? firstImportLine : 0;
 
     const deletionRange = new Range(
       new Position(deletionStartLine, 0),
@@ -495,22 +506,43 @@ export class ImportManager {
     }
 
     if (importLines.length > 0) {
-      // Insert at the deletionStartLine position (where we started deleting, which accounts for blank lines before imports)
-      // Preserve blank lines between comments and imports
-      const leadingBlankLines = this.eol.repeat(blankLinesBefore);
+      // Build the final import text with proper blank line handling
+      let importText = '';
 
-      // Preserve blank lines after imports
-      // importLines.join(eol) puts newlines between imports but not after the last one
-      // We need to add: one newline to end the last import line, plus additional newlines for blank lines
-      // However, when we insert at deletionStartLine (column 0), the text will be on its own line
-      // So we only need newlines for the blank lines themselves, not to end the import
-      // - 0 blank lines = 0 additional newlines (import ends, code starts next line)
-      // - 1 blank line = 1 newline (creates one blank line before code)
-      // - 2 blank lines = 2 newlines (creates two blank lines before code)
-      const trailingNewlines = this.eol.repeat(blankLinesAfter);
+      // If we're deleting from line 0 and there's a header, we need to re-add the header
+      if (deletionStartLine === 0 && hasHeader) {
+        // Extract the header lines from the original document
+        const text = this.document.getText();
+        const lines = text.split(/\r?\n/);
+        const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
 
-      // Join import lines with eol, then add one eol to end last import, then blank lines
-      const importText = leadingBlankLines + importLines.join(this.eol) + this.eol + trailingNewlines;
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (REGEX_IGNORED_LINE.test(line)) {
+            importText += line + this.eol;
+          } else if (line.trim() !== '') {
+            // Reached imports or code, stop
+            break;
+          }
+          // Skip blank lines (they've been removed)
+        }
+
+        // Add blank lines between header and imports if they existed
+        if (blankLinesBefore > 0) {
+          importText += this.eol.repeat(blankLinesBefore);
+        }
+      }
+
+      // Add the imports themselves
+      importText += importLines.join(this.eol);
+
+      // Add one newline to end the last import line
+      importText += this.eol;
+
+      // Add blank lines after imports according to the configured mode
+      if (finalBlankLinesAfter > 0) {
+        importText += this.eol.repeat(finalBlankLinesAfter);
+      }
 
       // Use a single REPLACE edit instead of DELETE + INSERT to avoid position shifts
       edits.push(TextEdit.replace(deletionRange, importText));
@@ -582,43 +614,117 @@ export class ImportManager {
 
   /**
    * Get the position where imports should be inserted.
-   * Also returns the number of blank lines before the first import (after header comments).
+   * Also returns information about blank lines before and after imports.
+   *
+   * This method handles:
+   * - Header detection (comments, shebangs, 'use strict')
+   * - Leading blank lines (before any header) - should be removed
+   * - Blank lines between header and imports - should be preserved
    */
-  private getImportInsertPosition(): { position: Position; blankLinesBefore: number } {
+  private getImportInsertPosition(): {
+    position: Position;
+    blankLinesBefore: number;
+    hasHeader: boolean;
+    hasLeadingBlanks: boolean;
+  } {
     const text = this.document.getText();
-    const lines = text.split('\n');
+    const lines = text.split(/\r?\n/);
 
     // Skip shebang, 'use strict', and other header comments
     const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
 
     let insertLine = 0;
     let blankLinesBefore = 0;
-    let foundComment = false;
+    let hasHeader = false;
+    let hasLeadingBlanks = false;
+    let lastHeaderLine = -1;
 
+    // Step 1: Find the end of the header section
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Skip comment lines
+      // Check for header lines (comments, shebang, 'use strict')
       if (REGEX_IGNORED_LINE.test(line)) {
-        foundComment = true;
-        blankLinesBefore = 0; // Reset counter after each comment
+        hasHeader = true;
+        lastHeaderLine = i;
         continue;
       }
 
-      // Count blank lines after comments (but before imports)
-      if (foundComment && line.trim() === '') {
-        blankLinesBefore++;
+      // Blank line handling:
+      // - Leading blank lines (before any header): skip, will be removed
+      // - Blank lines after header: skip, will be counted separately
+      if (line.trim() === '') {
+        // Track if we see blank lines before any header
+        if (!hasHeader) {
+          hasLeadingBlanks = true;
+        }
         continue;
       }
 
-      // Found first real content line (imports)
+      // Found first non-comment, non-blank line (imports or code)
       insertLine = i;
       break;
     }
 
+    // Step 2: Count blank lines between header and imports
+    // (but ignore leading blank lines if there's no header)
+    if (hasHeader && lastHeaderLine >= 0) {
+      for (let i = lastHeaderLine + 1; i < insertLine; i++) {
+        if (lines[i].trim() === '') {
+          blankLinesBefore++;
+        }
+      }
+    }
+
     return {
       position: new Position(insertLine, 0),
-      blankLinesBefore
+      blankLinesBefore,
+      hasHeader,
+      hasLeadingBlanks
     };
+  }
+
+  /**
+   * Calculate the number of blank lines to insert after imports based on the configured mode.
+   *
+   * Modes:
+   * - "one": Always exactly 1 blank line (Google/ESLint standard)
+   * - "two": Always exactly 2 blank lines
+   * - "preserve": Keep the existing number of blank lines
+   * - "legacy": Replicate old TypeScript Hero behavior (blanks before affect blanks after)
+   */
+  private calculateBlankLinesAfter(
+    existingBlankLinesAfter: number,
+    blankLinesBefore: number,
+    _hasHeader: boolean
+  ): number {
+    const mode = this.config.blankLinesAfterImports(this.document.uri);
+
+    switch (mode) {
+      case 'one':
+        return 1;
+
+      case 'two':
+        return 2;
+
+      case 'preserve':
+        return existingBlankLinesAfter;
+
+      case 'legacy': {
+        // Old TypeScript Hero formula:
+        // finalBlanks = blanksBefore + 1 (group separator) + max(blanksAfter - 1, 0)
+        //
+        // This caused blank lines to "move" from before imports to after imports
+        // due to how the insert position was calculated (it pointed to a blank line).
+        //
+        // We replicate this behavior for backward compatibility:
+        const groupSeparatorBlanks = 1; // The blank line between import groups
+        const preservedAfterBlanks = Math.max(existingBlankLinesAfter - 1, 0);
+        return blankLinesBefore + groupSeparatorBlanks + preservedAfterBlanks;
+      }
+
+      default:
+        return 1; // Fallback to standard
+    }
   }
 }

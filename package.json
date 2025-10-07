@@ -146,6 +146,17 @@
           "description": "Merge multiple imports from the same module into a single import statement. When disabled, preserves the original TypeScript Hero behavior of keeping imports separate.",
           "scope": "resource"
         },
+        "miniTypescriptHero.imports.blankLinesAfterImports": {
+          "enum": [
+            "one",
+            "two",
+            "preserve",
+            "legacy"
+          ],
+          "default": "one",
+          "description": "Number of blank lines after the last import before code starts. 'one' = exactly 1 (Google/ESLint standard), 'two' = exactly 2, 'preserve' = keep existing, 'legacy' = original TypeScript Hero behavior.",
+          "scope": "resource"
+        },
         "miniTypescriptHero.imports.grouping": {
           "type": "array",
           "items": {
