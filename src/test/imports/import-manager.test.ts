@@ -1840,6 +1840,202 @@ console.log(used);
     assert.ok(strictIdx < importIdx, 'Use strict before imports');
   });
 
+  test('74a. Blank line between comment and imports: Single blank line preserved', () => {
+    // CRITICAL: Blank lines between comments and imports must be preserved
+    // Scenario: File with comment followed by ONE blank line before imports
+    const content = `// Demo file for video
+// Press Ctrl+Alt+O
+
+import { UserDetail } from './user-detail';
+import { Component } from '@angular/core';
+
+const demo = new Component();
+console.log(UserDetail);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    // Find the comment and import lines
+    const commentLine2 = lines.findIndex(l => l.includes('Press Ctrl'));
+    const importLine = lines.findIndex(l => l.includes('import'));
+
+    // CRITICAL: There should be exactly ONE blank line between last comment and first import
+    assert.strictEqual(importLine - commentLine2, 2, 'Should have exactly one blank line between comment and imports');
+    assert.strictEqual(lines[commentLine2 + 1].trim(), '', 'Line between comment and import should be blank');
+  });
+
+  test('74b. Blank line between comment and imports: TWO blank lines preserved', () => {
+    // CRITICAL: Multiple blank lines between comments and imports must be preserved
+    // Scenario: File with comment followed by TWO blank lines before imports
+    const content = `// Copyright notice
+// MIT License
+
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const lastCommentLine = lines.findIndex(l => l.includes('MIT License'));
+    const importLine = lines.findIndex(l => l.includes('import'));
+
+    // CRITICAL: Should preserve TWO blank lines
+    assert.strictEqual(importLine - lastCommentLine, 3, 'Should have exactly two blank lines between comment and imports');
+    assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'First blank line');
+    assert.strictEqual(lines[lastCommentLine + 2].trim(), '', 'Second blank line');
+  });
+
+  test('74c. Blank line between comment and imports: Block comment with blank line', () => {
+    // CRITICAL: Block comments with trailing blank line
+    // Scenario: JSDoc/block comment followed by blank line
+    const content = `/**
+ * @fileoverview Main application module
+ * @author Someone
+ */
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const blockCommentEnd = lines.findIndex(l => l.trim() === '*/');
+    const importLine = lines.findIndex(l => l.includes('import'));
+
+    // CRITICAL: Should preserve one blank line after block comment
+    assert.strictEqual(importLine - blockCommentEnd, 2, 'Should have exactly one blank line after block comment');
+    assert.strictEqual(lines[blockCommentEnd + 1].trim(), '', 'Line after block comment should be blank');
+  });
+
+  test('74d. Blank line between comment and imports: Mixed comment types', () => {
+    // CRITICAL: Mixed comment types (block + line) with blank lines
+    // Scenario: Block comment, then line comments, then blank line
+    const content = `/**
+ * Module header
+ */
+// Additional info
+// More info
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const lastCommentLine = lines.findIndex(l => l.includes('More info'));
+    const importLine = lines.findIndex(l => l.includes('import'));
+
+    // CRITICAL: Should preserve one blank line after last comment
+    assert.strictEqual(importLine - lastCommentLine, 2, 'Should have exactly one blank line after last comment');
+    assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'Line after comments should be blank');
+  });
+
+  test('74e. No blank line between comment and imports: Should not add one', () => {
+    // CRITICAL: If there's NO blank line, don't add one
+    // Scenario: Comment immediately followed by imports
+    const content = `// Quick comment
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const commentLine = lines.findIndex(l => l.includes('Quick comment'));
+    const importLine = lines.findIndex(l => l.includes('import'));
+
+    // CRITICAL: Should NOT add a blank line if there wasn't one
+    assert.strictEqual(importLine - commentLine, 1, 'Should have no blank line between comment and imports');
+  });
+
+  test('74f. Blank lines before imports: Comprehensive test (0, 1, 2, 3 blank lines)', () => {
+    // Test ZERO blank lines before imports
+    const content0 = `// Comment
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc0 = new MockTextDocument('test.ts', content0);
+    const manager0 = new ImportManager(doc0, config, logger);
+    const result0 = applyEdits(content0, manager0.organizeImports());
+    const lines0 = result0.split('\n');
+    const comment0 = lines0.findIndex(l => l.includes('Comment'));
+    const import0 = lines0.findIndex(l => l.includes('import'));
+    assert.strictEqual(import0 - comment0, 1, 'ZERO blank lines before should be preserved');
+
+    // Test ONE blank line before imports
+    const content1 = `// Comment
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc1 = new MockTextDocument('test.ts', content1);
+    const manager1 = new ImportManager(doc1, config, logger);
+    const result1 = applyEdits(content1, manager1.organizeImports());
+    const lines1 = result1.split('\n');
+    const comment1 = lines1.findIndex(l => l.includes('Comment'));
+    const import1 = lines1.findIndex(l => l.includes('import'));
+    assert.strictEqual(import1 - comment1, 2, 'ONE blank line before should be preserved');
+
+    // Test TWO blank lines before imports
+    const content2 = `// Comment
+
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc2 = new MockTextDocument('test.ts', content2);
+    const manager2 = new ImportManager(doc2, config, logger);
+    const result2 = applyEdits(content2, manager2.organizeImports());
+    const lines2 = result2.split('\n');
+    const comment2 = lines2.findIndex(l => l.includes('Comment'));
+    const import2 = lines2.findIndex(l => l.includes('import'));
+    assert.strictEqual(import2 - comment2, 3, 'TWO blank lines before should be preserved');
+
+    // Test THREE blank lines before imports
+    const content3 = `// Comment
+
+
+
+import { used } from './lib';
+
+console.log(used);
+`;
+    const doc3 = new MockTextDocument('test.ts', content3);
+    const manager3 = new ImportManager(doc3, config, logger);
+    const result3 = applyEdits(content3, manager3.organizeImports());
+    const lines3 = result3.split('\n');
+    const comment3 = lines3.findIndex(l => l.includes('Comment'));
+    const import3 = lines3.findIndex(l => l.includes('import'));
+    assert.strictEqual(import3 - comment3, 4, 'THREE blank lines before should be preserved');
+  });
+
   // =============================================================================
   // CRITICAL EDGE CASES - Dynamic Imports & Modern Syntax
   // =============================================================================
@@ -2117,9 +2313,9 @@ console.log(A, B);
     assert.ok(!threw, 'Should not throw on invalid config - must fall back gracefully');
   });
 
-  test('86. Blank lines after imports: Exactly one blank line', () => {
-    // CRITICAL: Should have exactly ONE blank line after imports, not zero, not two
-    // Scenario: Remove some imports, check spacing
+  test('86. Blank lines after imports: ONE blank line preserved', () => {
+    // CRITICAL: Should preserve exactly ONE blank line after imports
+    // Scenario: Remove some imports, check spacing preserved
     const content = `import { UsedClass } from './used-class';
 import { unused } from './unused';
 import { AnotherUnused } from './another-unused';
@@ -2148,5 +2344,161 @@ console.log(instance);
     // Verify the line between is actually blank
     const blankLine = lines[importLine + 1];
     assert.strictEqual(blankLine.trim(), '', 'Line after import should be blank');
+  });
+
+  test('86a. Blank lines after imports: TWO blank lines preserved', () => {
+    // CRITICAL: Should preserve exactly TWO blank lines after imports
+    // Scenario: Two blank lines after imports
+    const content = `import { used } from './lib';
+
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+    const codeLine = lines.findIndex(l => l.includes('console.log'));
+
+    // Should preserve TWO blank lines
+    assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
+    assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
+    assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
+  });
+
+  test('86b. Blank lines after imports: THREE blank lines preserved', () => {
+    // CRITICAL: Should preserve exactly THREE blank lines after imports
+    // Scenario: Three blank lines after imports
+    const content = `import { used } from './lib';
+
+
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+    const codeLine = lines.findIndex(l => l.includes('console.log'));
+
+    // Should preserve THREE blank lines
+    assert.strictEqual(codeLine - importLine, 4, 'Should have exactly three blank lines after imports');
+    assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
+    assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
+    assert.strictEqual(lines[importLine + 3].trim(), '', 'Third blank line');
+  });
+
+  test('86c. Blank lines after imports: ZERO blank lines preserved', () => {
+    // CRITICAL: Should preserve ZERO blank lines when there aren't any
+    // Scenario: Import immediately followed by code
+    const content = `import { used } from './lib';
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+    const codeLine = lines.findIndex(l => l.includes('console.log'));
+
+    // Should have NO blank lines
+    assert.strictEqual(codeLine - importLine, 1, 'Should have zero blank lines after imports');
+  });
+
+  test('86e. Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', () => {
+    // Test ZERO blank lines after imports
+    const content0 = `import { used } from './lib';
+console.log(used);
+`;
+    const doc0 = new MockTextDocument('test.ts', content0);
+    const manager0 = new ImportManager(doc0, config, logger);
+    const result0 = applyEdits(content0, manager0.organizeImports());
+    const lines0 = result0.split('\n');
+    const import0 = lines0.findIndex(l => l.includes('import'));
+    const code0 = lines0.findIndex(l => l.includes('console.log'));
+    assert.strictEqual(code0 - import0, 1, 'ZERO blank lines after should be preserved');
+
+    // Test ONE blank line after imports
+    const content1 = `import { used } from './lib';
+
+console.log(used);
+`;
+    const doc1 = new MockTextDocument('test.ts', content1);
+    const manager1 = new ImportManager(doc1, config, logger);
+    const result1 = applyEdits(content1, manager1.organizeImports());
+    const lines1 = result1.split('\n');
+    const import1 = lines1.findIndex(l => l.includes('import'));
+    const code1 = lines1.findIndex(l => l.includes('console.log'));
+    assert.strictEqual(code1 - import1, 2, 'ONE blank line after should be preserved');
+
+    // Test TWO blank lines after imports
+    const content2 = `import { used } from './lib';
+
+
+console.log(used);
+`;
+    const doc2 = new MockTextDocument('test.ts', content2);
+    const manager2 = new ImportManager(doc2, config, logger);
+    const result2 = applyEdits(content2, manager2.organizeImports());
+    const lines2 = result2.split('\n');
+    const import2 = lines2.findIndex(l => l.includes('import'));
+    const code2 = lines2.findIndex(l => l.includes('console.log'));
+    assert.strictEqual(code2 - import2, 3, 'TWO blank lines after should be preserved');
+
+    // Test THREE blank lines after imports
+    const content3 = `import { used } from './lib';
+
+
+
+console.log(used);
+`;
+    const doc3 = new MockTextDocument('test.ts', content3);
+    const manager3 = new ImportManager(doc3, config, logger);
+    const result3 = applyEdits(content3, manager3.organizeImports());
+    const lines3 = result3.split('\n');
+    const import3 = lines3.findIndex(l => l.includes('import'));
+    const code3 = lines3.findIndex(l => l.includes('console.log'));
+    assert.strictEqual(code3 - import3, 4, 'THREE blank lines after should be preserved');
+  });
+
+  test('86d. Combined spacing: THREE blank lines before, TWO blank lines after', () => {
+    // CRITICAL: Both before and after blank lines preserved independently
+    // Scenario: Multiple blank lines on both sides
+    const content = `// Header comment
+
+
+
+import { used } from './lib';
+
+
+console.log(used);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n');
+
+    const commentLine = lines.findIndex(l => l.includes('Header comment'));
+    const importLine = lines.findIndex(l => l.includes("import { used }"));
+    const codeLine = lines.findIndex(l => l.includes('console.log'));
+
+    // Should preserve THREE blank lines before imports
+    assert.strictEqual(importLine - commentLine, 4, 'Should have exactly three blank lines before imports');
+
+    // Should preserve TWO blank lines after imports
+    assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
   });
 });

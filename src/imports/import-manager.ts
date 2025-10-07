@@ -431,33 +431,38 @@ export class ImportManager {
     // Sort by position to find first and last
     allImports.sort((a, b) => a.getStart() - b.getStart());
 
-    // Delete all existing imports including any blank lines after the import block
-    const firstImport = allImports[0];
+    // Get the position info including blank lines before imports
+    const { position: insertPosition, blankLinesBefore } = this.getImportInsertPosition();
+
+    // Delete all existing imports including any blank lines before and after the import block
     const lastImport = allImports[allImports.length - 1];
 
-    const startPos = this.document.positionAt(firstImport.getStart());
     const endPos = this.document.positionAt(lastImport.getEnd());
 
-    // Find the line after the last import
+    // Find the line after the last import and count blank lines after
     let endLine = endPos.line + 1;
+    let blankLinesAfter = 0;
 
-    // Skip any blank lines after the import block
+    // Count blank lines after the import block (preserve them)
     while (endLine < this.document.lineCount) {
       const line = this.document.lineAt(endLine);
       if (line.text.trim() === '') {
+        blankLinesAfter++;
         endLine++;
       } else {
         break;
       }
     }
 
-    // Delete from the first import to the end of blank lines
-    const range = new Range(
-      new Position(startPos.line, 0),
+    // Delete from the insert position (before blank lines) to the end of blank lines after
+    // The insert position already points to where the first import starts,
+    // but we want to delete the blank lines before it too
+    const deletionStartLine = insertPosition.line - blankLinesBefore;
+
+    const deletionRange = new Range(
+      new Position(deletionStartLine, 0),
       new Position(endLine, 0),
     );
-
-    edits.push(TextEdit.delete(range));
 
     // Generate new import text
     const importLines: string[] = [];
@@ -487,12 +492,28 @@ export class ImportManager {
     }
 
     if (importLines.length > 0) {
-      // Insert at the beginning (or after 'use strict', shebang, etc.)
-      const insertPosition = this.getImportInsertPosition();
-      // Join import lines with \n, then add one final \n to end the last import.
-      // This creates exactly one blank line before the code (which starts on its own line after deletion).
-      const importText = importLines.join('\n') + '\n';
-      edits.push(TextEdit.insert(insertPosition, importText));
+      // Insert at the deletionStartLine position (where we started deleting, which accounts for blank lines before imports)
+      // Preserve blank lines between comments and imports
+      const leadingBlankLines = '\n'.repeat(blankLinesBefore);
+
+      // Preserve blank lines after imports
+      // importLines.join('\n') puts newlines between imports but not after the last one
+      // We need to add: one newline to end the last import line, plus additional newlines for blank lines
+      // However, when we insert at deletionStartLine (column 0), the text will be on its own line
+      // So we only need newlines for the blank lines themselves, not to end the import
+      // - 0 blank lines = 0 additional newlines (import ends, code starts next line)
+      // - 1 blank line = 1 newline (creates one blank line before code)
+      // - 2 blank lines = 2 newlines (creates two blank lines before code)
+      const trailingNewlines = '\n'.repeat(blankLinesAfter);
+
+      // Join import lines with \n, then add one \n to end last import, then blank lines
+      const importText = leadingBlankLines + importLines.join('\n') + '\n' + trailingNewlines;
+
+      // Use a single REPLACE edit instead of DELETE + INSERT to avoid position shifts
+      edits.push(TextEdit.replace(deletionRange, importText));
+    } else {
+      // No imports left - just delete the old import block
+      edits.push(TextEdit.delete(deletionRange));
     }
 
     return edits;
@@ -558,8 +579,9 @@ export class ImportManager {
 
   /**
    * Get the position where imports should be inserted.
+   * Also returns the number of blank lines before the first import (after header comments).
    */
-  private getImportInsertPosition(): Position {
+  private getImportInsertPosition(): { position: Position; blankLinesBefore: number } {
     const text = this.document.getText();
     const lines = text.split('\n');
 
@@ -567,13 +589,33 @@ export class ImportManager {
     const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
 
     let insertLine = 0;
+    let blankLinesBefore = 0;
+    let foundComment = false;
+
     for (let i = 0; i < lines.length; i++) {
-      if (!REGEX_IGNORED_LINE.test(lines[i])) {
-        insertLine = i;
-        break;
+      const line = lines[i];
+
+      // Skip comment lines
+      if (REGEX_IGNORED_LINE.test(line)) {
+        foundComment = true;
+        blankLinesBefore = 0; // Reset counter after each comment
+        continue;
       }
+
+      // Count blank lines after comments (but before imports)
+      if (foundComment && line.trim() === '') {
+        blankLinesBefore++;
+        continue;
+      }
+
+      // Found first real content line (imports)
+      insertLine = i;
+      break;
     }
 
-    return new Position(insertLine, 0);
+    return {
+      position: new Position(insertLine, 0),
+      blankLinesBefore
+    };
   }
 }
