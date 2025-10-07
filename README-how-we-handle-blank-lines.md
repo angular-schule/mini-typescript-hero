@@ -194,15 +194,17 @@ group.sortedImports.map(imp => gen.generate(imp)).join('\n') + '\n'
 
 **Default: `"one"`** (always normalize to 1 blank line)
 
+**BEFORE organizing:**
 ```typescript
-// BEFORE organizing
 import { Component } from '@angular/core';
 import { BookList } from './components/book-list';
 
 
 @Component({ selector: 'app-test' })
+```
 
-// AFTER organizing (normalized to 1)
+**AFTER organizing (normalized to 1):**
+```typescript
 import { Component } from '@angular/core';
 
 import { BookList } from './components/book-list';
@@ -221,14 +223,16 @@ import { BookList } from './components/book-list';
 
 **Default: `"preserve"`** (respect user's header formatting)
 
+**BEFORE organizing:**
 ```typescript
-// BEFORE organizing
 // Copyright 2025
 // File description
 
 import { A } from './a';
+```
 
-// AFTER organizing
+**AFTER organizing:**
+```typescript
 // Copyright 2025
 // File description
 
@@ -244,13 +248,15 @@ import { A } from './a';
 
 **Special case: Leading blank lines**
 
+**BEFORE organizing:**
 ```typescript
-// BEFORE organizing
 
 // Comment
 import { A } from './a';
+```
 
-// AFTER organizing
+**AFTER organizing:**
+```typescript
 // Comment
 import { A } from './a';
 //        ^ Leading blank removed (pointless)
@@ -265,13 +271,15 @@ import { A } from './a';
 
 **Always exactly 1 blank line** (non-configurable, mandatory feature)
 
+**BEFORE organizing:**
 ```typescript
-// BEFORE organizing
 import { Component } from '@angular/core';
 import { BookList } from './components/book-list';
 import { map } from 'rxjs/operators';
+```
 
-// AFTER organizing
+**AFTER organizing:**
+```typescript
 import { Component } from '@angular/core';
 import { map } from 'rxjs/operators';
 
@@ -290,13 +298,15 @@ import { BookList } from './components/book-list';
 
 **Always removed** (non-configurable)
 
+**BEFORE organizing:**
 ```typescript
-// BEFORE organizing
 import { A } from './a';    [4 spaces here]
 
 export class Test {}
+```
 
-// AFTER organizing
+**AFTER organizing:**
+```typescript
 import { A } from './a';
 [no spaces on blank line]
 export class Test {}
@@ -327,28 +337,32 @@ export class Test {}
 
 **Examples:**
 
+**Mode `"one"` (default):**
 ```typescript
-// With "one" (default)
 import { A } from './a';
 
 export class Test {}
-
-// With "two"
-import { A } from './a';
-
-
-export class Test {}
-
-// With "preserve" (if file had 3)
-import { A } from './a';
-
-
-
-export class Test {}
-
-// With "legacy" (see test matrix for exact behavior)
-// Complex formula based on blanks before and after
 ```
+
+**Mode `"two"`:**
+```typescript
+import { A } from './a';
+
+
+export class Test {}
+```
+
+**Mode `"preserve"` (if file had 3 blank lines):**
+```typescript
+import { A } from './a';
+
+
+
+export class Test {}
+```
+
+**Mode `"legacy"`:**
+See test matrix for exact behavior (complex formula based on blanks before and after).
 
 ### Migration Strategy
 
@@ -384,19 +398,22 @@ Scan from line 0 until first non-header line:
 
 #### Step 2: Identify Leading Blanks
 
+**CASE 1: Leading blanks (remove)**
 ```typescript
-// CASE 1: Leading blanks (remove)
-
 [blank]  ← Leading blank (no header)
 [blank]  ← Leading blank (no header)
 import { A } from './a';
+```
 
-// CASE 2: Header blanks (preserve)
+**CASE 2: Header blanks (preserve)**
+```typescript
 // Comment
 [blank]  ← Header blank (after comment)
 import { A } from './a';
+```
 
-// CASE 3: No blanks (leave as-is)
+**CASE 3: No blanks (leave as-is)**
+```typescript
 // Comment
 import { A } from './a';
 ```
@@ -682,13 +699,16 @@ generateOrganizedImports(): string {
 | Custom Regex groups | 1 (between each group) | TC-204 |
 
 **Example TC-203:**
+
+**BEFORE organizing (messy):**
 ```typescript
-// Input (messy)
 import './polyfills';
 import { Component } from '@angular/core';
 import { MyService } from './my-service';
+```
 
-// Output (organized)
+**AFTER organizing:**
+```typescript
 import './polyfills';
 
 import { Component } from '@angular/core';

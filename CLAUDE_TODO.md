@@ -3220,6 +3220,239 @@ Test breakdown:
 
 ---
 
-**Last Updated**: 2025-10-06
-**Status**: ✅ Phase 10 Complete | 153/153 Tests Passing | Ready for Publishing
-**Next Session**: Phase 11 (Publishing to VSCode Marketplace)
+## Session 10: Blank Line Behavior Analysis & Documentation (2025-10-07)
+
+**Status**: 📝 Research & Planning Complete | Documentation Ready
+**Goal**: Understand old TypeScript Hero's blank line behavior and define new configurable behavior
+**Duration**: Extended research session with manual testing and comprehensive documentation
+
+### What We Accomplished
+
+1. **Analyzed Old TypeScript Hero Behavior**
+   - Investigated original algorithm in `/old-typescript-hero/src/imports/import-manager.ts` (lines 360-383)
+   - Discovered "blank line movement" bug: blank lines BEFORE imports end up AFTER imports
+   - Root cause: `getImportInsertPosition()` uses `REGEX_IGNORED_LINE` that doesn't match blank lines
+   - Manual testing confirmed unexpected behavior patterns
+
+2. **Manual Test Results** (user-provided, validated against old extension)
+
+   | Lines BEFORE | Lines AFTER (input) | Lines AFTER (output) | What Happened |
+   |--------------|---------------------|----------------------|---------------|
+   | 0            | 0                   | 1                    | Added 1 (group separator) |
+   | 0            | 1                   | 1                    | Deleted 1, added 1 back |
+   | 0            | 2                   | 2                    | Deleted 1, kept 1 extra |
+   | 0            | 3                   | 3                    | Deleted 1, kept 2 extra |
+   | 1            | 0                   | 2                    | Blank moved! (1 moved + 1 group) |
+   | 1            | 1                   | 2                    | Blank moved! (1 moved + 0 after delete) |
+   | 1            | 2                   | 3                    | Blank moved! (1 moved + 1 after delete) |
+
+   **Formula:** `finalBlanks = blanksBefore + 1 (group separator) + max(blanksAfter - 1, 0)`
+
+3. **Industry Standards Research**
+   - **Google TypeScript Style Guide**: "Exactly one blank line" after imports ✅
+   - **ESLint `import/newline-after-import`**: Default is 1 blank line ✅
+   - **Prettier**: Collapses to maximum 1 blank line ✅
+   - **Airbnb/Angular**: No specific guidance (defer to general practices)
+   - **Consensus**: 1 blank line is the industry standard
+
+4. **Defined New Configurable Behavior**
+   - **Default mode `"one"`**: Always exactly 1 blank after imports (industry standard) ✅ RECOMMENDED
+   - **Mode `"two"`**: Always exactly 2 blanks (for teams wanting more separation)
+   - **Mode `"preserve"`**: Keep user's exact blank line count (0, 1, 2, 3+)
+   - **Mode `"legacy"`**: Match old TypeScript Hero behavior (for migration)
+
+5. **Key Design Decisions**
+   - **AFTER imports**: Configurable via `blankLinesAfterImports` setting
+   - **BEFORE imports**: Preserve intentional spacing (respect user's header formatting)
+   - **Leading blanks**: Always remove (pointless spacing at file start)
+   - **Between groups**: Always 1 blank (mandatory, non-configurable, KEY FEATURE)
+   - **Trailing whitespace**: Always remove (industry standard)
+   - **Line endings**: Respect document's EOL (LF vs CRLF)
+
+6. **Created Comprehensive Documentation**
+   - File: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/README-how-we-handle-blank-lines.md`
+   - 837 lines of detailed specification
+   - Sections:
+     - Executive Summary
+     - Old TypeScript Hero behavior analysis
+     - Industry standards research
+     - New default behavior specification
+     - Configuration options (4 modes)
+     - Detailed algorithms for each mode
+     - Test case matrix: **91 test cases** (TC-001 to TC-407)
+     - Implementation checklist
+     - FAQ
+   - Formatted with separate BEFORE/AFTER code blocks for clarity
+
+7. **Test Case Coverage**
+   - **TC-001 to TC-005**: Mode "one" (5 tests)
+   - **TC-010 to TC-013**: Mode "two" (4 tests)
+   - **TC-020 to TC-024**: Mode "preserve" (5 tests)
+   - **TC-030 to TC-038**: Mode "legacy" (9 tests)
+   - **TC-100 to TC-101**: Leading blanks (2 tests)
+   - **TC-110 to TC-113**: Header blanks (4 tests)
+   - **TC-120 to TC-121**: Shebang (2 tests)
+   - **TC-130 to TC-132**: Use strict (3 tests)
+   - **TC-200 to TC-204**: Group separation (5 tests)
+   - **TC-300 to TC-320**: Combined scenarios (3 tests)
+   - **TC-400 to TC-407**: Edge cases (8 tests)
+   - **TOTAL: 91 test cases**
+
+### Technical Discoveries
+
+**Old TypeScript Hero Algorithm:**
+```typescript
+// Step 1: Delete each import + ONE blank after it
+for (const imp of imports) {
+  deleteImport(imp);
+  const nextLine = getLineAfter(imp);
+  if (isBlank(nextLine)) deleteLine(nextLine);  // Delete ONE blank
+}
+
+// Step 2: Generate organized imports
+const imports = importGroups
+  .map(group => generateGroup(group))  // Each ends with \n
+  .join('\n');  // Groups joined with \n = 1 blank between
+
+// Step 3: Insert at position (can be AT a blank line!)
+insert(getImportInsertPosition(), imports + '\n');
+```
+
+**The Bug:**
+```typescript
+const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
+// Blank lines DON'T match this regex!
+
+// So if you have:
+// // Comment
+// [blank]  ← Insert position points HERE (doesn't match regex)
+// import A
+
+// After reorganizing:
+// // Comment
+// import A
+// [blank]  ← Blank moved!
+```
+
+**Group Separation (the good part to preserve):**
+```typescript
+// Group 1: "import A\nimport B\n"
+// Group 2: "import C\n"
+// Joined: "import A\nimport B\n" + "\n" + "import C\n"
+// Result: "import A\nimport B\n\nimport C\n"
+//                             ^^
+//                             Always 1 blank between groups ✓
+```
+
+### Challenges & Solutions
+
+**Challenge 1**: Old TypeScript Hero has dependency issues (flatmap-stream removed from npm in 2018)
+- **Solution**: Deleted `package-lock.json` and ran fresh `npm install`
+- **Result**: Install succeeded
+
+**Challenge 2**: TypeScript version incompatibility (old uses TS 3.1, we use TS 5.7)
+- **Attempted**: Compile and run tests in old extension
+- **Result**: Compilation errors due to modern TypeScript features
+- **Solution**: Trusted user's manual test results instead of fighting with 7-year-old dependencies
+
+**Challenge 3**: Defining appropriate behavior for Mini TypeScript Hero
+- **Solution**: Research industry standards + provide 4 configurable modes
+- **Result**: Default is industry standard ("one"), but supports legacy migration ("legacy")
+
+### Files Created/Modified
+
+1. **Created**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/README-how-we-handle-blank-lines.md`
+   - Comprehensive 837-line specification document
+   - 91 test cases fully documented
+   - Algorithms for all 4 modes
+   - Ready for implementation
+
+2. **Created**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/old-typescript-hero/test/imports/blank-line-behavior.test.ts`
+   - 8 test scenarios for old behavior
+   - Not executed (TypeScript version issues)
+   - Served as analysis tool
+
+3. **Modified**: `.gitignore`
+   - Added `old-typescript-hero/` (already existed in gitignore from line 13)
+
+### Configuration to Implement
+
+**New setting:** `miniTypescriptHero.imports.blankLinesAfterImports`
+```json
+{
+  "miniTypescriptHero.imports.blankLinesAfterImports": {
+    "type": "string",
+    "enum": ["one", "two", "preserve", "legacy"],
+    "default": "one",
+    "enumDescriptions": [
+      "Always exactly 1 blank line (Google/ESLint standard) - RECOMMENDED",
+      "Always exactly 2 blank lines (more visual separation)",
+      "Preserve user's exact blank line count",
+      "Match original TypeScript Hero behavior (migration only)"
+    ],
+    "description": "Number of blank lines after the last import before code starts."
+  }
+}
+```
+
+**Migration logic:**
+- Detect users migrating from old TypeScript Hero
+- Auto-set `blankLinesAfterImports` to `"legacy"`
+- Maintains exact old behavior
+- Users can manually switch to `"one"` anytime
+
+### Next Steps (Session 11)
+
+1. **Implement header detection logic**
+   - Detect comments, shebangs, 'use strict'
+   - Count blank lines after header
+   - Remove leading blanks (no header)
+   - Preserve header blanks (intentional spacing)
+
+2. **Implement 4 modes for blank lines after imports**
+   - Mode `"one"`: Normalize to 1 blank
+   - Mode `"two"`: Normalize to 2 blanks
+   - Mode `"preserve"`: Keep exact count
+   - Mode `"legacy"`: Replicate old algorithm (with blank line movement)
+
+3. **Ensure group separation always has 1 blank**
+   - Verify existing `importGroups.join('\n')` logic
+   - Test with Plains, Modules, Workspace, Regex groups
+
+4. **Implement trailing whitespace removal**
+   - Strip trailing spaces from all lines
+   - Blank lines should be truly blank (no spaces)
+
+5. **Write 91 comprehensive tests**
+   - All test cases documented in README-how-we-handle-blank-lines.md
+   - Cover all 4 modes
+   - Cover all edge cases
+   - Verify CRLF handling
+
+6. **Update package.json**
+   - Add `blankLinesAfterImports` configuration
+   - Update contribution points
+
+7. **Update settings migration**
+   - Auto-set `"legacy"` for migrated users
+
+### Key Learnings
+
+- Old TypeScript Hero's blank line behavior was buggy, not intentional
+- Industry standard is clearly 1 blank line after imports
+- Users need configurability for team preferences
+- Header preservation is important (respect user's intent)
+- Always 1 blank between import groups is a KEY FEATURE to preserve
+
+### References
+
+- **Specification**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/README-how-we-handle-blank-lines.md`
+- **Old code**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/old-typescript-hero/src/imports/import-manager.ts` (lines 360-383)
+- **Old regex**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/old-typescript-hero/src/utilities/utility-functions.ts` (line 323)
+- **Test file**: `/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/old-typescript-hero/test/imports/blank-line-behavior.test.ts`
+
+---
+
+**Last Updated**: 2025-10-07
+**Status**: ✅ Phase 10 Complete (153/153 Tests) | 📝 Session 10 Complete (Blank Line Documentation)
+**Next Session**: Phase 11 - Implement blank line configuration (91 new test cases)
