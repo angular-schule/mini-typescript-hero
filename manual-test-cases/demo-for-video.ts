@@ -13,6 +13,7 @@ import {of} from "rxjs"
 @Component({
   selector: 'app-demo',
   standalone: true,
+  imports: [BookList, UserDetail],
   template: `
     <h1>Demo Component</h1>
     <app-book-list />
