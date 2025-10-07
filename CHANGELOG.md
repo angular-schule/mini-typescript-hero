@@ -1,16 +1,16 @@
 # Changelog
 
-## [1.0.0-rc.0] - 2025-10-06
+## [4.0.0-rc.0] - 2025-10-06
 
 ### Release Candidate
 
-This is the first release candidate for Mini TypeScript Hero v1.0.0. All features are complete and tested (153 tests passing on Ubuntu, macOS, Windows).
+This is the first release candidate for Mini TypeScript Hero v4.0.0.
 
-**Testing Period:** Please test this RC version and report any issues before the final 1.0.0 release.
+**Testing Period:** Please test this RC version and report any issues before the final 4.0.0 release.
 
 **Read the announcement:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
 
-## [1.0.0] - TBD
+## [4.0.0] - TBD
 
 ### Added
 
@@ -46,6 +46,3 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - Modern esbuild bundling (replaced tsc)
 - TypeScript 5.7+ with strict mode
 - VSCode engine 1.85.0+
-
-[1.0.0-rc.0]: https://github.com/angular-schule/mini-typescript-hero/releases/tag/v1.0.0-rc.0
-[1.0.0]: https://github.com/angular-schule/mini-typescript-hero/releases/tag/v1.0.0

@@ -1,6 +1,6 @@
 {
   "name": "mini-typescript-hero-manual-test-cases",
-  "version": "1.0.0",
+  "version": "4.0.0",
   "private": true,
   "description": "Manual test cases for Mini TypeScript Hero extension with real dependencies",
   "dependencies": {
