@@ -140,12 +140,6 @@
           "description": "Defines imports (libraries, so the 'from' part), which are not removed during 'organize imports'.",
           "scope": "resource"
         },
-        "miniTypescriptHero.imports.mergeImportsFromSameModule": {
-          "type": "boolean",
-          "default": true,
-          "description": "Merge multiple imports from the same module into a single import statement. When disabled, preserves the original TypeScript Hero behavior of keeping imports separate.",
-          "scope": "resource"
-        },
         "miniTypescriptHero.imports.blankLinesAfterImports": {
           "enum": [
             "one",

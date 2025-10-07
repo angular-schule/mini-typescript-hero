@@ -14,6 +14,7 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 
 - ✨ **Sort imports** alphabetically (by module path or first specifier)
 - 🧹 **Remove unused imports** automatically
+- 🔀 **Merge imports** from the same module (e.g., `import { A, B } from './lib'`)
 - 📦 **Group imports** into customizable categories (Plains, Modules, Workspace, Regex patterns)
 - 📏 **Smart blank line handling** — Choose your preferred spacing: 1 line (standard from ESLint), 2 lines, preserve existing, or legacy mode
 - ⚙️ **Highly configurable** formatting (quotes, semicolons, spaces, multiline thresholds)
@@ -110,8 +111,6 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Import Merging Behavior:** For migrated users, `mergeImportsFromSameModule` is automatically set to `false` to preserve the original TypeScript Hero behavior. New users get `true` by default (cleaner, more concise imports). You can change this setting anytime in your configuration.
-
 **Blank Line Behavior:** For migrated users, `blankLinesAfterImports` is automatically set to `"legacy"` to preserve the original TypeScript Hero behavior. New users get `"one"` by default (ESLint standard: 1 blank line after imports). You can change this setting anytime in your configuration.
 
 ### No Old Settings?
@@ -167,11 +166,6 @@ Control spacing after imports with `blankLinesAfterImports`:
 
   // Sort by first imported name instead of module path
   "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
-
-  // Merge multiple imports from the same module (default: true)
-  // When true: import { A, B } from './lib'
-  // When false: import { A } from './lib'; import { B } from './lib';
-  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
 
   // Libraries that should never be removed (even if unused)
   "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],

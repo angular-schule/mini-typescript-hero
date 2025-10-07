@@ -3678,6 +3678,237 @@ The session ended with all 212 tests passing, all documentation updated, and the
 
 ---
 
+## Session 11: Critical Bug Discoveries - Sorting & Merging (2025-10-07)
+
+### Overview
+
+**Timeline**: Same day as Session 10
+**Trigger**: User manual testing discovered two critical bugs
+**Result**: ✅ 212/212 tests passing | Both bugs fixed | Invented config removed
+
+### Critical Bugs Discovered
+
+#### 🚨 Bug #1: Incorrect Specifier Sorting
+
+**Discovery**: User tested with real extension and found:
+- **Old TypeScript Hero**: `import { Component, inject, OnInit } from '@angular/core';`
+- **Mini TypeScript Hero**: `import { Component, OnInit, inject } from '@angular/core';`
+
+**Root Cause**:
+```typescript
+// src/imports/import-utilities.ts:81-83 (BEFORE)
+export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
+  return stringSort(i1.specifier, i2.specifier);  // ❌ ASCII sort
+}
+```
+
+The function used `stringSort()` which uses `<` and `>` operators (ASCII comparison):
+- ASCII sort: Capital letters (A-Z) come before lowercase letters (a-z)
+- Result: `Component`, `OnInit`, `inject` (capitals first, then lowercase)
+- Expected: `Component`, `inject`, `OnInit` (natural alphabetical order)
+
+**The Fix**:
+```typescript
+// src/imports/import-utilities.ts:81-83 (AFTER)
+export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
+  return localeStringSort(i1.specifier, i2.specifier);  // ✅ Locale-aware
+}
+```
+
+Changed to use `localeStringSort()` which wraps `localeCompare()`:
+- Locale-aware: Case-insensitive natural sort
+- Result: `Component`, `inject`, `OnInit` (alphabetical regardless of case)
+
+**Test Coverage**: Added test 12a specifically for this case:
+```typescript
+test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', () => {
+  // CRITICAL: This test validates the fix for a major sorting bug.
+  // Specifiers must be sorted using localeCompare (case-insensitive), not ASCII sort.
+  // ASCII sort: Component, OnInit, inject (capitals first)
+  // localeCompare: Component, inject, OnInit (natural alphabetical order)
+  const content = `import { OnInit, Component, inject } from '@angular/core';
+
+const x = Component;
+const y = inject;
+const z: OnInit = null as any;
+`;
+  const doc = new MockTextDocument('test.ts', content);
+  const manager = new ImportManager(doc, config, logger);
+  const edits = manager.organizeImports();
+  const result = applyEdits(content, edits);
+
+  const importLine = result.split('\n').find(line => line.includes('@angular/core'));
+  assert.ok(importLine, 'Should have @angular/core import');
+
+  const match = importLine!.match(/\{\s*(.+?)\s*\}/);
+  assert.ok(match, 'Should have named imports');
+  const specifiers = match![1].split(',').map(s => s.trim());
+
+  // Verify exact order: Component, inject, OnInit (localeCompare order)
+  assert.deepStrictEqual(specifiers, ['Component', 'inject', 'OnInit'],
+    'Specifiers should be sorted case-insensitively using localeCompare (Component, inject, OnInit)');
+});
+```
+
+**Why Tests Didn't Catch This**:
+- Existing tests used specifiers that happened to sort the same with both methods
+- Test 12 tested `Component, OnInit` (both capitals - order is same either way)
+- Test 53 tested `map, switchMap` (both lowercase - order is same either way)
+- No test used mixed-case specifiers where the difference would be visible
+
+#### 🚨 Bug #2: Invented Configuration Option
+
+**Discovery**: User realized: "we claimed that the old TS hero does not merging, but it obviously did so, we invented a complete config option for something that was never a thing!"
+
+**The Misunderstanding**:
+- We added `mergeImportsFromSameModule` config (default: true)
+- Migration set it to `false` for old users
+- We thought: "Old TypeScript Hero never merged imports"
+- Reality: **Old TypeScript Hero ALWAYS merged imports during organizeImports()**
+
+**Evidence from Old Code** (`old-typescript-hero/import-manager.ts:180-202`):
+```typescript
+const libraryAlreadyImported = keepImports.find(
+  o => o.libraryName === imp.libraryName,
+);
+
+if (libraryAlreadyImported) {
+  // Merge specifiers into existing import
+  libraryAlreadyImported.specifiers = libraryAlreadyImported.specifiers.concat(
+    (imp as NamedImport).specifiers,
+  );
+} else {
+  keepImports.push(imp);
+}
+```
+
+This happened **every time** `organizeImports()` was called. No configuration option. Always merged.
+
+**The Fix**: Complete removal of invented config
+1. **package.json** - Removed `mergeImportsFromSameModule` option
+2. **ImportsConfig** - Removed `mergeImportsFromSameModule()` method
+3. **ImportManager** - Removed conditional, always merge now
+4. **settings-migration.ts** - Removed auto-set logic, added clarifying comment
+5. **Test mocks** - Removed method from MockImportsConfig (3 files)
+6. **Tests** - Deleted test 43, updated comments in tests 41, 53, 62
+
+**Changes to ImportManager** (`src/imports/import-manager.ts:331-391`):
+```typescript
+// BEFORE (conditional merging)
+if (this.config.mergeImportsFromSameModule(this.document.uri)) {
+  const merged: Import[] = [];
+  for (const imp of keep) {
+    const existing = merged.find((m) => m.libraryName === imp.libraryName);
+    if (existing && existing.isNamedImport() && imp.isNamedImport()) {
+      existing.specifiers.push(...imp.specifiers);
+    } else {
+      merged.push(imp);
+    }
+  }
+  keep = merged;
+}
+
+// AFTER (always merge - matches old TypeScript Hero)
+// Merge imports from same module (always - matches original TypeScript Hero behavior)
+const merged: Import[] = [];
+for (const imp of keep) {
+  const existing = merged.find((m) => m.libraryName === imp.libraryName);
+  if (existing && existing.isNamedImport() && imp.isNamedImport()) {
+    existing.specifiers.push(...imp.specifiers);
+  } else {
+    merged.push(imp);
+  }
+}
+keep = merged;
+```
+
+**Test Changes**:
+- Deleted test 43: "should not merge imports when mergeImportsFromSameModule=false"
+- Updated test 41 comment: "merged by default" → "always merged"
+- Updated test 53: Removed merging config line, focused on sorting
+- Updated test 62: Removed redundant merging config line
+- Result: Still 212 tests passing (deleted 1, added test 12a)
+
+### Files Modified
+
+**Core Implementation**:
+1. `src/imports/import-utilities.ts` - Changed `specifierSort()` to use `localeStringSort()`
+2. `src/imports/import-manager.ts` - Removed conditional merging, always merge now
+3. `src/configuration/imports-config.ts` - Removed `mergeImportsFromSameModule()` method
+4. `package.json` - Removed `mergeImportsFromSameModule` configuration option
+5. `src/configuration/settings-migration.ts` - Removed auto-set logic, added clarifying comment
+
+**Testing**:
+6. `src/test/imports/import-manager.test.ts` - Added test 12a, deleted test 43, updated tests 41/53/62, removed mock method
+7. `src/test/imports/blank-lines.test.ts` - Removed `mergeImportsFromSameModule()` from MockImportsConfig
+8. `src/test/imports/import-organizer.test.ts` - Removed `mergeImportsFromSameModule()` from MockImportsConfig
+
+**Documentation**:
+9. `README.md` - Removed merging behavior migration paragraph, removed config example, added feature bullet
+10. `blog-post.md` - Removed unnecessary phrase about default behavior
+
+### Test Results
+
+**Final Status**: ✅ 212/212 tests passing (100%)
+
+**Test Changes**:
+- ➕ Added test 12a: Validate Component, inject, OnInit sorting
+- ➖ Deleted test 43: Tested non-existent disabled merging feature
+- ✏️ Updated tests 41, 53, 62: Comments and removed config lines
+- Net: 212 tests (same as before, but improved quality)
+
+### Impact Analysis
+
+**Severity**: Critical
+- **Sorting bug**: Every import with mixed-case specifiers was incorrectly sorted
+- **Invented config**: Users could disable merging (behavior never in original TypeScript Hero)
+
+**Why Tests Didn't Catch This**:
+1. **Sorting**: No existing tests used mixed-case specifiers (Component + inject)
+2. **Merging**: Tests validated merging worked when enabled, but didn't question if config should exist
+
+**Lesson Learned**:
+- Manual testing with real-world imports (Angular's `Component, inject, OnInit`) caught what unit tests missed
+- Need to test with diverse real-world patterns, not just synthetic test cases
+- Question assumptions: verify features existed in original before implementing config for them
+
+### Key Technical Details
+
+**ASCII Sort vs Locale Sort**:
+```javascript
+// JavaScript < operator (ASCII)
+'Component' < 'OnInit' < 'inject'  // true (capitals before lowercase)
+
+// String.localeCompare() (natural alphabetical)
+'Component'.localeCompare('inject')  // -1 (C before i, case-insensitive)
+'inject'.localeCompare('OnInit')     // 1  (i after O, case-insensitive)
+```
+
+**Old TypeScript Hero Merging Logic**:
+- Always happened during `organizeImports()`
+- Used `libraryAlreadyImported` check (lines 180-202)
+- No configuration option to disable it
+- Fundamental behavior, not optional feature
+
+### User Feedback During Session
+
+1. **Bug Discovery**: "TS HERO did: import { Component, inject, OnInit } from '@angular/core'; MINI TS HERO does import { Component, OnInit, inject } from '@angular/core'; we are sorting differently."
+
+2. **Second Discovery**: "even more embarrassing. we claimed that the old TS hero does not merging, but it obviously did so, we invented a complete config option for something that was never a thing!"
+
+3. **Documentation Request**: "the option mergeImportsFromSameModule is not any longer necessary. we should get rid of it and always merge. fix also the readme and the blogpost"
+
+4. **Correction on CHANGELOG**: "this is not a topic for the CHANGELOG, a new reader won't be interested into our bug-findings (we still haven't published a new version), but add the current state instead to your @CLAUDE_TODO.md"
+
+### Next Steps
+
+- ✅ Both bugs fixed and documented
+- ✅ All tests passing (212/212)
+- ✅ Documentation updated
+- ⏭️ Ready for next user request
+
+---
+
 **Last Updated**: 2025-10-07
-**Status**: ✅ Session 11 Complete (212/212 Tests) | All blank line implementation complete
+**Status**: ✅ Session 11 Complete (212/212 Tests) | Critical bugs fixed | Config cleanup complete
 **Next Session**: Continue with additional details the user wants to address

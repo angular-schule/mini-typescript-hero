@@ -76,10 +76,10 @@ function getImportFirstSpecifier(imp: Import): string {
 }
 
 /**
- * Order specifiers by name.
+ * Order specifiers by name (case-insensitive, locale-aware).
  */
 export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
-  return stringSort(i1.specifier, i2.specifier);
+  return localeStringSort(i1.specifier, i2.specifier);
 }
 
 /**

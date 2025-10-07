@@ -118,10 +118,6 @@ class MockImportsConfig extends ImportsConfig {
     return this.overrides.get('ignoredFromRemoval') ?? [];
   }
 
-  public mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.overrides.get('mergeImportsFromSameModule') ?? true;
-  }
-
   public removeTrailingIndex(_resource: Uri): boolean {
     return this.overrides.get('removeTrailingIndex') ?? true;
   }

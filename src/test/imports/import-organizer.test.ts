@@ -166,8 +166,8 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['ignoredFromRemoval'] ?? ['react'];
   }
 
-  public mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.mockConfig['mergeImportsFromSameModule'] ?? true;
+  public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+    return this.mockConfig['blankLinesAfterImports'] ?? 'one';
   }
 
   public grouping(_resource: Uri): any[] {

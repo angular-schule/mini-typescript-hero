@@ -262,10 +262,6 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
   }
 
-  mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
-  }
-
   blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
     return this.mockConfig.get('blankLinesAfterImports') ?? 'one';
   }
@@ -570,6 +566,35 @@ const y = map;
 
     assert.ok(filterIndex < mapIndex, 'Specifiers should be sorted alphabetically');
     assert.ok(!result.includes('tap'), 'Unused specifier should be removed');
+  });
+
+  test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', () => {
+    // CRITICAL: This test validates the fix for a major sorting bug.
+    // Specifiers must be sorted using localeCompare (case-insensitive), not ASCII sort.
+    // ASCII sort: Component, OnInit, inject (capitals first)
+    // localeCompare: Component, inject, OnInit (natural alphabetical order)
+    const content = `import { OnInit, Component, inject } from '@angular/core';
+
+const x = Component;
+const y = inject;
+const z: OnInit = null as any;
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const importLine = result.split('\n').find(line => line.includes('@angular/core'));
+    assert.ok(importLine, 'Should have @angular/core import');
+
+    // Extract specifiers from the import line
+    const match = importLine!.match(/\{\s*(.+?)\s*\}/);
+    assert.ok(match, 'Should have named imports');
+    const specifiers = match![1].split(',').map(s => s.trim());
+
+    // Verify exact order: Component, inject, OnInit (localeCompare order)
+    assert.deepStrictEqual(specifiers, ['Component', 'inject', 'OnInit'],
+      'Specifiers should be sorted case-insensitively using localeCompare (Component, inject, OnInit)');
   });
 
   test('13. Format with configured quote style', () => {
@@ -1067,16 +1092,15 @@ MyHelper;
     assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
   });
 
-  test('41. Imports from same module are merged by default', () => {
+  test('41. Imports from same module are always merged', () => {
     // Scenario: Multiple imports from the same library
-    // By default (new behavior), we merge them into a single import
+    // Imports are ALWAYS merged (matches original TypeScript Hero behavior)
     const content = `import { A } from './lib';
 import { B } from './lib';
 
 console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    // mergeImportsFromSameModule is true by default
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
@@ -1088,27 +1112,6 @@ console.log(A, B);
     assert.ok(lines[0].includes('A'), 'Merged import should have A');
     assert.ok(lines[0].includes('B'), 'Merged import should have B');
     assert.ok(lines[0].includes('{ A, B }'), 'Should be merged as { A, B }');
-  });
-
-  test('43. Imports NOT merged when disabled (preserves old TypeScript Hero behavior)', () => {
-    // Scenario: When mergeImportsFromSameModule is false (old behavior for migrated users)
-    const content = `import { A } from './lib';
-import { B } from './lib';
-
-console.log(A, B);
-`;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('mergeImportsFromSameModule', false);
-    const manager = new ImportManager(doc, config, logger);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
-
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
-
-    // Should keep imports separate
-    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
-    assert.ok(lines[0].includes('A'), 'First import should have A');
-    assert.ok(lines[1].includes('B'), 'Second import should have B');
   });
 
   test('44. Merge default and named imports from same module', () => {
@@ -1320,15 +1323,14 @@ console.log(A, B, C, D);
     assert.ok(lines[1].includes('{ C, D }'), 'Local imports should be merged');
   });
 
-  test('53. Merging disabled works with sorting by first specifier', () => {
-    // Scenario: When merging is off + sorting by first specifier
+  test('53. Sorting by first specifier works correctly', () => {
+    // Scenario: Different modules sorted by first specifier
     const content = `import { Z } from './z';
 import { A } from './a';
 
 console.log(Z, A);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('mergeImportsFromSameModule', false);
     config.setConfig('organizeSortsByFirstSpecifier', true);
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
@@ -1336,8 +1338,8 @@ console.log(Z, A);
 
     const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should keep separate AND sort by first specifier (A before Z)
-    assert.strictEqual(lines.length, 2, 'Should keep imports separate');
+    // Should sort by first specifier (A before Z)
+    assert.strictEqual(lines.length, 2, 'Should have 2 imports');
     assert.ok(lines[0].includes('A'), 'First should be A (sorted by specifier)');
     assert.ok(lines[1].includes('Z'), 'Second should be Z');
   });
@@ -1512,7 +1514,7 @@ console.log(Lib1, Lib2);
   });
 
   test('62. /index removal disabled - imports NOT merged', () => {
-    // Scenario: When /index removal is OFF, './lib/index' and './lib' are different
+    // Scenario: When /index removal is OFF, './lib/index' and './lib' are different modules
     const content = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -1520,7 +1522,6 @@ console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('removeTrailingIndex', false);
-    config.setConfig('mergeImportsFromSameModule', true);
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);

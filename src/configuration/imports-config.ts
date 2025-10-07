@@ -71,12 +71,6 @@ export class ImportsConfig {
       .get('ignoredFromRemoval', ['react']);
   }
 
-  public mergeImportsFromSameModule(resource: Uri): boolean {
-    return workspace
-      .getConfiguration(sectionKey, resource)
-      .get('mergeImportsFromSameModule', true);
-  }
-
   public blankLinesAfterImports(resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
     return workspace
       .getConfiguration(sectionKey, resource)

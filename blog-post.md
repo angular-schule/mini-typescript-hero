@@ -36,7 +36,7 @@ import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
 ```
 
-Angular libraries grouped together and merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Exactly one blank line after imports. Beautiful.
+Angular libraries grouped together and automatically merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Exactly one blank line after imports. Beautiful.
 
 **I literally can't imagine working without this.**
 
@@ -67,8 +67,7 @@ For a tool I rely on daily, that was a ticking time bomb.
 - Simpler, cleaner architecture
 - No deprecated dependencies
 
-**New features:**
-- **Import merging**: Automatically combines duplicate imports from the same module (e.g., two separate `@angular/core` imports become one). I always wanted to have this. This is enabled by default for new users, while migrated users keep the original behavior.
+**Key improvement:**
 - **Smart blank line handling**: Choose how many blank lines you want after imports. The new default is 1 blank line (standard from ESLint), but you can configure it to 2 lines, preserve existing spacing, or use the old TypeScript Hero behavior. Honestly, I always felt that 1 line would be better than the old behavior where blank lines would sometimes "move" around unpredictably. Now everyone can decide what preference they have!
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.

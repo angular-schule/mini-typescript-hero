@@ -109,15 +109,6 @@ async function performMigration(): Promise<number> {
 
   // For migrated users: Set compatibility settings to preserve old behavior
   if (migratedCount > 0) {
-    // Set mergeImportsFromSameModule to false
-    // (Old TypeScript Hero never merged imports from same module)
-    const mergeInspect = newConfig.inspect('mergeImportsFromSameModule');
-    if (mergeInspect?.globalValue === undefined &&
-        mergeInspect?.workspaceValue === undefined &&
-        mergeInspect?.workspaceFolderValue === undefined) {
-      await newConfig.update('mergeImportsFromSameModule', false, ConfigurationTarget.Global);
-    }
-
     // Set blankLinesAfterImports to 'legacy' to preserve old blank line behavior
     // (Old TypeScript Hero had complex blank line logic where blanks before imports affected blanks after)
     const blankLinesInspect = newConfig.inspect('blankLinesAfterImports');
