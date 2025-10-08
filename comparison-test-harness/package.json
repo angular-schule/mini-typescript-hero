@@ -1,0 +1,23 @@
+{
+  "name": "comparison-test-harness",
+  "version": "1.0.0",
+  "description": "Test harness comparing old vs new TypeScript Hero",
+  "private": true,
+  "scripts": {
+    "compile-tests": "tsc -p . --outDir out --noEmitOnError false || true",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.104.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "inversify": "^7.10.2",
+    "reflect-metadata": "^0.2.2",
+    "typescript": "^5.9.3",
+    "typescript-parser": "^2.6.1"
+  }
+}

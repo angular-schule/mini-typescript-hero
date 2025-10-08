@@ -3912,3 +3912,214 @@ keep = merged;
 **Last Updated**: 2025-10-07
 **Status**: ✅ Session 11 Complete (212/212 Tests) | Critical bugs fixed | Config cleanup complete
 **Next Session**: Continue with additional details the user wants to address
+
+---
+
+## Session 12: Comparison Test Harness (2025-10-08)
+
+### Overview
+Created a comprehensive comparison test harness to systematically verify compatibility between old TypeScript Hero and new Mini TypeScript Hero. The harness successfully caught bugs that manual testing missed.
+
+### What Was Built
+
+**Complete Test Harness Structure:**
+```
+comparison-test-harness/
+├── old-typescript-hero/          # Git submodule to buehler/typescript-hero
+├── old-extension/
+│   └── adapter.ts                # Wrapper for old TypeScript Hero
+├── new-extension/
+│   └── adapter.ts                # Wrapper for new Mini TypeScript Hero
+├── test-cases/
+│   └── 01-sorting.test.ts       # 15 comprehensive sorting tests
+├── package.json                  # Separate test environment
+├── tsconfig.json                 # Compiles harness + both extensions
+└── .vscode-test.mjs             # VSCode test runner config
+```
+
+### Key Accomplishments
+
+1. **✅ Test Infrastructure**
+   - Created standalone VSCode test environment using @vscode/test-cli
+   - Both extensions reference REAL source code via imports (no copying)
+   - Old extension uses `typescript-parser` (deprecated but working)
+   - New extension uses `ts-morph` (modern)
+   - Tests run in actual VSCode instance with proper Mocha globals
+
+2. **✅ Clean Build Setup**
+   - All compilation output goes to `comparison-test-harness/out/`
+   - No fragmented .js files scattered around
+   - Removed `rootDir: ".."` issue
+   - Excluded old-typescript-hero's own test/tsconfig from compilation
+
+3. **✅ Git Submodule for Reference**
+   - old-typescript-hero added as git submodule (not a messy copy)
+   - Points to https://github.com/buehler/typescript-hero.git
+   - Clean reference implementation that won't get modified
+
+4. **✅ Test Results: 14 Passing, 1 Failing**
+   - **Test 008**: Expected difference documented (trailing newlines at EOF)
+   - **Test 010**: 🐛 REAL BUG FOUND - ignoredFromRemoval imports skip specifier sorting
+
+### Bug Found by Test Harness 🎉
+
+**Location**: `src/imports/import-manager.ts:270`
+
+```typescript
+if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName)) {
+  keep.push(imp);
+  continue;  // ← BUG: Skips ALL processing including specifier sorting!
+}
+```
+
+**Problem**: Imports in `ignoredFromRemoval` list (default: `['react']`) completely bypass specifier sorting
+
+**Expected**: `import React, { useEffect, useState }` (alphabetical)
+**Actual**: `import React, { useState, useEffect }` (preserves input order)
+
+**Impact**: React imports and any other library in ignoredFromRemoval list don't get their specifiers sorted
+
+**Fix Needed**: The config should only skip *removal* of unused specifiers, not *sorting* of kept specifiers. Need to move the `continue` after specifier sorting logic.
+
+### Files Ready to Commit
+
+**Modified:**
+- `.gitignore` - Removed old-typescript-hero line (now a submodule)
+- `package-lock.json` - Updated from test harness dependencies
+
+**New:**
+- `.gitmodules` - Defines old-typescript-hero submodule
+- `comparison-test-harness/` - Entire test harness (12 files, +3584 lines)
+  - `.gitignore` - Ignores `out/` and `*.js.map`
+  - `.vscode-test.mjs` - Test runner config
+  - `README.md` - Documentation
+  - `package.json` + `package-lock.json` - Dependencies
+  - `tsconfig.json` - TypeScript config
+  - `old-extension/adapter.ts` - Old extension wrapper (345 lines)
+  - `new-extension/adapter.ts` - New extension wrapper (287 lines)
+  - `test-cases/01-sorting.test.ts` - 15 test cases (295 lines)
+  - `old-typescript-hero` - Git submodule link
+
+### Test Cases Created (15/100)
+
+**01-sorting.test.ts**: 15 comprehensive sorting tests
+1. ✅ Mixed-case specifiers (Component, inject, OnInit)
+2. ✅ All capitals specifiers (Component, OnInit)
+3. ✅ All lowercase specifiers (map, filter, tap)
+4. ✅ Mixed lower and upper start (inject, Component, map, OnInit)
+5. ✅ Library name sorting (alphabetical)
+6. ✅ Sort by first specifier (enabled)
+7. ✅ String imports come first
+8. ✅ Multiple string imports sorted (expected difference documented)
+9. ✅ Specifiers with aliases
+10. 🐛 Default + named imports (bug found!)
+11. ✅ Namespace imports
+12. ✅ Disable sorting
+13. ✅ Case-insensitive library sorting
+14. ✅ Numbers in specifier names
+15. ✅ Special characters in library names
+
+### Lessons Learned
+
+1. **Comparison testing is invaluable** - Caught a bug that 212 unit tests missed
+2. **Git submodules** - Proper way to reference another repo as test baseline
+3. **TypeScript rootDir** - Can cause fragmented output if misconfigured
+4. **VSCode test environment** - Requires @vscode/test-cli, can't just mock vscode module
+5. **Test interface** - VSCode tests use `suite()`/`test()` (TDD), not `describe()`/`it()` (BDD)
+
+### Next Steps - CONTINUE HERE
+
+**IMMEDIATE TASK**: Create 85 more test cases to reach 100+ comprehensive coverage
+
+**Test Categories Needed:**
+1. **Merging** (10-15 tests)
+   - Same library, different specifiers
+   - Same library, default + named
+   - Same library, namespace + named
+   - Same library after removeTrailingIndex
+
+2. **Grouping** (15-20 tests)
+   - Plains (string imports)
+   - Modules (external packages)
+   - Workspace (relative imports)
+   - Regex groups
+   - Multiple groups with blank lines between
+
+3. **Removal/Filtering** (10-15 tests)
+   - Unused specifiers removed
+   - ignoredFromRemoval list honored
+   - Used specifiers kept
+   - Partial import cleanup
+   - Default + named partial removal
+
+4. **Blank Lines** (15-20 tests)
+   - Mode: "one" (default)
+   - Mode: "two"
+   - Mode: "preserve"
+   - Mode: "legacy"
+   - Before imports (header preservation)
+   - Between groups
+   - After imports
+   - Leading blanks removal
+   - File with only imports (no code after)
+
+5. **Edge Cases** (10-15 tests)
+   - Empty file
+   - No imports
+   - Only string imports
+   - Only default imports
+   - Only namespace imports
+   - Mixed import types
+   - Long import lines (multiline wrapping)
+   - Path aliases
+   - removeTrailingIndex behavior
+   - CRLF vs LF line endings
+
+6. **Configuration** (10-15 tests)
+   - disableImportsSorting: true
+   - disableImportRemovalOnOrganize: true
+   - organizeSortsByFirstSpecifier: true
+   - removeTrailingIndex: true/false
+   - Different quote styles
+   - Different semicolon settings
+   - Different brace spacing
+
+7. **Real-World Scenarios** (10-15 tests)
+   - Angular component
+   - React component
+   - NestJS controller
+   - Vue component
+   - Mixed framework imports
+   - Monorepo scenarios
+
+**File Structure for New Tests:**
+- `test-cases/02-merging.test.ts`
+- `test-cases/03-grouping.test.ts`
+- `test-cases/04-removal.test.ts`
+- `test-cases/05-blank-lines.test.ts`
+- `test-cases/06-edge-cases.test.ts`
+- `test-cases/07-configuration.test.ts`
+- `test-cases/08-real-world.test.ts`
+
+**Approach:**
+- Use same pattern as 01-sorting.test.ts
+- Each test: input string → old result → new result → assert equal
+- Document expected differences with comments
+- Mark bugs with 🐛 emoji and detailed explanation
+
+**Command to Continue:**
+```bash
+cd comparison-test-harness
+npm test  # To run current tests
+npm run watch-tests  # To watch for changes while developing
+```
+
+**Status**: Test harness infrastructure complete and working. Ready for test case expansion.
+
+---
+
+**Last Updated**: 2025-10-08
+**Status**: 🎉 Test Harness Complete (14✅/1🐛) | Ready to commit | Next: Create 85+ more test cases
+**Bug Found**: ignoredFromRemoval skips specifier sorting (needs fix in src/imports/import-manager.ts:270)
+**Next Session**: Expand to 100+ test cases covering all scenarios listed above
+
