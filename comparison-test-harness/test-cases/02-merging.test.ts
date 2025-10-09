@@ -214,4 +214,52 @@ const z = A;
 
     assert.equal(newResult, oldResult, 'Mixed import types from same module');
   });
+
+  test('028. Real Angular example - merges @angular/core imports', async () => {
+    const input = `import { UserDetail } from './components/user-detail';
+import { Component } from '@angular/core';
+import { UnusedService } from './services/unused';
+import { Router } from '@angular/router';
+import { map, switchMap } from 'rxjs/operators';
+import { OnInit, inject } from '@angular/core';
+import { BookList } from './components/book-list';
+import { of } from 'rxjs';
+
+// Using some imports
+const component = Component;
+const init = OnInit;
+const inj = inject;
+const router = Router;
+const observable = of(1);
+const ops = [map, switchMap];
+const book = BookList;
+const user = UserDetail;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
+
+    console.log('\n=== TEST 028: Real Angular example ===');
+    console.log('OLD OUTPUT:');
+    console.log(oldResult);
+    console.log('\nNEW OUTPUT:');
+    console.log(newResult);
+    console.log('===\n');
+
+    // The expected output based on user's specification
+    const expectedImports = `import { Component, inject, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+
+import { BookList } from './components/book-list';
+import { UserDetail } from './components/user-detail';`;
+
+    assert.ok(oldResult.includes("Component, inject, OnInit"),
+      'Old extension should merge @angular/core imports and sort specifiers');
+    assert.ok(newResult.includes("Component, inject, OnInit"),
+      'New extension should merge @angular/core imports and sort specifiers');
+
+    assert.equal(newResult, oldResult, 'Both extensions should produce identical output');
+  });
 });

@@ -106,6 +106,10 @@ class MockImportsConfig extends ImportsConfig {
     return this.overrides.get('disableImportRemovalOnOrganize') ?? false;
   }
 
+  public mergeImportsFromSameModule(_resource: Uri): boolean {
+    return this.overrides.get('mergeImportsFromSameModule') ?? true;
+  }
+
   public disableImportsSorting(_resource: Uri): boolean {
     return this.overrides.get('disableImportsSorting') ?? false;
   }

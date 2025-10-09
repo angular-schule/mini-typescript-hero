@@ -47,6 +47,12 @@ export class ImportsConfig {
       .get('disableImportRemovalOnOrganize', false);
   }
 
+  public mergeImportsFromSameModule(resource: Uri): boolean {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('mergeImportsFromSameModule', true);
+  }
+
   public disableImportsSorting(resource: Uri): boolean {
     return workspace
       .getConfiguration(sectionKey, resource)

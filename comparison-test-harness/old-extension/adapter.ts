@@ -188,7 +188,7 @@ class MockImportsConfig extends ImportsConfig {
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return true; // Disable removal since typescript-parser doesn't detect usage in test environment
+    return false; // Enable merging and removal - parser correctly detects usages
   }
 
   disableImportsSorting(_resource: Uri): boolean {

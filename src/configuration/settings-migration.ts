@@ -117,6 +117,35 @@ async function performMigration(): Promise<number> {
         blankLinesInspect?.workspaceFolderValue === undefined) {
       await newConfig.update('blankLinesAfterImports', 'legacy', ConfigurationTarget.Global);
     }
+
+    // Set mergeImportsFromSameModule based on old disableImportRemovalOnOrganize setting
+    // (In old TypeScript Hero, merging only happened when removal was enabled)
+    // This preserves 100% backward compatibility:
+    // - If they had disableImportRemovalOnOrganize: true → merging was OFF → set mergeImportsFromSameModule: false
+    // - If they had disableImportRemovalOnOrganize: false (or default) → merging was ON → set mergeImportsFromSameModule: true
+    const disableRemovalInspect = newConfig.inspect('disableImportRemovalOnOrganize');
+    const mergeImportsInspect = newConfig.inspect('mergeImportsFromSameModule');
+
+    // Only set if mergeImportsFromSameModule hasn't been explicitly configured
+    if (mergeImportsInspect?.globalValue === undefined &&
+        mergeImportsInspect?.workspaceValue === undefined &&
+        mergeImportsInspect?.workspaceFolderValue === undefined) {
+
+      // Check the migrated value of disableImportRemovalOnOrganize at each level
+      if (disableRemovalInspect?.workspaceFolderValue !== undefined) {
+        const shouldMerge = !disableRemovalInspect.workspaceFolderValue;
+        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.WorkspaceFolder);
+      } else if (disableRemovalInspect?.workspaceValue !== undefined) {
+        const shouldMerge = !disableRemovalInspect.workspaceValue;
+        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.Workspace);
+      } else if (disableRemovalInspect?.globalValue !== undefined) {
+        const shouldMerge = !disableRemovalInspect.globalValue;
+        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.Global);
+      } else {
+        // Default case: if no disableImportRemovalOnOrganize was set, they had merging enabled
+        await newConfig.update('mergeImportsFromSameModule', true, ConfigurationTarget.Global);
+      }
+    }
   }
 
   return migratedCount;

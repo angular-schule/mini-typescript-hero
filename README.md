@@ -113,6 +113,11 @@ If the old TypeScript Hero extension is still active, you'll see a reminder in t
 
 **Blank Line Behavior:** For migrated users, `blankLinesAfterImports` is automatically set to `"legacy"` to preserve the original TypeScript Hero behavior. New users get `"one"` by default (ESLint standard: 1 blank line after imports). You can change this setting anytime in your configuration.
 
+**Import Merging Behavior:** The migration intelligently configures `mergeImportsFromSameModule` based on your old settings:
+- If you had `disableImportRemovalOnOrganize: true`, merging is disabled (`false`) to preserve the exact old behavior
+- If you had `disableImportRemovalOnOrganize: false` (or default), merging is enabled (`true`) as before
+- This preserves 100% backward compatibility with your existing workflow
+
 ### No Old Settings?
 
 If you've never used TypeScript Hero before, the migration simply won't run — no action needed!
@@ -164,6 +169,9 @@ Control spacing after imports with `blankLinesAfterImports`:
   // Disable removal of unused imports
   "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
 
+  // Merge imports from same module (e.g., two '@angular/core' imports become one)
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+
   // Sort by first imported name instead of module path
   "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
 
@@ -177,6 +185,38 @@ Control spacing after imports with `blankLinesAfterImports`:
   "miniTypescriptHero.imports.multiLineTrailingComma": true
 }
 ```
+
+#### Import Merging vs. Import Removal
+
+**`mergeImportsFromSameModule`** (default: `true`) combines multiple import statements from the same module into a single statement:
+
+```typescript
+// Before (mergeImportsFromSameModule: false):
+import { Component } from '@angular/core';
+import { OnInit } from '@angular/core';
+
+// After (mergeImportsFromSameModule: true):
+import { Component, OnInit } from '@angular/core';
+```
+
+**`disableImportRemovalOnOrganize`** controls whether unused imports/specifiers are deleted:
+
+```typescript
+// Code file only uses 'Component', not 'OnInit'
+import { Component, OnInit } from '@angular/core';
+
+// With disableImportRemovalOnOrganize: false (default):
+import { Component } from '@angular/core';  // OnInit removed
+
+// With disableImportRemovalOnOrganize: true:
+import { Component, OnInit } from '@angular/core';  // OnInit kept
+```
+
+**These settings are independent:**
+- You can merge imports while keeping unused ones
+- You can disable merging while removing unused ones
+- New users get merging enabled (modern best practice)
+- Migrated users preserve their original behavior
 
 ### Import Grouping
 

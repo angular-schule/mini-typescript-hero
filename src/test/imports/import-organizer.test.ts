@@ -154,6 +154,10 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['disableImportRemovalOnOrganize'] ?? false;
   }
 
+  public mergeImportsFromSameModule(_resource: Uri): boolean {
+    return this.mockConfig['mergeImportsFromSameModule'] ?? true;
+  }
+
   public disableImportsSorting(_resource: Uri): boolean {
     return this.mockConfig['disableImportsSorting'] ?? false;
   }

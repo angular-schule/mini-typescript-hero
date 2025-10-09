@@ -246,6 +246,10 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
   }
 
+  mergeImportsFromSameModule(_resource: Uri): boolean {
+    return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
+  }
+
   disableImportsSorting(_resource: Uri): boolean {
     return this.mockConfig.get('disableImportsSorting') ?? false;
   }
@@ -1092,9 +1096,9 @@ MyHelper;
     assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
   });
 
-  test('41. Imports from same module are always merged', () => {
+  test('41. Imports from same module are merged by default', () => {
     // Scenario: Multiple imports from the same library
-    // Imports are ALWAYS merged (matches original TypeScript Hero behavior)
+    // With mergeImportsFromSameModule: true (default for new users)
     const content = `import { A } from './lib';
 import { B } from './lib';
 
@@ -1112,6 +1116,54 @@ console.log(A, B);
     assert.ok(lines[0].includes('A'), 'Merged import should have A');
     assert.ok(lines[0].includes('B'), 'Merged import should have B');
     assert.ok(lines[0].includes('{ A, B }'), 'Should be merged as { A, B }');
+  });
+
+  test('42. Merging can be disabled with mergeImportsFromSameModule: false', () => {
+    // Scenario: Multiple imports from same library with merging disabled
+    // With mergeImportsFromSameModule: false (for migrated users who had disableImportRemovalOnOrganize: true)
+    const content = `import { A } from './lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const customConfig = new MockImportsConfig();
+    customConfig.setConfig('mergeImportsFromSameModule', false);
+    const manager = new ImportManager(doc, customConfig, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should NOT merge - keep as separate imports
+    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
+    assert.ok(lines[0].includes('A'), 'First import should have A');
+    assert.ok(lines[1].includes('B'), 'Second import should have B');
+  });
+
+  test('43. Merging and removal are independent settings', () => {
+    // Scenario: Merging disabled but removal enabled
+    // Show that mergeImportsFromSameModule and disableImportRemovalOnOrganize are independent
+    const content = `import { A, Unused } from './lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+    const doc = new MockTextDocument('test.ts', content);
+    const customConfig = new MockImportsConfig();
+    customConfig.setConfig('mergeImportsFromSameModule', false);
+    customConfig.setConfig('disableImportRemovalOnOrganize', false);
+    const manager = new ImportManager(doc, customConfig, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+    // Should NOT merge but SHOULD remove unused specifiers
+    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (not merged)');
+    assert.ok(lines[0].includes('A'), 'First import should have A');
+    assert.ok(lines[1].includes('B'), 'Second import should have B');
+    assert.ok(!result.includes('Unused'), 'Unused specifier should be removed');
   });
 
   test('44. Merge default and named imports from same module', () => {

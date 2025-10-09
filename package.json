@@ -128,6 +128,12 @@
           "description": "Defines if any imports should be removed at all on an organize imports command.",
           "scope": "resource"
         },
+        "miniTypescriptHero.imports.mergeImportsFromSameModule": {
+          "type": "boolean",
+          "default": true,
+          "description": "Merge multiple import statements from the same module into a single import. For example, 'import { A } from \"./lib\"' and 'import { B } from \"./lib\"' become 'import { A, B } from \"./lib\"'. This setting is independent from removal behavior.",
+          "scope": "resource"
+        },
         "miniTypescriptHero.imports.ignoredFromRemoval": {
           "type": "array",
           "items": {
