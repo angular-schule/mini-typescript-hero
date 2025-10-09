@@ -17,6 +17,7 @@
 		"node_modules",
 		".vscode-test",
 		"manual-test-cases",
-		"old-typescript-hero"
+		"old-typescript-hero",
+		"comparison-test-harness"
 	]
 }

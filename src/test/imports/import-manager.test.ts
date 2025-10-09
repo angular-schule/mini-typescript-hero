@@ -2552,4 +2552,37 @@ console.log(used);
     assert.ok(editText2.includes('{\r\n'), 'Multiline imports should use CRLF for line breaks');
     config.setConfig('multiLineWrapThreshold', 125); // Reset
   });
+
+  test('89. ignoredFromRemoval: Specifiers must be sorted', () => {
+    // BUG FIX (Session 13): ignoredFromRemoval imports were keeping specifiers in original order
+    // ROOT CAUSE: Line 270-272 in import-manager.ts pushed ignored imports directly without sorting
+    // EXPECTED: Even ignored imports should have alphabetically sorted specifiers for consistency
+    // WHY: Formatting should be consistent regardless of removal rules
+
+    const content = `import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+const x = useState;
+const y = useEffect;
+const z = useCallback;
+const w = useMemo;
+const r = React;
+`;
+
+    config.setConfig('ignoredFromRemoval', ['react']);
+    const doc = new MockTextDocument('test.tsx', content);
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+    const result = applyEdits(content, edits);
+
+    // CRITICAL: Specifiers must be in alphabetical order
+    assert.ok(result.includes("import React, { useCallback, useEffect, useMemo, useState } from 'react';"),
+      'Specifiers in ignoredFromRemoval imports must be sorted alphabetically');
+
+    // Verify the order is correct: useCallback < useEffect < useMemo < useState
+    const importMatch = result.match(/import React, \{ ([^}]+) \} from 'react'/);
+    assert.ok(importMatch, 'Should find React import');
+    const specifiers = importMatch![1].split(', ');
+    assert.deepStrictEqual(specifiers, ['useCallback', 'useEffect', 'useMemo', 'useState'],
+      'Specifiers must be in strict alphabetical order');
+  });
 });

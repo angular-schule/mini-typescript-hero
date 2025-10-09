@@ -268,7 +268,13 @@ export class ImportManager {
       for (const imp of this.imports) {
         // Check if import is in the ignore list
         if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName)) {
-          keep.push(imp);
+          // Still need to sort specifiers for NamedImport to maintain consistent formatting
+          if (imp instanceof NamedImport && imp.specifiers.length > 0) {
+            const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
+            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias));
+          } else {
+            keep.push(imp);
+          }
           continue;
         }
 
