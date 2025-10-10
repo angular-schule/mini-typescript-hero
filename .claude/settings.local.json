@@ -20,7 +20,8 @@
       "Bash(git rm:*)",
       "Bash(rm:*)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []
