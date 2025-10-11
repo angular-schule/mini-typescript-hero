@@ -6,7 +6,6 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
-import { OLD_EXTENSION_COMPATIBLE_CONFIG, mergeConfig } from './shared-config';
 
 suite('Sorting', () => {
   /**
@@ -24,8 +23,8 @@ const y = inject;
 const z: OnInit = null as any;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     // First, let's see what the old extension actually produces
     console.log('\n=== TEST 001: Mixed-case specifiers ===');
@@ -111,9 +110,8 @@ const x = ant;
 const y = zoo;
 `;
 
-    const config = mergeConfig({ organizeSortsByFirstSpecifier: true });
-    const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const oldResult = await organizeImportsOld(input, { organizeSortsByFirstSpecifier: true });
+    const newResult = organizeImportsNew(input, { organizeSortsByFirstSpecifier: true });
 
     console.log('\n=== TEST 006: Sort by first specifier ===');
     console.log('OLD OUTPUT:');
@@ -233,9 +231,8 @@ const y = m;
 const w = z;
 `;
 
-    const config = mergeConfig({ disableImportsSorting: true });
-    const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const oldResult = await organizeImportsOld(input, { disableImportsSorting: true });
+    const newResult = organizeImportsNew(input, { disableImportsSorting: true });
 
     assert.equal(newResult, oldResult, 'Should preserve order when sorting disabled');
   });

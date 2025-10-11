@@ -5867,3 +5867,143 @@ if (mergeImportsFromSameModule) {
 **Session**: 16 (Confusion Session)
 **Status**: Need to restart with correct context
 **Next**: Read and audit actual documentation, not test implementation
+
+
+
+
+---
+
+## Session 17: 2025-10-11 - Legacy Mode Blank Line Bug Fixing
+
+### Completed Tasks
+
+1. **Fixed Critical applyEdits Bug** (both adapters)
+   - Bug: When `TextEdit.insert()` had newlines in `newText` but `startLine === endLine`, the function treated it as single-line edit
+   - Result: Newlines were embedded into single string element instead of split into array
+   - Fix: Added check `!edit.newText.includes('\n')` to condition in both `old-extension/adapter.ts` and `new-extension/adapter.ts`
+   - This was causing the old extension adapter to produce incorrect output with excessive blank lines
+
+2. **Discovered Old Extension's Blank Line Formula**
+   - Tested with multiple scenarios (1-10 imports, with/without groups)
+   - Pattern found:
+     - **Single group (no separators)**: ALWAYS 3 blank lines after imports
+     - **Multiple groups**: `(import_lines + group_separators + 3)` blank lines
+   - Example: 6 imports + 1 separator = 7, so 7 + 3 = 10 blank lines
+
+3. **Fixed Header Blank Line Removal Bug**
+   - Old extension REMOVES blank line between header comments and imports in legacy mode
+   - Modified `generateTextEdits()` to:
+     - Always delete from line 0 when in legacy mode with header
+     - Skip re-adding `blankLinesBefore` when in legacy mode
+   - This ensures legacy mode exactly replicates old extension's buggy behavior
+
+4. **Implemented New Legacy Mode Formula**
+   - Updated `calculateBlankLinesAfter()` in `src/imports/import-manager.ts`
+   - Logic:
+     ```typescript
+     if (groupsWithImports <= 1) {
+       return 3;  // Single group: always 3 blanks
+     } else {
+       const groupSeparators = groupsWithImports - 1;
+       return totalImportLines + groupSeparators + 3;  // Multiple groups
+     }
+     ```
+
+### Current Status
+
+**Comparison Test Harness**: 46/129 passing (improved from 6/129) ✅
+- Major improvement but still 83 tests failing
+- Many sorting tests now pass
+- Real-world scenario tests still failing
+
+**Main Extension Tests**: 206/215 passing (9 legacy tests broken) ⚠️
+- Tests TC-030 through TC-038 and TC-320 failing
+- These tests were expecting the OLD legacy mode behavior (preserve blanks based on `blankLinesBefore`)
+- Now they fail because legacy mode uses the NEW formula that matches actual old extension
+
+### Files Modified
+
+1. **comparison-test-harness/old-extension/adapter.ts** (lines 167-206)
+   - Fixed `applyEdits()` function to handle newlines in insert edits correctly
+
+2. **comparison-test-harness/new-extension/adapter.ts** (lines 260-299)
+   - Fixed `applyEdits()` function (same fix as old adapter)
+
+3. **src/imports/import-manager.ts**
+   - Lines 478-496: Added logic to always delete from line 0 in legacy mode with header
+   - Lines 522-545: Skip re-adding `blankLinesBefore` in legacy mode
+   - Lines 737-762: Completely rewrote `calculateBlankLinesAfter()` legacy case with new formula
+
+### Temporary Files Created
+
+- **comparison-test-harness/test-cases/99-debug.test.ts** - DELETED
+  - Was temporary test file for discovering blank line pattern
+  - Successfully discovered pattern and deleted before committing
+
+### Issues & Blockers
+
+1. **Main Extension Legacy Tests Broken**
+   - 9 tests in blank-lines.test.ts failing
+   - Tests expect OLD legacy behavior: `existingBlankLinesAfter` or formula based on `blankLinesBefore`
+   - Now legacy mode uses NEW formula: single group = 3, multiple = lines+seps+3
+   - **Decision needed**: Should we update these tests to match actual old extension, or is the formula still wrong?
+
+2. **Comparison Tests Still Failing (83/129)**
+   - Real-world tests (101-110) failing - wrong blank count
+   - Some config tests failing
+   - Multiline/formatting tests failing
+   - Need to investigate if formula is incomplete or if there are other differences
+
+### Open Questions
+
+1. **Are there edge cases in the blank line formula?**
+   - Current formula works for simple cases but 83 comparison tests still fail
+   - May need to account for: headers, no code after imports, string imports, etc.
+
+2. **Should main extension tests be updated?**
+   - Current main tests expect "smart" legacy behavior
+   - Actual old extension has "buggy" behavior
+   - Which should legacy mode replicate?
+
+### Next Steps
+
+1. **IMMEDIATE**: Investigate why 83 comparison tests still fail
+   - Check test 101 specifically (Angular component) - seems to be getting 4 blanks instead of 6
+   - May need to add debug output to see what's being counted
+
+2. **Fix or Update Main Extension Tests**
+   - Either fix the formula to pass both test suites, or
+   - Update main extension tests to expect actual old extension behavior
+
+3. **Run Full Test Suite**
+   - After fixes, verify both test suites pass:
+     - Main extension: 215/215 tests ✅
+     - Comparison harness: 129/129 tests ✅
+
+### Technical Decisions Made
+
+1. **Legacy mode now replicates exact old extension bugs**
+   - Previously tried to be "smart" about blank lines
+   - Now exactly replicates buggy behavior including:
+     - Removing blank between header and imports
+     - Adding too many blanks after imports (formula-based)
+   - This is correct approach for backward compatibility
+
+2. **Fixed at adapter level, not just config**
+   - The applyEdits bug was in both adapters
+   - Could have been in VSCode mock, but fixing in adapters is more explicit
+
+### Key Insights
+
+1. **Old extension has ALWAYS 3 blanks for single group**
+   - Doesn't matter if 1 import or 100 imports in that group
+   - Fixed number, not formula-based
+
+2. **Formula only applies with multiple groups**
+   - When imports are split across groups (Modules vs Workspace)
+   - Then it counts actual imports + separators + 3
+
+3. **The +3 is consistent**
+   - Whether single or multiple groups, there's always a +3
+   - This suggests the old extension has a base of 3, then adds more for grouped imports
+

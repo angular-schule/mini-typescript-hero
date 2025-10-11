@@ -6,7 +6,6 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
-import { OLD_EXTENSION_COMPATIBLE_CONFIG, mergeConfig } from './shared-config';
 
 suite('Configuration', () => {
   test('087. Single quotes (default)', async () => {
@@ -15,8 +14,8 @@ suite('Configuration', () => {
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 087: Quote style ===');
     console.log('OLD OUTPUT:');
@@ -34,7 +33,7 @@ const x = A;
 const x = A;
 `;
 
-    const config = mergeConfig({ stringQuoteStyle: '"' });
+    const config = { stringQuoteStyle: '"' };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -47,8 +46,8 @@ const x = A;
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should add semicolons by default');
   });
@@ -59,7 +58,7 @@ const x = A;
 const x = A;
 `;
 
-    const config = mergeConfig({ insertSemicolons: false });
+    const config = { insertSemicolons: false };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -79,8 +78,8 @@ const x = A;
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should add spaces in braces by default');
   });
@@ -91,7 +90,7 @@ const x = A;
 const x = A;
 `;
 
-    const config = mergeConfig({ insertSpaceBeforeAndAfterImportBraces: false });
+    const config = { insertSpaceBeforeAndAfterImportBraces: false };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -113,7 +112,7 @@ const b = VeryLongName2;
 const c = VeryLongName3;
 `;
 
-    const config = mergeConfig({ multiLineWrapThreshold: 40 });
+    const config = { multiLineWrapThreshold: 40 };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -135,10 +134,10 @@ const b = VeryLongName2;
 const c = VeryLongName3;
 `;
 
-    const config = mergeConfig({
+    const config = {
       multiLineWrapThreshold: 40,
       multiLineTrailingComma: true,
-    });
+    };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -153,10 +152,10 @@ const b = VeryLongName2;
 const c = VeryLongName3;
 `;
 
-    const config = mergeConfig({
+    const config = {
       multiLineWrapThreshold: 40,
       multiLineTrailingComma: false,
-    });
+    };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -177,11 +176,11 @@ const x = A;
 const y = B;
 `;
 
-    const config = mergeConfig({
+    const config = {
       stringQuoteStyle: '"',
       insertSemicolons: false,
       insertSpaceBeforeAndAfterImportBraces: false,
-    });
+    };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -203,7 +202,7 @@ const x = A;
 const y = Z;
 `;
 
-    const config = mergeConfig({ disableImportsSorting: true });
+    const config = { disableImportsSorting: true };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -217,7 +216,7 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const config = mergeConfig({ disableImportRemovalOnOrganize: true });
+    const config = { disableImportRemovalOnOrganize: true };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -232,7 +231,7 @@ const x = ant;
 const y = zoo;
 `;
 
-    const config = mergeConfig({ organizeSortsByFirstSpecifier: true });
+    const config = { organizeSortsByFirstSpecifier: true };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -254,13 +253,13 @@ const x = ant;
 const y = zoo;
 `;
 
-    const config = mergeConfig({
+    const config = {
       stringQuoteStyle: '"',
       insertSemicolons: false,
       insertSpaceBeforeAndAfterImportBraces: true,
       organizeSortsByFirstSpecifier: true,
       disableImportRemovalOnOrganize: true,
-    });
+    };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -283,8 +282,8 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should remove trailing /index by default');
   });
@@ -297,7 +296,7 @@ const x = A;
 const y = B;
 `;
 
-    const config = mergeConfig({ removeTrailingIndex: false });
+    const config = { removeTrailingIndex: false };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -312,8 +311,8 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, '/index removal should happen before merging');
   });
@@ -326,7 +325,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const config = mergeConfig({ ignoredFromRemoval: [] });
+    const config = { ignoredFromRemoval: [] };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -341,7 +340,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const config = mergeConfig({ ignoredFromRemoval: ['react', 'vue'] });
+    const config = { ignoredFromRemoval: ['react', 'vue'] };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -356,7 +355,7 @@ const y = useState;
 const z = useEffect;
 `;
 
-    const config = mergeConfig({ ignoredFromRemoval: ['react'] });
+    const config = { ignoredFromRemoval: ['react'] };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 

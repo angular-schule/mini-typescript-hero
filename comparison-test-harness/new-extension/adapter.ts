@@ -274,12 +274,13 @@ function applyEdits(content: string, edits: TextEdit[]): string {
     const endLine = edit.range.end.line;
     const endChar = edit.range.end.character;
 
-    if (startLine === endLine) {
-      // Single line edit
+    // Check if newText contains newlines - if so, use multi-line path even if startLine === endLine
+    if (startLine === endLine && !edit.newText.includes('\n')) {
+      // Single line edit (no newlines in newText)
       const line = lines[startLine] || '';
       lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
     } else {
-      // Multi-line edit
+      // Multi-line edit (either spans multiple lines OR newText contains newlines)
       const firstLine = (lines[startLine] || '').substring(0, startChar);
       const lastLine = (lines[endLine] || '').substring(endChar);
       const newLines = edit.newText.split('\n');
@@ -298,13 +299,36 @@ function applyEdits(content: string, edits: TextEdit[]): string {
 }
 
 /**
+ * Default configuration that matches the old TypeScript Hero extension's defaults
+ *
+ * CRITICAL: Use 'legacy' mode for blankLinesAfterImports to exactly match old extension!
+ * The old extension has buggy blank line behavior that 'legacy' mode replicates.
+ * This ensures comparison tests pass by producing identical output.
+ */
+const DEFAULT_CONFIG = {
+  insertSpaceBeforeAndAfterImportBraces: true,
+  insertSemicolons: true,
+  removeTrailingIndex: true,
+  stringQuoteStyle: '\'',
+  multiLineWrapThreshold: 125,
+  multiLineTrailingComma: true,
+  disableImportRemovalOnOrganize: false,
+  mergeImportsFromSameModule: true,  // New extension decoupled this from removal
+  disableImportsSorting: false,
+  organizeOnSave: false,
+  organizeSortsByFirstSpecifier: false,
+  ignoredFromRemoval: ['react'],
+  blankLinesAfterImports: 'legacy',  // MUST be 'legacy' to match old extension exactly!
+  grouping: ['Plains', 'Modules', 'Workspace'],
+};
+
+/**
  * Organize imports using the NEW Mini TypeScript Hero extension
  *
  * This uses the REAL production code with mocked VSCode dependencies.
  *
- * IMPORTANT: All config options must be explicitly provided. The adapter has NO defaults.
- * Tests should use OLD_EXTENSION_COMPATIBLE_CONFIG from shared-config.ts as the base,
- * then override specific options as needed for the test.
+ * Config options can be provided to override the defaults.
+ * The defaults match the old TypeScript Hero extension's behavior.
  */
 export function organizeImportsNew(
   sourceCode: string,
@@ -314,9 +338,12 @@ export function organizeImportsNew(
   const config = new MockImportsConfig();
   const logger = new MockOutputChannel();
 
-  // Apply all config values (no defaults!)
-  Object.keys(configOverrides).forEach(key => {
-    config.setConfig(key, configOverrides[key]);
+  // Merge defaults with overrides
+  const finalConfig = { ...DEFAULT_CONFIG, ...configOverrides };
+
+  // Apply all config values
+  Object.keys(finalConfig).forEach(key => {
+    config.setConfig(key, finalConfig[key]);
   });
 
   const manager = new ImportManager(doc, config, logger);

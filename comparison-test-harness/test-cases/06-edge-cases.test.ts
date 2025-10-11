@@ -6,14 +6,13 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
-import { OLD_EXTENSION_COMPATIBLE_CONFIG, mergeConfig } from './shared-config';
 
 suite('Edge Cases', () => {
   test('071. Empty file', async () => {
     const input = ``;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Empty file should remain empty');
   });
@@ -23,8 +22,8 @@ suite('Edge Cases', () => {
 const y = 2;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'File without imports should remain unchanged');
   });
@@ -34,8 +33,8 @@ const y = 2;
 import 'reflect-metadata';
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     // Handle EOF blank line difference
     const oldTrimmed = oldResult.replace(/\n\n$/, '\n');
@@ -50,8 +49,8 @@ const x = Lib1;
 const y = Lib2;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Only default imports should be sorted');
   });
@@ -64,8 +63,8 @@ const x = Lib1;
 const y = Lib2;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Only namespace imports should be sorted');
   });
@@ -80,8 +79,8 @@ const d = VeryLongSpecifierName4;
 const e = VeryLongSpecifierName5;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 076: Long import ===');
     console.log('OLD OUTPUT:');
@@ -103,8 +102,8 @@ const y = Service;
 const z = Utils;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 077: Path aliases ===');
     console.log('OLD OUTPUT:');
@@ -124,8 +123,8 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 078: Remove /index ===');
     console.log('OLD OUTPUT:');
@@ -145,7 +144,7 @@ const x = A;
 const y = B;
 `;
 
-    const config = mergeConfig({ removeTrailingIndex: false });
+    const config = { removeTrailingIndex: false };
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
 
@@ -159,8 +158,8 @@ const x = A;
 const y = import('./dynamic');
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Dynamic import() should not be confused with static imports');
   });
@@ -172,8 +171,8 @@ const x = A;
 const url = import.meta.url;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'import.meta should not be confused with imports');
   });
@@ -185,8 +184,8 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 082: Empty specifiers ===');
     console.log('OLD OUTPUT:');
@@ -207,8 +206,8 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 083: Comments between ===');
     console.log('OLD OUTPUT:');
@@ -227,8 +226,8 @@ const x = A;
 const str = \`import { B } from 'fake'\`;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Template strings with import keyword should not be confused');
   });
@@ -240,8 +239,8 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 085: Triple-slash ===');
     console.log('OLD OUTPUT:');
@@ -261,8 +260,8 @@ const x = MyValue;
 let y: MyType;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 086: Type-only import ===');
     console.log('OLD OUTPUT:');
@@ -282,8 +281,8 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Shebang should be preserved at line 1');
   });
@@ -295,8 +294,8 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'use strict (single quotes) should be preserved');
   });
@@ -308,8 +307,8 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'use strict (double quotes) should be preserved');
   });
@@ -322,8 +321,8 @@ const x = Lib;
 const y = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 120: import = require() ===');
     console.log('OLD OUTPUT:');
@@ -345,8 +344,8 @@ class Component {
 const service = Injectable;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 121: Local shadowing ===');
     console.log('OLD OUTPUT:');
@@ -366,8 +365,8 @@ const doubled = map(arr, x => x * 2);
 const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 122: Property access ===');
     console.log('OLD OUTPUT:');

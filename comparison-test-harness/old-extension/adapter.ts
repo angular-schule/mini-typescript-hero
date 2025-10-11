@@ -280,12 +280,13 @@ function applyEdits(content: string, edits: TextEdit[]): string {
     const endLine = edit.range.end.line;
     const endChar = edit.range.end.character;
 
-    if (startLine === endLine) {
-      // Single line edit
+    // Check if newText contains newlines - if so, use multi-line path even if startLine === endLine
+    if (startLine === endLine && !edit.newText.includes('\n')) {
+      // Single line edit (no newlines in newText)
       const line = lines[startLine] || '';
       lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
     } else {
-      // Multi-line edit
+      // Multi-line edit (either spans multiple lines OR newText contains newlines)
       const firstLine = (lines[startLine] || '').substring(0, startChar);
       const lastLine = (lines[endLine] || '').substring(endChar);
       const newLines = edit.newText.split('\n');

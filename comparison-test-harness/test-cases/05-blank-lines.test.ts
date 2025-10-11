@@ -10,7 +10,6 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
-import { OLD_EXTENSION_COMPATIBLE_CONFIG } from './shared-config';
 
 suite('Blank Lines', () => {
   test('058. One blank line after imports (default for old)', async () => {
@@ -20,7 +19,7 @@ suite('Blank Lines', () => {
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 058: Blank lines (legacy mode) ===');
@@ -41,7 +40,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 059: Blank before imports ===');
@@ -62,7 +61,7 @@ const x = Component;
 const y = MyService;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 060: Between groups ===');
@@ -83,7 +82,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'Leading blank lines should be removed');
@@ -97,7 +96,7 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     // Old may add trailing blank, new doesn't
@@ -113,7 +112,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 063: Shebang ===');
@@ -133,7 +132,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'use strict should be preserved before imports');
@@ -147,7 +146,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'Copyright header should be preserved');
@@ -162,7 +161,7 @@ const x = A;
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 066: Multiple blanks ===');
@@ -181,7 +180,7 @@ const x = A;
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'No blank line before imports when no header');
@@ -196,7 +195,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 068: Block comment ===');
@@ -218,7 +217,7 @@ const x = Component;
 const y = MyService;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 069: Three groups ===');
@@ -239,7 +238,7 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
     const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 070: After header ===');

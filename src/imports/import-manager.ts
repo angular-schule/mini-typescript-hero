@@ -471,15 +471,29 @@ export class ImportManager {
     const finalBlankLinesAfter = hasCodeAfter ? this.calculateBlankLinesAfter(
       existingBlankLinesAfter,
       blankLinesBefore,
-      hasHeader
+      hasHeader,
+      importGroups
     ) : 0;
 
     // Calculate deletion range:
     // - If no header: delete from line 0 (remove any leading blanks)
     // - If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
     // - If header WITHOUT leading blanks: delete from first import line (preserve header + blanks after header)
+    // - EXCEPTION: In 'legacy' mode with header, ALWAYS delete from line 0 (to remove blank between header/imports)
     const firstImportLine = allImports[0].getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
-    const deletionStartLine = (hasHeader && !hasLeadingBlanks) ? firstImportLine : 0;
+    const blankLineMode = this.config.blankLinesAfterImports(this.document.uri);
+
+    let deletionStartLine: number;
+    if (blankLineMode === 'legacy' && hasHeader) {
+      // Legacy mode: always delete from line 0 to remove blank between header and imports
+      deletionStartLine = 0;
+    } else if (hasHeader && !hasLeadingBlanks) {
+      // Normal mode with header: preserve header and blanks after it
+      deletionStartLine = firstImportLine;
+    } else {
+      // No header or has leading blanks: delete from line 0
+      deletionStartLine = 0;
+    }
 
     const deletionRange = new Range(
       new Position(deletionStartLine, 0),
@@ -535,8 +549,9 @@ export class ImportManager {
           // Skip blank lines (they've been removed)
         }
 
-        // Add blank lines between header and imports if they existed
-        if (blankLinesBefore > 0) {
+        // In 'legacy' mode, DON'T add blank lines between header and imports
+        // (old extension bug: it removes those blank lines)
+        if (blankLineMode !== 'legacy' && blankLinesBefore > 0) {
           importText += this.eol.repeat(blankLinesBefore);
         }
       }
@@ -699,12 +714,13 @@ export class ImportManager {
    * - "one": Always exactly 1 blank line (Google/ESLint standard)
    * - "two": Always exactly 2 blank lines
    * - "preserve": Keep the existing number of blank lines
-   * - "legacy": Replicate old TypeScript Hero behavior (blanks before affect blanks after)
+   * - "legacy": Replicate old TypeScript Hero behavior (buggy algorithm that adds too many blanks)
    */
   private calculateBlankLinesAfter(
     existingBlankLinesAfter: number,
-    blankLinesBefore: number,
-    _hasHeader: boolean
+    _blankLinesBefore: number,
+    _hasHeader: boolean,
+    importGroups: ImportGroup[]
   ): number {
     const mode = this.config.blankLinesAfterImports(this.document.uri);
 
@@ -719,16 +735,30 @@ export class ImportManager {
         return existingBlankLinesAfter;
 
       case 'legacy': {
-        // Old TypeScript Hero formula:
-        // finalBlanks = blanksBefore + 1 (group separator) + max(blanksAfter - 1, 0)
+        // Old TypeScript Hero has a BUG where it adds way too many blank lines.
         //
-        // This caused blank lines to "move" from before imports to after imports
-        // due to how the insert position was calculated (it pointed to a blank line).
+        // Pattern discovered through testing:
+        // - If all imports in ONE group (no group separators): ALWAYS 3 blank lines
+        // - If multiple groups: (import_lines + group_separators + 3) blank lines
         //
-        // We replicate this behavior for backward compatibility:
-        const groupSeparatorBlanks = 1; // The blank line between import groups
-        const preservedAfterBlanks = Math.max(existingBlankLinesAfter - 1, 0);
-        return blankLinesBefore + groupSeparatorBlanks + preservedAfterBlanks;
+        // Count groups with imports
+        let groupsWithImports = 0;
+        let totalImportLines = 0;
+        for (const group of importGroups) {
+          if (group.imports.length > 0) {
+            groupsWithImports++;
+            totalImportLines += group.imports.length;
+          }
+        }
+
+        if (groupsWithImports <= 1) {
+          // Single group or no imports: always 3 blank lines
+          return 3;
+        } else {
+          // Multiple groups: count imports + separators
+          const groupSeparators = groupsWithImports - 1;
+          return totalImportLines + groupSeparators + 3;
+        }
       }
 
       default:

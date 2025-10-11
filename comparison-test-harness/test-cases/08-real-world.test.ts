@@ -6,7 +6,6 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
-import { OLD_EXTENSION_COMPATIBLE_CONFIG } from './shared-config';
 
 suite('Real-World', () => {
   test('101. Angular standalone component', async () => {
@@ -32,8 +31,8 @@ export class BooksComponent implements OnInit {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 101: Angular component ===');
     console.log('OLD OUTPUT:');
@@ -66,8 +65,8 @@ export function UserProfile({ userId }: { userId: string }) {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 102: React component ===');
     console.log('OLD OUTPUT:');
@@ -104,8 +103,8 @@ export class BooksController {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 103: NestJS controller ===');
     console.log('OLD OUTPUT:');
@@ -132,15 +131,15 @@ export default defineComponent({
 
     onMounted(async () => {
       books.value = await fetchBooks();
-    });
+    };
 
     return { books, bookCount };
   },
 });
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 104: Vue component ===');
     console.log('OLD OUTPUT:');
@@ -174,8 +173,8 @@ export class DataService {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 105: RxJS service ===');
     console.log('OLD OUTPUT:');
@@ -204,7 +203,7 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() };
     }
     const book = await bookService.create(req.body);
     res.json(book);
@@ -214,8 +213,8 @@ router.post(
 export default router;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Express route handler imports should be organized correctly');
   });
@@ -236,14 +235,14 @@ export class FileProcessor {
   async process(filePath: string): Promise<void> {
     const fullPath = path.resolve(filePath);
     const content = await readFile(fullPath, 'utf-8');
-    await axios.post(this.config.apiUrl, { content });
+    await axios.post(this.config.apiUrl, { content };
     this.logger.info('File processed');
   }
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 107: Node.js module ===');
     console.log('OLD OUTPUT:');
@@ -281,8 +280,8 @@ export class AppComponent {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 108: Monorepo ===');
     console.log('OLD OUTPUT:');
@@ -307,8 +306,8 @@ const z = createApp;
 const w = express;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Mixed framework imports should be sorted alphabetically');
   });
@@ -331,8 +330,8 @@ const e = E1; const f = F1; const g = G1; const h = H1;
 const l1 = Local1; const l2 = Local2; const l3 = Local3;
 `;
 
-    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
-    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const oldResult = await organizeImportsOld(input);
+    const newResult = organizeImportsNew(input);
 
     console.log('\n=== TEST 110: Large file ===');
     console.log('OLD OUTPUT:');
