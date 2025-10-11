@@ -6,6 +6,7 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
+import { OLD_EXTENSION_COMPATIBLE_CONFIG, mergeConfig } from './shared-config';
 
 suite('Grouping', () => {
   test('028. Plains (string imports) first', async () => {
@@ -15,8 +16,8 @@ import 'zone.js';
 const x = Component;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 028: Plains first ===');
     console.log('OLD OUTPUT:');
@@ -38,8 +39,8 @@ const y = map;
 const z = useState;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'External packages should be in Modules group');
   });
@@ -52,8 +53,8 @@ const x = MyService;
 const y = Utils;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Relative imports should be in Workspace group');
   });
@@ -65,8 +66,8 @@ import { Component } from '@angular/core';
 const x = Component;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 031: Plains → Modules ===');
     console.log('OLD OUTPUT:');
@@ -86,8 +87,8 @@ const x = Component;
 const y = MyService;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 032: Modules → Workspace ===');
     console.log('OLD OUTPUT:');
@@ -108,8 +109,8 @@ const x = Component;
 const y = MyService;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 033: All three groups ===');
     console.log('OLD OUTPUT:');
@@ -131,8 +132,8 @@ const y = Injectable;
 const z = map;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Scoped packages should be in Modules group');
   });
@@ -147,8 +148,8 @@ const y = m;
 const w = z;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Modules should be sorted alphabetically within group');
   });
@@ -163,8 +164,8 @@ const y = M;
 const z = Z;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Workspace imports should be sorted alphabetically');
   });
@@ -179,9 +180,9 @@ const y = map;
 const z = MyService;
 `;
 
-    const config = {
+    const config = mergeConfig({
       grouping: ['Plains', '/^@angular/', 'Modules', 'Workspace'],
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -204,9 +205,9 @@ const x = Component;
 const y = map;
 `;
 
-    const config = {
+    const config = mergeConfig({
       grouping: ['/^@angular/', 'Modules'],
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -220,9 +221,9 @@ const y = map;
 const x = Component;
 `;
 
-    const config = {
+    const config = mergeConfig({
       grouping: ['Plains', '/^never-matches/', 'Modules'],
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -238,8 +239,8 @@ import 'reflect-metadata';
 const x = Component;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Multiple string imports should all be in Plains group');
   });
@@ -252,8 +253,8 @@ const x = Service;
 const y = Utils;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 041: Path aliases ===');
     console.log('OLD OUTPUT:');
@@ -273,9 +274,9 @@ const x = A;
 const y = B;
 `;
 
-    const config = {
+    const config = mergeConfig({
       grouping: ['Plains', 'Remaining'],
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -302,8 +303,8 @@ const g = MyService;
 const h = MyComponent;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 043: Complex grouping ===');
     console.log('OLD OUTPUT:');

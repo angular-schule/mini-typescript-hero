@@ -11,15 +11,15 @@
  */
 
 import 'reflect-metadata';
-import { TypescriptParser, TypescriptCodeGenerator, File } from 'typescript-parser';
-import { Uri, Position, Range, TextDocument, TextEdit } from 'vscode';
+import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions } from 'typescript-parser';
+import { Uri, Position, Range, TextDocument, TextEdit, window, TextEditor } from 'vscode';
 import { ImportManager } from '../old-typescript-hero/src/imports/import-manager';
 import { Configuration } from '../old-typescript-hero/src/configuration';
 import { ImportsConfig } from '../old-typescript-hero/src/configuration/imports-config';
 import { TypescriptCodeGeneratorFactory } from '../old-typescript-hero/src/ioc-symbols';
 import { getScriptKind } from '../old-typescript-hero/src/utilities/utility-functions';
 import { ImportGroupSettingParser } from '../old-typescript-hero/src/imports/import-grouping/import-group-setting-parser';
-import { ImportGroup } from '../old-typescript-hero/src/imports/import-grouping';
+import { ImportGroup, KeywordImportGroup, RegexImportGroup, RemainImportGroup } from '../old-typescript-hero/src/imports/import-grouping';
 
 /**
  * Mock TextDocument for old extension
@@ -163,60 +163,108 @@ class MockConfiguration extends Configuration {
  * Mock ImportsConfig for old extension
  */
 class MockImportsConfig extends ImportsConfig {
+  private mockConfig: Map<string, any> = new Map();
+
+  setConfig(key: string, value: any): void {
+    this.mockConfig.set(key, value);
+  }
+
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
-    return true;
+    return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
   }
 
   insertSemicolons(_resource: Uri): boolean {
-    return true;
+    return this.mockConfig.get('insertSemicolons') ?? true;
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
-    return true;
+    return this.mockConfig.get('removeTrailingIndex') ?? true;
   }
 
   stringQuoteStyle(_resource: Uri): '"' | '\'' {
-    return '\'';
+    return this.mockConfig.get('stringQuoteStyle') ?? '\'';
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
-    return 125;
+    return this.mockConfig.get('multiLineWrapThreshold') ?? 125;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
-    return true;
+    return this.mockConfig.get('multiLineTrailingComma') ?? true;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return false; // Enable merging and removal - parser correctly detects usages
+    return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
-    return false;
+    return this.mockConfig.get('disableImportsSorting') ?? false;
   }
 
   organizeOnSave(_resource: Uri): boolean {
-    return false;
+    return this.mockConfig.get('organizeOnSave') ?? false;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
-    return false;
+    return this.mockConfig.get('organizeSortsByFirstSpecifier') ?? false;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
-    return ['react'];
+    return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
   }
 
   grouping(_resource: Uri): ImportGroup[] {
+    const customGrouping = this.mockConfig.get('grouping');
+    if (customGrouping) {
+      // If it's an array of strings, parse each into ImportGroup objects
+      if (Array.isArray(customGrouping) && customGrouping.length > 0 && typeof customGrouping[0] === 'string') {
+        // Filter out any undefined/null values and parse each string
+        const cleanGrouping: string[] = customGrouping.filter(g => g !== undefined && g !== null);
+        return cleanGrouping.map(setting => ImportGroupSettingParser.parseSetting(setting));
+      }
+      // Otherwise it's already an array of ImportGroup objects
+      return customGrouping;
+    }
     // Return default grouping: Plains, Modules, Workspace, Remain
     return ImportGroupSettingParser.default;
   }
 }
 
 /**
+ * Register custom generators for ImportGroup types
+ * (Copied from old-typescript-hero/src/typescript-hero.ts:extendCodeGenerator)
+ */
+let generatorsExtended = false;
+function extendCodeGenerator(): void {
+  if (generatorsExtended) return;
+  generatorsExtended = true;
+
+  function simpleGenerator(
+    generatable: Generatable,
+    options: TypescriptGenerationOptions,
+  ): string {
+    const gen = new TypescriptCodeGenerator(options);
+    const group = generatable as KeywordImportGroup;
+    if (!group.imports.length) {
+      return '';
+    }
+    return (
+      group.sortedImports.map(imp => gen.generate(imp)).join('\n') + '\n'
+    );
+  }
+
+  GENERATORS[KeywordImportGroup.name] = simpleGenerator;
+  GENERATORS[RegexImportGroup.name] = simpleGenerator;
+  GENERATORS[RemainImportGroup.name] = simpleGenerator;
+}
+
+/**
  * Helper function to apply TextEdits to a string
+ *
+ * This is copied from the new extension's adapter for consistency.
  */
 function applyEdits(content: string, edits: TextEdit[]): string {
+  // Sort edits by position (descending) to apply them without affecting positions
   const sortedEdits = [...edits].sort((a, b) => {
     if (a.range.start.line !== b.range.start.line) {
       return b.range.start.line - a.range.start.line;
@@ -233,9 +281,11 @@ function applyEdits(content: string, edits: TextEdit[]): string {
     const endChar = edit.range.end.character;
 
     if (startLine === endLine) {
+      // Single line edit
       const line = lines[startLine] || '';
       lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
     } else {
+      // Multi-line edit
       const firstLine = (lines[startLine] || '').substring(0, startChar);
       const lastLine = (lines[endLine] || '').substring(endChar);
       const newLines = edit.newText.split('\n');
@@ -260,8 +310,11 @@ function applyEdits(content: string, edits: TextEdit[]): string {
  */
 export async function organizeImportsOld(
   sourceCode: string,
-  _config: any = {}
+  configOverrides: any = {}
 ): Promise<string> {
+  // Register custom generators for ImportGroup types (one-time setup)
+  extendCodeGenerator();
+
   // Parse with typescript-parser
   const parser = new TypescriptParser();
   const parsedDocument: File = await parser.parseSource(sourceCode, getScriptKind('test.ts'));
@@ -271,10 +324,23 @@ export async function organizeImportsOld(
   const config = new MockConfiguration();
   const logger = new MockLogger() as any;
 
+  // Apply config overrides
+  Object.keys(configOverrides).forEach(key => {
+    (config.imports as MockImportsConfig).setConfig(key, configOverrides[key]);
+  });
+
   // Create generator factory
   const generatorFactory: TypescriptCodeGeneratorFactory = (resource: Uri) => {
     return new TypescriptCodeGenerator(config.typescriptGeneratorOptions(resource));
   };
+
+  // Mock window.activeTextEditor (needed by getImportInsertPosition)
+  const mockEditor = { document: doc } as unknown as TextEditor;
+  const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'activeTextEditor');
+  Object.defineProperty(window, 'activeTextEditor', {
+    get: () => mockEditor,
+    configurable: true
+  });
 
   // Create ImportManager (using REAL old extension code)
   const manager = new ImportManager(
@@ -286,60 +352,18 @@ export async function organizeImportsOld(
     generatorFactory
   );
 
-  // Organize imports
-  manager.organizeImports();
+  // Organize imports and get text edits (using REAL old extension API)
+  const edits = manager.organizeImports().calculateTextEdits();
 
-  // WORKAROUND: The old extension has a bug in calculateTextEdits() where it tries to
-  // generate ImportGroup objects instead of Import objects. We manually generate the
-  // output here to work around the bug.
-  const generator = generatorFactory(doc.uri);
-  const importGroups = (manager as any).importGroups;
-  const groupOutputs: string[] = [];
-
-  for (const group of importGroups) {
-    const importsInGroup = group.sortedImports;
-    if (importsInGroup.length > 0) {
-      const generatedImports = importsInGroup
-        .map((imp: any) => generator.generate(imp))
-        .filter(Boolean);
-      if (generatedImports.length > 0) {
-        groupOutputs.push(generatedImports.join('\n'));
-      }
-    }
+  // Restore original descriptor
+  if (originalDescriptor) {
+    Object.defineProperty(window, 'activeTextEditor', originalDescriptor);
+  } else {
+    delete (window as any).activeTextEditor;
   }
 
-  const organizedImports = groupOutputs.join('\n\n');
+  // Apply the text edits to get the result
+  const result = applyEdits(sourceCode, edits);
 
-  // Find import region in original source
-  let importStart = sourceCode.length;
-  let importEnd = 0;
-
-  for (const imp of parsedDocument.imports) {
-    if (imp.start !== undefined && imp.start < importStart) {
-      importStart = imp.start;
-    }
-    if (imp.end !== undefined && imp.end > importEnd) {
-      importEnd = imp.end;
-    }
-  }
-
-  // Replace imports region
-  if (parsedDocument.imports.length > 0) {
-    // Find the line after imports to preserve spacing
-    const lines = sourceCode.split('\n');
-    const importEndPos = doc.positionAt(importEnd);
-    let endLine = importEndPos.line + 1;
-
-    // Skip empty lines after imports
-    while (endLine < lines.length && lines[endLine].trim() === '') {
-      endLine++;
-    }
-
-    const beforeImports = sourceCode.substring(0, importStart);
-    const afterImports = lines.slice(endLine).join('\n');
-
-    return beforeImports + organizedImports + '\n\n' + afterImports;
-  }
-
-  return organizedImports + '\n\n' + sourceCode;
+  return result;
 }

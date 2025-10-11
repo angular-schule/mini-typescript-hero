@@ -13,12 +13,13 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "noEmitOnError": false
   },
   "include": [
     "**/*.ts",
     "../src/**/*.ts",
     "./old-typescript-hero/src/**/*.ts"
   ],
-  "exclude": ["node_modules", "out", "../node_modules", "old-typescript-hero/test", "old-typescript-hero/out", "old-typescript-hero/tsconfig.json"]
+  "exclude": ["node_modules", "out", "../node_modules", "old-typescript-hero/test", "old-typescript-hero/out", "old-typescript-hero/tsconfig.json", "old-typescript-hero/src/ioc.ts"]
 }

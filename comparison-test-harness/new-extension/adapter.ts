@@ -156,55 +156,82 @@ class MockImportsConfig extends ImportsConfig {
   }
 
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
+    // Config MUST be provided by tests (no defaults in adapter)
+    const value = this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces');
+    if (value === undefined) throw new Error('insertSpaceBeforeAndAfterImportBraces must be explicitly configured in tests');
+    return value;
   }
 
   insertSemicolons(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSemicolons') ?? true;
+    const value = this.mockConfig.get('insertSemicolons');
+    if (value === undefined) throw new Error('insertSemicolons must be explicitly configured in tests');
+    return value;
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
-    return this.mockConfig.get('removeTrailingIndex') ?? true;
+    const value = this.mockConfig.get('removeTrailingIndex');
+    if (value === undefined) throw new Error('removeTrailingIndex must be explicitly configured in tests');
+    return value;
   }
 
   stringQuoteStyle(_resource: Uri): '"' | '\'' {
-    return this.mockConfig.get('stringQuoteStyle') ?? '\'';
+    const value = this.mockConfig.get('stringQuoteStyle');
+    if (value === undefined) throw new Error('stringQuoteStyle must be explicitly configured in tests');
+    return value;
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
-    return this.mockConfig.get('multiLineWrapThreshold') ?? 125;
+    const value = this.mockConfig.get('multiLineWrapThreshold');
+    if (value === undefined) throw new Error('multiLineWrapThreshold must be explicitly configured in tests');
+    return value;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
-    return this.mockConfig.get('multiLineTrailingComma') ?? true;
+    const value = this.mockConfig.get('multiLineTrailingComma');
+    if (value === undefined) throw new Error('multiLineTrailingComma must be explicitly configured in tests');
+    return value;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
+    const value = this.mockConfig.get('disableImportRemovalOnOrganize');
+    if (value === undefined) throw new Error('disableImportRemovalOnOrganize must be explicitly configured in tests');
+    return value;
   }
 
   mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
+    const value = this.mockConfig.get('mergeImportsFromSameModule');
+    if (value === undefined) throw new Error('mergeImportsFromSameModule must be explicitly configured in tests');
+    return value;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportsSorting') ?? false;
+    const value = this.mockConfig.get('disableImportsSorting');
+    if (value === undefined) throw new Error('disableImportsSorting must be explicitly configured in tests');
+    return value;
   }
 
   organizeOnSave(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeOnSave') ?? false;
+    const value = this.mockConfig.get('organizeOnSave');
+    if (value === undefined) throw new Error('organizeOnSave must be explicitly configured in tests');
+    return value;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeSortsByFirstSpecifier') ?? false;
+    const value = this.mockConfig.get('organizeSortsByFirstSpecifier');
+    if (value === undefined) throw new Error('organizeSortsByFirstSpecifier must be explicitly configured in tests');
+    return value;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
-    return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
+    const value = this.mockConfig.get('ignoredFromRemoval');
+    if (value === undefined) throw new Error('ignoredFromRemoval must be explicitly configured in tests');
+    return value;
   }
 
   blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
-    return this.mockConfig.get('blankLinesAfterImports') ?? 'one';
+    const value = this.mockConfig.get('blankLinesAfterImports');
+    if (value === undefined) throw new Error('blankLinesAfterImports must be explicitly configured in tests');
+    return value;
   }
 
   grouping(_resource: Uri): ImportGroup[] {
@@ -274,14 +301,23 @@ function applyEdits(content: string, edits: TextEdit[]): string {
  * Organize imports using the NEW Mini TypeScript Hero extension
  *
  * This uses the REAL production code with mocked VSCode dependencies.
+ *
+ * IMPORTANT: All config options must be explicitly provided. The adapter has NO defaults.
+ * Tests should use OLD_EXTENSION_COMPATIBLE_CONFIG from shared-config.ts as the base,
+ * then override specific options as needed for the test.
  */
 export function organizeImportsNew(
   sourceCode: string,
-  _config: any = {}
+  configOverrides: any = {}
 ): string {
   const doc = new MockTextDocument('test.ts', sourceCode);
   const config = new MockImportsConfig();
   const logger = new MockOutputChannel();
+
+  // Apply all config values (no defaults!)
+  Object.keys(configOverrides).forEach(key => {
+    config.setConfig(key, configOverrides[key]);
+  });
 
   const manager = new ImportManager(doc, config, logger);
   const edits = manager.organizeImports();

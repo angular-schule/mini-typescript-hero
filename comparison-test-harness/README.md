@@ -141,14 +141,6 @@ const z: OnInit = null as any;
 - Mixed framework imports
 - Monorepo scenarios
 
-**Current: 110/110 tests (COMPLETE ✅)**
-
-**Test Results**:
-- ✅ 73 passing (66%)
-- ❌ 37 failing (34%)
-- See [DIFFERENCES.md](DIFFERENCES.md) for detailed analysis
-
----
 
 ## Dependencies
 

@@ -6,6 +6,7 @@
 import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
+import { OLD_EXTENSION_COMPATIBLE_CONFIG, mergeConfig } from './shared-config';
 
 suite('Removal', () => {
   test('044. Remove completely unused import', async () => {
@@ -15,8 +16,8 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 044: Remove unused ===');
     console.log('OLD OUTPUT:');
@@ -34,8 +35,8 @@ const x = Used;
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Only used specifiers should be kept');
   });
@@ -46,8 +47,8 @@ const x = Used;
 let x: MyType;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Type-only usage counts as used');
   });
@@ -59,8 +60,8 @@ let x: MyType;
 const x = 1;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 047: ignoredFromRemoval ===');
     console.log('OLD OUTPUT:');
@@ -80,9 +81,9 @@ import { Other } from 'other';
 const x = 1;
 `;
 
-    const config = {
+    const config = mergeConfig({
       ignoredFromRemoval: ['custom-lib'],
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -97,8 +98,8 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Unused default import should be removed');
   });
@@ -110,8 +111,8 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Unused namespace import should be removed');
   });
@@ -123,8 +124,8 @@ import { Used } from './lib';
 const x = Used;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'String imports should always be kept');
   });
@@ -135,8 +136,8 @@ const x = Used;
 export { A };
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Unused specifiers in re-export should be removed');
   });
@@ -147,8 +148,8 @@ export { A };
 export { A, B };
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'All re-exported symbols should be kept');
   });
@@ -161,8 +162,8 @@ const doubled = map(arr, x => x * 2);
 const sum = doubled.reduce((a, b) => a + b, 0);
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 054: Property access ===');
     console.log('OLD OUTPUT:');
@@ -183,8 +184,8 @@ class Component {}
 const x = Injectable;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     assert.equal(newResult, oldResult, 'Local declarations should shadow imports');
   });
@@ -196,9 +197,9 @@ import { Used } from './other';
 const x = Used;
 `;
 
-    const config = {
+    const config = mergeConfig({
       disableImportRemovalOnOrganize: true,
-    };
+    });
 
     const oldResult = await organizeImportsOld(input, config);
     const newResult = organizeImportsNew(input, config);
@@ -212,8 +213,8 @@ const x = Used;
 const x = UsedNamed;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
+    const newResult = organizeImportsNew(input, OLD_EXTENSION_COMPATIBLE_CONFIG);
 
     console.log('\n=== TEST 057: Partial removal ===');
     console.log('OLD OUTPUT:');
