@@ -83,12 +83,10 @@ export class ImportsConfig {
    * When true, enables ALL legacy behaviors:
    * - Within-group sorting: Always sorts by library name (ignores disableImportsSorting/organizeSortsByFirstSpecifier)
    * - Blank lines: Uses 'preserve' mode (keeps existing blank lines from source)
-   * - Import merging: Disabled (old extension coupled merging with removal)
    *
    * When false (default), uses modern best practices:
    * - Sorting: Respects all sorting configs correctly
    * - Blank lines: Exactly 1 blank line (Google/ESLint/Prettier standard)
-   * - Import merging: Always enabled (modern best practice)
    *
    * Default: false (new users get modern behavior)
    * Migrated users: Automatically set to true for 100% backward compatibility

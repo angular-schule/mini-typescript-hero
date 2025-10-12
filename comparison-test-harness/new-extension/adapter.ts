@@ -255,6 +255,11 @@ export async function organizeImportsNew(
     const manager = new ImportManager(doc, config, logger);
     const edits = manager.organizeImports();
 
+    // If no edits (empty file or no imports), return original content
+    if (!edits || edits.length === 0) {
+      return doc.getText();
+    }
+
     // Use REAL workspace.applyEdit (this is the key!)
     const workspaceEdit = new WorkspaceEdit();
     workspaceEdit.set(doc.uri, edits);

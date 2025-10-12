@@ -263,7 +263,21 @@ export class ImportManager {
 
     // Filter unused imports (unless disabled)
     if (this.config.disableImportRemovalOnOrganize(this.document.uri)) {
-      keep = this.imports;
+      // In legacy mode, TypeScript Hero ALWAYS sorted specifiers, even with removal disabled
+      // In modern mode, preserve imports exactly as-is (including unsorted specifiers)
+      if (this.config.legacyMode(this.document.uri)) {
+        // Legacy: Sort specifiers within each import
+        keep = this.imports.map(imp => {
+          if (imp instanceof NamedImport && imp.specifiers.length > 0) {
+            const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
+            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias);
+          }
+          return imp;
+        });
+      } else {
+        // Modern: Preserve everything as-is
+        keep = this.imports;
+      }
     } else {
       for (const imp of this.imports) {
         // Check if import is in the ignore list
@@ -379,18 +393,22 @@ export class ImportManager {
           }
 
           // Remove duplicate specifiers (same name and alias)
-          const uniqueSpecifiers = allSpecifiers.filter((spec, index, self) =>
-            index === self.findIndex(s =>
-              s.specifier === spec.specifier && s.alias === spec.alias
-            )
-          );
+          // BUT: In legacy mode, keep duplicates (old extension behavior)
+          let finalSpecifiers = allSpecifiers;
+          if (!this.config.legacyMode(this.document.uri)) {
+            finalSpecifiers = allSpecifiers.filter((spec, index, self) =>
+              index === self.findIndex(s =>
+                s.specifier === spec.specifier && s.alias === spec.alias
+              )
+            );
+          }
 
           // Sort specifiers
-          uniqueSpecifiers.sort(specifierSort);
+          finalSpecifiers.sort(specifierSort);
 
           merged.push(new NamedImport(
             namedImports[0].libraryName,
-            uniqueSpecifiers,
+            finalSpecifiers,
             mergedDefault,
           ));
         }
@@ -478,15 +496,19 @@ export class ImportManager {
     // Calculate deletion range:
     // - If no header: delete from line 0 (remove any leading blanks)
     // - If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
-    // - If header WITHOUT leading blanks: delete from first import line (preserve header + blanks after header)
+    // - If header WITHOUT leading blanks:
+    //   - Legacy mode with blank before imports: delete from line 0 (remove header + blank, will reconstruct)
+    //   - Otherwise: delete from first import line (preserve header + blanks after header)
     const firstImportLine = allImports[0].getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
 
     let deletionStartLine: number;
-    if (hasHeader && !hasLeadingBlanks) {
+    const isLegacyWithBlankBefore = this.config.legacyMode(this.document.uri) && blankLinesBefore > 0;
+
+    if (hasHeader && !hasLeadingBlanks && !isLegacyWithBlankBefore) {
       // Normal mode with header: preserve header and blanks after it
       deletionStartLine = firstImportLine;
     } else {
-      // No header or has leading blanks: delete from line 0
+      // No header, has leading blanks, or legacy mode with blank before imports: delete from line 0
       deletionStartLine = 0;
     }
 
@@ -557,7 +579,9 @@ export class ImportManager {
         }
 
         // Add blank lines between header and imports
-        if (blankLinesBefore > 0) {
+        // In legacy mode, TypeScript Hero does NOT add blank line after header
+        // In modern mode, preserve whatever blank lines were there
+        if (!this.config.legacyMode(this.document.uri) && blankLinesBefore > 0) {
           importText += this.eol.repeat(blankLinesBefore);
         }
       }
@@ -680,12 +704,13 @@ export class ImportManager {
       }
 
       // Blank line handling:
-      // - Leading blank lines (before any header): skip, will be removed
+      // - Leading blank lines (before any header): count them, will be removed
       // - Blank lines after header: skip, will be counted separately
       if (line.trim() === '') {
         // Track if we see blank lines before any header
         if (!hasHeader) {
           hasLeadingBlanks = true;
+          blankLinesBefore++; // Use blankLinesBefore to count leading blanks when no header
         }
         continue;
       }
@@ -720,14 +745,33 @@ export class ImportManager {
    * - "one": Always exactly 1 blank line (Google/ESLint standard)
    * - "two": Always exactly 2 blank lines
    * - "preserve": Keep the existing number of blank lines
-   * - "legacy": Replicate old TypeScript Hero behavior (buggy algorithm that adds too many blanks)
+   *
+   * Legacy Mode Override:
+   * When legacyMode is true, TypeScript Hero's behavior is:
+   * - With header AND blank line before imports: Remove blank before, add 2 blanks after
+   * - With header but NO blank line before imports: Use 'preserve' mode
+   * - Without header: Use 'preserve' mode
    */
   private calculateBlankLinesAfter(
     existingBlankLinesAfter: number,
-    _blankLinesBefore: number,
-    _hasHeader: boolean,
+    blankLinesBefore: number,
+    hasHeader: boolean,
     _importGroups: ImportGroup[]
   ): number {
+    // Legacy mode: TypeScript Hero's behavior
+    if (this.config.legacyMode(this.document.uri)) {
+      // With header AND blank line before imports: Remove blank before, add 2 blanks after
+      if (hasHeader && blankLinesBefore > 0) {
+        return 2;
+      }
+
+      // Without header but WITH leading blanks: Add blankLinesBefore + existingBlankLinesAfter
+      // This is a quirk of the old extension - it adds extra blank lines
+      if (!hasHeader && blankLinesBefore > 0) {
+        return blankLinesBefore + existingBlankLinesAfter;
+      }
+    }
+
     const mode = this.config.blankLinesAfterImports(this.document.uri);
 
     switch (mode) {

@@ -1006,3 +1006,152 @@ Remaining failures (20):
 **Session Outcome**: ✅ SUCCESS - Ready for documentation updates and release preparation  
 **Next Session**: Update docs, review remaining test failures, prepare v4.0.0 release
 
+
+---
+
+## Session 21: 2025-10-12 - Systematic Test Harness Fixes
+
+### Current Work Status
+
+#### ✅ Completed Tasks
+1. **Fixed empty file handling** (Tests 071, 072)
+   - Added null check in both old and new extension adapters
+   - Return original content when no edits generated
+   - +2 tests passing
+
+2. **Fixed leading blank lines calculation** (Test 061)
+   - Counted leading blanks when no header present
+   - Added extra blank lines formula for legacy mode: `blankLinesBefore + existingBlankLinesAfter`
+   - +1 test passing
+
+3. **Disabled deduplication in legacy mode** (Test 019)
+   - Old TypeScript Hero keeps duplicate specifiers when merging
+   - Added legacy mode check to skip deduplication
+   - +1 test passing
+
+4. **Reverted incorrect merging fix**
+   - Initially thought old extension doesn't merge - WRONG!
+   - Old extension DOES merge imports by default
+   - Reverted changes to `mergeImportsFromSameModule()` in both configs
+
+#### 🔄 In-Progress Tasks
+- **Remaining 13 test failures** (116/125 = 92.8% passing)
+  - Multiline wrapping (4 tests) - old extension bug, may skip
+  - removeTrailingIndex + merging (3 tests)
+  - Import edge cases (3 tests)
+  - Mixed import types (1 test)
+  - Demo tests (2 tests)
+
+#### 🚫 Blocked Items
+None - steady progress continuing
+
+### Technical Context
+
+#### Files Modified
+
+1. **`src/imports/import-manager.ts`** (3 changes)
+   - Lines 492-509: Added `isLegacyWithBlankBefore` logic to force deletion from line 0
+   - Lines 707-709: Count leading blanks in `blankLinesBefore` when no header
+   - Lines 395-404: Skip deduplication in legacy mode
+   - Lines 756-768: Added formula for leading blanks without header
+
+2. **`comparison-test-harness/old-extension/adapter.ts`**
+   - Lines 251-254: Added empty edits check, return original content if no edits
+
+3. **`comparison-test-harness/new-extension/adapter.ts`**
+   - Lines 258-261: Added empty edits check, return original content if no edits
+
+4. **`src/configuration/imports-config.ts`**
+   - Lines 50-54: Reverted incorrect legacy mode merging check
+   - Lines 80-93: Updated legacyMode docstring (removed incorrect merging info)
+
+#### Files Created
+- **`comparison-test-harness/SESSION-FINDINGS.md`** - TEMPORARY analysis document (can delete)
+- **`comparison-test-harness/PROGRESS-REPORT.md`** - TEMPORARY report (can delete)
+
+### Important Decisions
+
+#### Architecture Choices
+
+1. **Legacy Mode Formula Discovery**
+   - Old extension's blank line behavior is complex and scenario-dependent:
+     - Header + blank before imports → 2 blanks after
+     - No header + leading blanks → `leadingBlanks + existingBlanks` after
+     - All other cases → preserve mode
+   - This is now correctly implemented
+
+2. **Deduplication Behavior**
+   - Old extension does NOT deduplicate specifiers when merging
+   - New extension only deduplicates when `legacyMode: false`
+   - Maintains backward compatibility while allowing modern behavior
+
+3. **Empty File Handling**
+   - Both adapters now gracefully handle empty files or files with no imports
+   - Return original content unchanged when no edits generated
+
+#### Open Questions
+
+1. **Multiline wrapping tests (4 failures)** - Should we fix these?
+   - Old extension has a bug outputting empty specifier lists
+   - User wants 125/125 but these are actual bugs in old extension
+   - Need decision: replicate bug or accept as known difference
+
+2. **removeTrailingIndex + merging interaction (3 failures)**
+   - Tests show old extension merges after removing `/index`
+   - Our extension does this too, but something's not matching
+   - Need investigation of exact behavior
+
+### Next Steps
+
+#### Immediate TODO
+
+1. **Investigate remaining 13 failures**
+   - Check test 022 (Merging after removeTrailingIndex) - console output shows mismatch
+   - Check test 027 (Mixed import types) - namespace vs default+named order
+   - Check test 057 (Partial default + named removal) - default import handling
+
+2. **Consider skipping multiline wrapping tests**
+   - Tests 093, 094, 095, 076 all fail due to old extension bug
+   - Document as "known differences" instead of replicating bugs
+   - Would give us 120/125 (96%) without replicating bugs
+
+3. **Focus on merging/removal edge cases**
+   - Tests 022, 078, 113, 057 all involve import merging or removal
+   - These should be fixable with source code analysis
+
+#### Testing Needed
+- Run full test suite after each fix
+- Monitor for regressions
+- Keep todo list updated with progress
+
+#### Documentation Updates
+- Update CLAUDE.md after reaching final test count
+- Document any "known differences" vs old extension
+- Update test status in project documentation
+
+### Session Statistics
+
+- **Starting**: 112/125 passing (89.6%)
+- **Ending**: 116/125 passing (92.8%)
+- **Progress**: +4 tests fixed
+- **Time**: ~1.5 hours of focused work
+- **Approach**: Systematic investigation of old extension source code
+
+### Key Learnings
+
+1. **Always check old extension source code** - Don't guess behavior!
+2. **Old extension merges imports** - Previous assumption was completely wrong
+3. **Blank line behavior is extremely complex** - Multiple scenarios require different formulas
+4. **Deduplication was missing** - Simple oversight that affected multiple tests
+5. **Empty file edge case** - Both adapters needed null checks
+
+### User Feedback
+
+User emphasized:
+- "continue, as long as it takes!"
+- "don't give up"
+- "i want code! reports are just words"
+- "remember to always look at the ts hero source code"
+
+**Response**: Shifted to action-focused approach, checking source code for every behavior question, making steady incremental progress.
+

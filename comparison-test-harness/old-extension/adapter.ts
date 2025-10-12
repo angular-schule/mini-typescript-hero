@@ -248,6 +248,11 @@ export async function organizeImportsOld(
       delete (window as any).activeTextEditor;
     }
 
+    // If no edits (empty file or no imports), return original content
+    if (!edits || edits.length === 0) {
+      return doc.getText();
+    }
+
     // Use REAL workspace.applyEdit (this is the key!)
     const workspaceEdit = new WorkspaceEdit();
     workspaceEdit.set(doc.uri, edits);
