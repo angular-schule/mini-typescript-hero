@@ -25,7 +25,8 @@
       "Bash(tee:*)",
       "WebFetch(domain:github.com)",
       "SlashCommand(/document-end)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

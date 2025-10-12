@@ -68,9 +68,10 @@ export class ImportManager {
       const moduleSpecifier = importDecl.getModuleSpecifierValue();
 
       // String-only import (e.g., import 'reflect-metadata')
-      if (!importDecl.getNamedImports().length &&
-          !importDecl.getDefaultImport() &&
-          !importDecl.getNamespaceImport()) {
+      // Must check for ABSENCE of import clause, not just empty arrays
+      // import {} from 'lib' has a named imports clause (even though empty)
+      // import 'lib' has NO import clause
+      if (!importDecl.getImportClause()) {
         this.imports.push(new StringImport(moduleSpecifier));
         continue;
       }
@@ -318,12 +319,20 @@ export class ImportManager {
             // Sort specifiers
             usedSpecifiers.sort(specifierSort);
 
+            // OLD extension behavior (legacy mode): Keep default even if unused, as long as ANY specifiers exist
+            // NEW extension behavior (modern mode): Only keep default if it's actually used
+            const keepDefault = this.config.legacyMode(this.document.uri)
+              ? (usedSpecifiers.length > 0 && imp.defaultAlias) || defaultUsed  // Legacy: Keep if specifiers OR used
+              : defaultUsed;  // Modern: Keep only if used
+
             keep.push(new NamedImport(
               imp.libraryName,
               usedSpecifiers,
-              defaultUsed ? imp.defaultAlias : undefined,
+              keepDefault ? imp.defaultAlias : undefined,
             ));
           }
+          // else: Remove the import entirely (no used specifiers or default)
+          // Both old and new extensions remove empty imports like `import {} from './lib'`
         }
       }
     }
@@ -482,29 +491,75 @@ export class ImportManager {
     // Get the position info including blank lines before imports
     const { blankLinesBefore, hasHeader, hasLeadingBlanks } = this.getImportInsertPosition();
 
-    // Delete all existing imports including any blank lines before and after the import block
+    // OLD extension approach: Delete each import line individually (preserves comments between imports!)
+    // This is CRITICAL - we must not delete comments that developers wrote
+    //
+    // IMPORTANT: Delete in REVERSE order (bottom to top) so line numbers don't shift
+    for (let i = allImports.length - 1; i >= 0; i--) {
+      const imp = allImports[i];
+      const startLine = imp.getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
+      const endLine = imp.getEndLineNumber() - 1;
+
+      // For the FIRST import (processed last in reverse), also delete blank lines BEFORE it
+      // This removes blank lines between header and imports
+      let actualStartLine = startLine;
+      if (i === 0 && blankLinesBefore > 0) {
+        actualStartLine = startLine - blankLinesBefore;
+      }
+
+      // Delete the import line(s) - same logic as old extension's importRange()
+      // From start of first line to end of last line (including line break)
+      const deleteRange = new Range(
+        this.document.lineAt(actualStartLine).rangeIncludingLineBreak.start,
+        this.document.lineAt(endLine).rangeIncludingLineBreak.end,
+      );
+      edits.push(TextEdit.delete(deleteRange));
+
+      // OLD extension behavior: Delete ALL consecutive blank lines after this import
+      // BUT stop at the first non-blank line (preserves comments!)
+      let blankLineCount = 0;
+      let checkLine = endLine + 1;
+      while (checkLine < this.document.lineCount) {
+        const line = this.document.lineAt(checkLine);
+        if (line.text.trim() === '') {
+          blankLineCount++;
+          checkLine++;
+        } else {
+          // Hit a non-blank line (comment or code), stop
+          break;
+        }
+      }
+
+      // Delete all the blank lines we found
+      if (blankLineCount > 0) {
+        const blankLinesRange = new Range(
+          new Position(endLine + 1, 0),
+          new Position(endLine + 1 + blankLineCount, 0),
+        );
+        edits.push(TextEdit.delete(blankLinesRange));
+      }
+    }
+
+    // Now determine where the last import was and count blank lines after for the new imports
     const lastImport = allImports[allImports.length - 1];
+    const lastImportEndLine = lastImport.getEndLineNumber() - 1;
 
-    const endPos = this.document.positionAt(lastImport.getEnd());
-
-    // Find the line after the last import and count blank lines after
-    let endLine = endPos.line + 1;
     let existingBlankLinesAfter = 0;
+    let scanLine = lastImportEndLine + 1;
 
-    // Count blank lines after the import block
-    while (endLine < this.document.lineCount) {
-      const line = this.document.lineAt(endLine);
+    // Count blank lines after last import
+    while (scanLine < this.document.lineCount) {
+      const line = this.document.lineAt(scanLine);
       if (line.text.trim() === '') {
         existingBlankLinesAfter++;
-        endLine++;
+        scanLine++;
       } else {
         break;
       }
     }
 
     // Calculate how many blank lines to insert after imports based on mode
-    // But if there's no code after imports, don't add blank lines
-    const hasCodeAfter = endLine < this.document.lineCount;
+    const hasCodeAfter = scanLine < this.document.lineCount;
     const finalBlankLinesAfter = hasCodeAfter ? this.calculateBlankLinesAfter(
       existingBlankLinesAfter,
       blankLinesBefore,
@@ -512,29 +567,14 @@ export class ImportManager {
       importGroups
     ) : 0;
 
-    // Calculate deletion range:
-    // - If no header: delete from line 0 (remove any leading blanks)
-    // - If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
-    // - If header WITHOUT leading blanks:
-    //   - Legacy mode with blank before imports: delete from line 0 (remove header + blank, will reconstruct)
-    //   - Otherwise: delete from first import line (preserve header + blanks after header)
-    const firstImportLine = allImports[0].getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
-
-    let deletionStartLine: number;
-    const isLegacyWithBlankBefore = this.config.legacyMode(this.document.uri) && blankLinesBefore > 0;
-
-    if (hasHeader && !hasLeadingBlanks && !isLegacyWithBlankBefore) {
-      // Normal mode with header: preserve header and blanks after it
-      deletionStartLine = firstImportLine;
-    } else {
-      // No header, has leading blanks, or legacy mode with blank before imports: delete from line 0
-      deletionStartLine = 0;
-    }
-
-    const deletionRange = new Range(
-      new Position(deletionStartLine, 0),
-      new Position(endLine, 0),
-    );
+    // Determine where to insert the new organized imports
+    // After deleting:
+    // - All imports
+    // - All blank lines after each import
+    // - All blank lines before the FIRST import
+    // We insert at the position where the first import WAS (now minus the blanks we deleted)
+    const insertPos = this.getImportInsertPosition();
+    const insertionLine = insertPos.position.line - blankLinesBefore;
 
     // Generate new import text
     const importLines: string[] = [];
@@ -579,31 +619,8 @@ export class ImportManager {
       // Build the final import text with proper blank line handling
       let importText = '';
 
-      // If we're deleting from line 0 and there's a header, we need to re-add the header
-      if (deletionStartLine === 0 && hasHeader) {
-        // Extract the header lines from the original document
-        const text = this.document.getText();
-        const lines = text.split(/\r?\n/);
-        const REGEX_IGNORED_LINE = /^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/;
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (REGEX_IGNORED_LINE.test(line)) {
-            importText += line + this.eol;
-          } else if (line.trim() !== '') {
-            // Reached imports or code, stop
-            break;
-          }
-          // Skip blank lines (they've been removed)
-        }
-
-        // Add blank lines between header and imports
-        // In legacy mode, TypeScript Hero does NOT add blank line after header
-        // In modern mode, preserve whatever blank lines were there
-        if (!this.config.legacyMode(this.document.uri) && blankLinesBefore > 0) {
-          importText += this.eol.repeat(blankLinesBefore);
-        }
-      }
+      // NOTE: With individual deletion approach, we DON'T need to reconstruct headers
+      // They're already in the document since we only deleted import lines
 
       // Add the imports themselves
       importText += importLines.join(this.eol);
@@ -616,12 +633,10 @@ export class ImportManager {
         importText += this.eol.repeat(finalBlankLinesAfter);
       }
 
-      // Use a single REPLACE edit instead of DELETE + INSERT to avoid position shifts
-      edits.push(TextEdit.replace(deletionRange, importText));
-    } else {
-      // No imports left - just delete the old import block
-      edits.push(TextEdit.delete(deletionRange));
+      // INSERT the new organized imports at the determined position
+      edits.push(TextEdit.insert(new Position(insertionLine, 0), importText));
     }
+    // If no imports, we already deleted them - nothing to insert
 
     return edits;
   }

@@ -1155,3 +1155,138 @@ User emphasized:
 
 **Response**: Shifted to action-focused approach, checking source code for every behavior question, making steady incremental progress.
 
+
+---
+
+## 🚨 CRITICAL SESSION 21 CONTINUATION - 2025-10-12
+
+### ⚠️ MAJOR DISCOVERY - TEST HARNESS IS FUNDAMENTALLY BROKEN
+
+**USER'S ACTUAL TESTING RESULTS**: Old TypeScript Hero extension works perfectly!
+- Test 093: Removes unused imports correctly, outputs valid code
+- Test 128: Removes UnusedService correctly
+- NO broken code like `import { , } from './lib';`
+
+**TEST HARNESS SHOWING**: Completely wrong results!
+- Test 093: Claims old extension outputs `import { , } from './lib';` (WRONG!)
+- Test 128: Claims old extension keeps UnusedService (WRONG!)
+- Test harness is NOT accurately simulating old extension behavior
+
+### 🔍 ROOT CAUSE ANALYSIS
+
+The test harness adapters are failing to correctly replicate the old extension's behavior because:
+
+1. **`typescript-parser` may not be working correctly** in test environment
+   - Location: `comparison-test-harness/old-extension/adapter.ts:208`
+   - Parsing: `const parsedDocument: File = await parser.parseSource(sourceCode, getScriptKind('test.ts'));`
+   - Issue: `parsedDocument.nonLocalUsages` might not contain correct usage information
+   - Result: Old extension adapter thinks imports are unused when they're actually used
+
+2. **Test context is insufficient**
+   - Old extension in production has full VSCode workspace context
+   - Test harness only provides source code string
+   - Parser may need more context to determine what's "used"
+
+3. **Possible parser initialization issue**
+   - TypeScript Parser might need specific configuration
+   - May not be analyzing usage correctly in isolated test environment
+
+### ❌ INVALIDATED TEST RESULTS
+
+**ALL PREVIOUS TEST RESULTS ARE SUSPECT!**
+
+- ❌ 123/125 passing (98.4%) - WRONG!
+- ❌ 116/125 passing (92.8%) - WRONG!
+- ❌ 93/125 passing (74%) - WRONG!
+
+**We cannot trust ANY comparison test results until we fix the old extension adapter to CORRECTLY replicate actual old extension behavior!**
+
+### 🎯 IMMEDIATE PRIORITY - MUST FIX BEFORE CONTINUING
+
+**STOP ALL OTHER WORK!**
+
+1. **Investigate `typescript-parser` behavior**
+   - Why is it not detecting usages correctly?
+   - What additional context or configuration does it need?
+   - Compare `parsedDocument.nonLocalUsages` vs actual usages in code
+
+2. **Create validation tests**
+   - Write manual test cases where we KNOW the expected output (from real extension)
+   - Compare test harness output vs real extension output
+   - Identify WHERE the discrepancy occurs
+
+3. **Fix the old extension adapter**
+   - Ensure `typescript-parser` correctly identifies used vs unused imports
+   - May need to parse files differently or provide additional context
+   - Validate against REAL extension behavior, not assumptions
+
+4. **Re-run ALL tests after fix**
+   - Archive previous results as "INVALID - PARSER BUG"
+   - Get NEW baseline results from CORRECT simulation
+   - Only THEN can we trust the test results
+
+### 📝 ARCHIVE OF INVALID RESULTS
+
+**Session 21 Results (INVALID)**:
+- Starting: 120/125 (96%)
+- Ending: 123/125 (98.4%)
+- Reason: Test harness not accurately simulating old extension
+
+**Session 20 Results (INVALID)**:
+- Starting: 93/125 (74%)
+- Ending: 105/125 (84%)
+- Reason: Test harness not accurately simulating old extension
+
+**Session 19 Results (INVALID)**:
+- Starting: 0/125 (blocked)
+- Ending: 93/125 (74%)
+- Reason: Test harness not accurately simulating old extension
+
+**All sessions built on WRONG foundation - test harness was broken from the start!**
+
+### 💡 USER'S CRITICAL INSIGHT
+
+**User proved with REAL extension that our test results are wrong!**
+
+This is a FUNDAMENTAL flaw in our testing approach. We were "fixing" the NEW extension to match INCORRECT output from the test harness, when the test harness itself was giving us BAD data about what the old extension actually does.
+
+**Key lesson**: ALWAYS validate test infrastructure against REAL behavior before trusting results!
+
+### 🔧 INVESTIGATION PLAN
+
+1. **Create simple proof case**
+   - Take the EXACT input from test 093
+   - Run it through test harness old extension adapter
+   - Run it through REAL old extension (manual test)
+   - Compare outputs - identify the exact mismatch
+
+2. **Debug `typescript-parser` usage analysis**
+   - Log `parsedDocument.nonLocalUsages` to see what parser thinks is used
+   - Check if VeryLongName1, VeryLongName2, VeryLongName3 are in the list
+   - Determine why parser is missing these usages
+
+3. **Fix parser configuration or usage**
+   - Research `typescript-parser` documentation
+   - Check if we need to call additional methods
+   - Ensure parser is fully analyzing the source code
+
+4. **Validate fix across multiple tests**
+   - Don't trust a single test fix
+   - Validate against 5-10 manual test cases
+   - Ensure old extension adapter matches REAL behavior consistently
+
+### ⚠️ CRITICAL REMINDER
+
+**DO NOT TRUST ANY TEST RESULTS UNTIL OLD EXTENSION ADAPTER IS FIXED!**
+
+**DO NOT MAKE ANY MORE CHANGES TO NEW EXTENSION BASED ON CURRENT TEST RESULTS!**
+
+**ALL WORK MUST STOP UNTIL TEST INFRASTRUCTURE IS PROVEN CORRECT!**
+
+---
+
+**Status**: 🔴 BLOCKED - Test harness fundamentally broken, must fix before continuing
+**Priority**: 🚨 HIGHEST - Everything else depends on this
+**Next Action**: Investigate `typescript-parser` usage in old extension adapter
+**Expected Duration**: Unknown - this is a critical infrastructure issue
+
