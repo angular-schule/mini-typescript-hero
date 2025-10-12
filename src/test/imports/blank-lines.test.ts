@@ -78,7 +78,7 @@ class MockImportsConfig extends ImportsConfig {
   }
 
   // Override specific methods for testing
-  public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+  public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
     return this.overrides.get('blankLinesAfterImports') ?? 'one';
   }
 
@@ -381,125 +381,6 @@ suite('Blank Lines - Mode "preserve"', () => {
   });
 });
 
-suite('Blank Lines - Mode "legacy"', () => {
-  let config: MockImportsConfig;
-  let logger: MockOutputChannel;
-
-  setup(() => {
-    config = new MockImportsConfig();
-    config.override('blankLinesAfterImports', 'legacy');
-    config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
-  });
-
-  test('TC-030: 0 before, 0 after → 1 after (formula: 0 + 1 + 0 = 1)', () => {
-    const input = `import { A } from './a';\nexport class Test {}`;
-    const expected = `import { A } from './a';\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-031: 0 before, 1 after → 1 after (formula: 0 + 1 + 0 = 1)', () => {
-    const input = `import { A } from './a';\n\nexport class Test {}`;
-    const expected = `import { A } from './a';\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-032: 0 before, 2 after → 2 after (formula: 0 + 1 + 1 = 2)', () => {
-    const input = `import { A } from './a';\n\n\nexport class Test {}`;
-    const expected = `import { A } from './a';\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-033: 0 before, 3 after → 3 after (formula: 0 + 1 + 2 = 3)', () => {
-    const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
-    const expected = `import { A } from './a';\n\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-034: 1 before, 0 after → 2 after (formula: 1 + 1 + 0 = 2)', () => {
-    const input = `// Comment\n\nimport { A } from './a';\nexport class Test {}`;
-    const expected = `// Comment\n\nimport { A } from './a';\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-035: 1 before, 1 after → 2 after (formula: 1 + 1 + 0 = 2)', () => {
-    const input = `// Comment\n\nimport { A } from './a';\n\nexport class Test {}`;
-    const expected = `// Comment\n\nimport { A } from './a';\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-036: 1 before, 2 after → 3 after (formula: 1 + 1 + 1 = 3)', () => {
-    const input = `// Comment\n\nimport { A } from './a';\n\n\nexport class Test {}`;
-    const expected = `// Comment\n\nimport { A } from './a';\n\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-037: 2 before, 0 after → 3 after (formula: 2 + 1 + 0 = 3)', () => {
-    const input = `// Comment\n\n\nimport { A } from './a';\nexport class Test {}`;
-    const expected = `// Comment\n\n\nimport { A } from './a';\n\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-
-  test('TC-038: 2 before, 1 after → 3 after (formula: 2 + 1 + 0 = 3)', () => {
-    const input = `// Comment\n\n\nimport { A } from './a';\n\nexport class Test {}`;
-    const expected = `// Comment\n\n\nimport { A } from './a';\n\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
-});
 
 suite('Blank Lines - Header Detection', () => {
   let config: MockImportsConfig;
@@ -743,19 +624,6 @@ suite('Blank Lines - Combined Scenarios', () => {
     assert.strictEqual(result, expected);
   });
 
-  test('TC-320: Mode "legacy" + Header with 1 blank', () => {
-    config.override('blankLinesAfterImports', 'legacy');
-
-    const input = `// Header\n\nimport { A } from './a';\nexport class Test {}`;
-    const expected = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
-
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
-
-    assert.strictEqual(result, expected);
-  });
 });
 
 suite('Blank Lines - Edge Cases', () => {

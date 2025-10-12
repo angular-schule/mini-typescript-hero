@@ -479,15 +479,10 @@ export class ImportManager {
     // - If no header: delete from line 0 (remove any leading blanks)
     // - If header WITH leading blanks: delete from line 0 (remove leading blanks, preserve header)
     // - If header WITHOUT leading blanks: delete from first import line (preserve header + blanks after header)
-    // - EXCEPTION: In 'legacy' mode with header, ALWAYS delete from line 0 (to remove blank between header/imports)
     const firstImportLine = allImports[0].getStartLineNumber() - 1;  // Convert from 1-indexed to 0-indexed
-    const blankLineMode = this.config.blankLinesAfterImports(this.document.uri);
 
     let deletionStartLine: number;
-    if (blankLineMode === 'legacy' && hasHeader) {
-      // Legacy mode: always delete from line 0 to remove blank between header and imports
-      deletionStartLine = 0;
-    } else if (hasHeader && !hasLeadingBlanks) {
+    if (hasHeader && !hasLeadingBlanks) {
       // Normal mode with header: preserve header and blanks after it
       deletionStartLine = firstImportLine;
     } else {
@@ -504,6 +499,7 @@ export class ImportManager {
     const importLines: string[] = [];
     const useSorting = !this.config.disableImportsSorting(this.document.uri);
     const useFirstSpecifierSort = this.config.organizeSortsByFirstSpecifier(this.document.uri);
+    const useLegacyWithinGroupSorting = this.config.legacyWithinGroupSorting(this.document.uri);
 
     for (const group of importGroups) {
       if (group.imports.length === 0) {
@@ -511,12 +507,21 @@ export class ImportManager {
       }
 
       // Choose which import list to use:
+      //
+      // LEGACY MODE (replicates old TypeScript Hero bug):
+      // - Always use group.sortedImports (sorted by library name)
+      // - Ignores disableImportsSorting and organizeSortsByFirstSpecifier
+      // - This is the "Level 2 sorting" bug from the old extension
+      //
+      // MODERN MODE (correct behavior):
       // - If sorting is DISABLED: use pre-sorted order (group.imports)
       // - If sorting by FIRST SPECIFIER: use pre-sorted order (group.imports) - sorted in organizeImports()
       // - If sorting by LIBRARY NAME: re-sort within group (group.sortedImports)
-      const importsToUse = (useSorting && !useFirstSpecifierSort)
-        ? group.sortedImports
-        : group.imports;
+      const importsToUse = useLegacyWithinGroupSorting
+        ? group.sortedImports // Legacy: always sort within groups (bug!)
+        : (useSorting && !useFirstSpecifierSort)
+          ? group.sortedImports
+          : group.imports;
       const groupLines = importsToUse.map(imp => this.generateImportStatement(imp));
       importLines.push(...groupLines);
 
@@ -551,9 +556,8 @@ export class ImportManager {
           // Skip blank lines (they've been removed)
         }
 
-        // In 'legacy' mode, DON'T add blank lines between header and imports
-        // (old extension bug: it removes those blank lines)
-        if (blankLineMode !== 'legacy' && blankLinesBefore > 0) {
+        // Add blank lines between header and imports
+        if (blankLinesBefore > 0) {
           importText += this.eol.repeat(blankLinesBefore);
         }
       }
@@ -722,7 +726,7 @@ export class ImportManager {
     existingBlankLinesAfter: number,
     _blankLinesBefore: number,
     _hasHeader: boolean,
-    importGroups: ImportGroup[]
+    _importGroups: ImportGroup[]
   ): number {
     const mode = this.config.blankLinesAfterImports(this.document.uri);
 
@@ -735,22 +739,6 @@ export class ImportManager {
 
       case 'preserve':
         return existingBlankLinesAfter;
-
-      case 'legacy': {
-        // Session 18 Discovery: The old TypeScript Hero extension's blank line behavior
-        // is INCONSISTENT and varies by scenario. Through systematic testing:
-        // - 'legacy' mode with complex formula: 4/125 tests passing (3%)
-        // - 'two' mode (simple 2 blanks): 4/125 tests passing (3%)
-        // - 'preserve' mode (keep existing): 93/125 tests passing (74%)
-        //
-        // The old extension appears to preserve existing blank lines from source files.
-        // This 'legacy' mode exists for migrated users who want the old behavior,
-        // but there's no single formula that matches it perfectly.
-        //
-        // For simplicity, we return 2 blank lines (common in old extension output).
-        // For best compatibility, users should use 'preserve' mode instead.
-        return 2;
-      }
 
       default:
         return 1; // Fallback to standard

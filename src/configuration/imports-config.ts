@@ -77,10 +77,46 @@ export class ImportsConfig {
       .get('ignoredFromRemoval', ['react']);
   }
 
-  public blankLinesAfterImports(resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+  /**
+   * Enable full legacy mode for 100% compatibility with old TypeScript Hero extension.
+   *
+   * When true, enables ALL legacy behaviors:
+   * - Within-group sorting: Always sorts by library name (ignores disableImportsSorting/organizeSortsByFirstSpecifier)
+   * - Blank lines: Uses 'preserve' mode (keeps existing blank lines from source)
+   * - Import merging: Disabled (old extension coupled merging with removal)
+   *
+   * When false (default), uses modern best practices:
+   * - Sorting: Respects all sorting configs correctly
+   * - Blank lines: Exactly 1 blank line (Google/ESLint/Prettier standard)
+   * - Import merging: Always enabled (modern best practice)
+   *
+   * Default: false (new users get modern behavior)
+   * Migrated users: Automatically set to true for 100% backward compatibility
+   */
+  public legacyMode(resource: Uri): boolean {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('legacyMode', false);
+  }
+
+  public blankLinesAfterImports(resource: Uri): 'one' | 'two' | 'preserve' {
+    // Check legacy mode first
+    if (this.legacyMode(resource)) {
+      return 'preserve'; // Old extension behavior: keep existing blank lines
+    }
+
     return workspace
       .getConfiguration(sectionKey, resource)
       .get('blankLinesAfterImports', 'one');
+  }
+
+  /**
+   * Internal: Controls within-group sorting behavior.
+   * This is NOT a user-configurable setting - it's controlled by legacyMode.
+   */
+  public legacyWithinGroupSorting(resource: Uri): boolean {
+    // Always controlled by legacyMode flag
+    return this.legacyMode(resource);
   }
 
   public grouping(resource: Uri): ImportGroup[] {

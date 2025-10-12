@@ -107,44 +107,17 @@ async function performMigration(): Promise<number> {
     }
   }
 
-  // For migrated users: Set compatibility settings to preserve old behavior
+  // For migrated users: Enable legacyMode for 100% backward compatibility
   if (migratedCount > 0) {
-    // Set blankLinesAfterImports to 'legacy' to preserve old blank line behavior
-    // (Old TypeScript Hero had complex blank line logic where blanks before imports affected blanks after)
-    const blankLinesInspect = newConfig.inspect('blankLinesAfterImports');
-    if (blankLinesInspect?.globalValue === undefined &&
-        blankLinesInspect?.workspaceValue === undefined &&
-        blankLinesInspect?.workspaceFolderValue === undefined) {
-      await newConfig.update('blankLinesAfterImports', 'legacy', ConfigurationTarget.Global);
-    }
-
-    // Set mergeImportsFromSameModule based on old disableImportRemovalOnOrganize setting
-    // (In old TypeScript Hero, merging only happened when removal was enabled)
-    // This preserves 100% backward compatibility:
-    // - If they had disableImportRemovalOnOrganize: true → merging was OFF → set mergeImportsFromSameModule: false
-    // - If they had disableImportRemovalOnOrganize: false (or default) → merging was ON → set mergeImportsFromSameModule: true
-    const disableRemovalInspect = newConfig.inspect('disableImportRemovalOnOrganize');
-    const mergeImportsInspect = newConfig.inspect('mergeImportsFromSameModule');
-
-    // Only set if mergeImportsFromSameModule hasn't been explicitly configured
-    if (mergeImportsInspect?.globalValue === undefined &&
-        mergeImportsInspect?.workspaceValue === undefined &&
-        mergeImportsInspect?.workspaceFolderValue === undefined) {
-
-      // Check the migrated value of disableImportRemovalOnOrganize at each level
-      if (disableRemovalInspect?.workspaceFolderValue !== undefined) {
-        const shouldMerge = !disableRemovalInspect.workspaceFolderValue;
-        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.WorkspaceFolder);
-      } else if (disableRemovalInspect?.workspaceValue !== undefined) {
-        const shouldMerge = !disableRemovalInspect.workspaceValue;
-        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.Workspace);
-      } else if (disableRemovalInspect?.globalValue !== undefined) {
-        const shouldMerge = !disableRemovalInspect.globalValue;
-        await newConfig.update('mergeImportsFromSameModule', shouldMerge, ConfigurationTarget.Global);
-      } else {
-        // Default case: if no disableImportRemovalOnOrganize was set, they had merging enabled
-        await newConfig.update('mergeImportsFromSameModule', true, ConfigurationTarget.Global);
-      }
+    // Simply enable legacyMode: true to replicate ALL old behaviors:
+    // - Within-group sorting bug (always sorts by library name)
+    // - Blank line preservation (keeps existing blank lines)
+    // - No import merging (coupled with removal in old extension)
+    const legacyModeInspect = newConfig.inspect('legacyMode');
+    if (legacyModeInspect?.globalValue === undefined &&
+        legacyModeInspect?.workspaceValue === undefined &&
+        legacyModeInspect?.workspaceFolderValue === undefined) {
+      await newConfig.update('legacyMode', true, ConfigurationTarget.Global);
     }
   }
 

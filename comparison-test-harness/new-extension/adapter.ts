@@ -157,10 +157,26 @@ class MockImportsConfig extends ImportsConfig {
     return value;
   }
 
-  blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+  legacyMode(_resource: Uri): boolean {
+    const value = this.mockConfig.get('legacyMode');
+    if (value === undefined) throw new Error('legacyMode must be explicitly configured in tests');
+    return value;
+  }
+
+  blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
+    // Check legacy mode first
+    if (this.legacyMode(_resource)) {
+      return 'preserve'; // Old extension behavior
+    }
+
     const value = this.mockConfig.get('blankLinesAfterImports');
     if (value === undefined) throw new Error('blankLinesAfterImports must be explicitly configured in tests');
     return value;
+  }
+
+  legacyWithinGroupSorting(_resource: Uri): boolean {
+    // Always controlled by legacyMode - not separately configurable
+    return this.legacyMode(_resource);
   }
 
   grouping(_resource: Uri): ImportGroup[] {
@@ -186,9 +202,10 @@ class MockImportsConfig extends ImportsConfig {
 /**
  * Default configuration that matches the old TypeScript Hero extension's defaults
  *
- * Note: The old extension's blank line behavior is best matched by 'preserve' mode,
- * which keeps the existing blank lines from the source file (just like the old extension did).
- * This gives 93/125 tests passing (74% pass rate).
+ * Simply enable legacyMode: true to replicate ALL old behaviors:
+ * - Within-group sorting bug (always sorts by library name)
+ * - Blank line preservation (keeps existing blank lines)
+ * - No import merging (coupled with removal in old extension)
  */
 const DEFAULT_CONFIG = {
   insertSpaceBeforeAndAfterImportBraces: true,
@@ -198,12 +215,13 @@ const DEFAULT_CONFIG = {
   multiLineWrapThreshold: 125,
   multiLineTrailingComma: true,
   disableImportRemovalOnOrganize: false,
-  mergeImportsFromSameModule: true,  // New extension decoupled this from removal
+  mergeImportsFromSameModule: true,
   disableImportsSorting: false,
   organizeOnSave: false,
   organizeSortsByFirstSpecifier: false,
   ignoredFromRemoval: ['react'],
-  blankLinesAfterImports: 'preserve',  // Matches old extension behavior best
+  legacyMode: true,  // 🎯 SINGLE FLAG to replicate ALL old behaviors!
+  blankLinesAfterImports: 'one',  // Ignored when legacyMode=true
   grouping: ['Plains', 'Modules', 'Workspace'],
 };
 

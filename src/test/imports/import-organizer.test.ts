@@ -170,7 +170,7 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['ignoredFromRemoval'] ?? ['react'];
   }
 
-  public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' | 'legacy' {
+  public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
     return this.mockConfig['blankLinesAfterImports'] ?? 'one';
   }
 
