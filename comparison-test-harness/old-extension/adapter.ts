@@ -12,7 +12,7 @@
 
 import 'reflect-metadata';
 import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions } from 'typescript-parser';
-import { Uri, Position, Range, TextDocument, TextEdit, window, TextEditor } from 'vscode';
+import { Uri, Position, Range, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit } from 'vscode';
 import { ImportManager } from '../old-typescript-hero/src/imports/import-manager';
 import { Configuration } from '../old-typescript-hero/src/configuration';
 import { ImportsConfig } from '../old-typescript-hero/src/configuration/imports-config';
@@ -259,49 +259,23 @@ function extendCodeGenerator(): void {
 }
 
 /**
- * Helper function to apply TextEdits to a string
+ * Helper function to apply TextEdits using VSCode's REAL workspace.applyEdit API
  *
- * This is copied from the new extension's adapter for consistency.
+ * This uses VSCode's actual implementation instead of our buggy homegrown version!
  */
-function applyEdits(content: string, edits: TextEdit[]): string {
-  // Sort edits by position (descending) to apply them without affecting positions
-  const sortedEdits = [...edits].sort((a, b) => {
-    if (a.range.start.line !== b.range.start.line) {
-      return b.range.start.line - a.range.start.line;
-    }
-    return b.range.start.character - a.range.start.character;
-  });
+async function applyEditsUsingVSCode(doc: TextDocument, edits: TextEdit[]): Promise<string> {
+  const workspaceEdit = new WorkspaceEdit();
+  workspaceEdit.set(doc.uri, edits);
 
-  const lines = content.split('\n');
+  // Apply edits using VSCode's real implementation
+  const success = await workspace.applyEdit(workspaceEdit);
 
-  for (const edit of sortedEdits) {
-    const startLine = edit.range.start.line;
-    const startChar = edit.range.start.character;
-    const endLine = edit.range.end.line;
-    const endChar = edit.range.end.character;
-
-    // Check if newText contains newlines - if so, use multi-line path even if startLine === endLine
-    if (startLine === endLine && !edit.newText.includes('\n')) {
-      // Single line edit (no newlines in newText)
-      const line = lines[startLine] || '';
-      lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
-    } else {
-      // Multi-line edit (either spans multiple lines OR newText contains newlines)
-      const firstLine = (lines[startLine] || '').substring(0, startChar);
-      const lastLine = (lines[endLine] || '').substring(endChar);
-      const newLines = edit.newText.split('\n');
-
-      lines.splice(
-        startLine,
-        endLine - startLine + 1,
-        firstLine + newLines[0],
-        ...newLines.slice(1, -1),
-        newLines[newLines.length - 1] + lastLine
-      );
-    }
+  if (!success) {
+    throw new Error('Failed to apply edits');
   }
 
-  return lines.join('\n');
+  // Return the updated document text
+  return doc.getText();
 }
 
 /**
@@ -363,8 +337,8 @@ export async function organizeImportsOld(
     delete (window as any).activeTextEditor;
   }
 
-  // Apply the text edits to get the result
-  const result = applyEdits(sourceCode, edits);
+  // Apply the text edits using VSCode's REAL implementation
+  const result = await applyEditsUsingVSCode(doc, edits);
 
   return result;
 }

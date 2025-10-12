@@ -22,7 +22,9 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(npm test:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "WebFetch(domain:github.com)",
+      "SlashCommand(/document-end)"
     ],
     "deny": [],
     "ask": []
