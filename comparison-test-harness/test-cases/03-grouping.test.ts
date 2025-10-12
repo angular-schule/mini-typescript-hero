@@ -16,7 +16,7 @@ const x = Component;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 028: Plains first ===');
     console.log('OLD OUTPUT:');
@@ -39,7 +39,7 @@ const z = useState;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'External packages should be in Modules group');
   });
@@ -53,7 +53,7 @@ const y = Utils;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Relative imports should be in Workspace group');
   });
@@ -66,7 +66,7 @@ const x = Component;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 031: Plains → Modules ===');
     console.log('OLD OUTPUT:');
@@ -87,7 +87,7 @@ const y = MyService;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 032: Modules → Workspace ===');
     console.log('OLD OUTPUT:');
@@ -109,7 +109,7 @@ const y = MyService;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 033: All three groups ===');
     console.log('OLD OUTPUT:');
@@ -132,7 +132,7 @@ const z = map;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Scoped packages should be in Modules group');
   });
@@ -148,7 +148,7 @@ const w = z;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Modules should be sorted alphabetically within group');
   });
@@ -164,7 +164,7 @@ const z = Z;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Workspace imports should be sorted alphabetically');
   });
@@ -184,7 +184,7 @@ const z = MyService;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 037: Custom regex group ===');
     console.log('OLD OUTPUT:');
@@ -209,7 +209,7 @@ const y = map;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Regex groups should have precedence over keywords');
   });
@@ -225,7 +225,7 @@ const x = Component;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Empty groups should not add extra blank lines');
   });
@@ -239,7 +239,7 @@ const x = Component;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Multiple string imports should all be in Plains group');
   });
@@ -253,7 +253,7 @@ const y = Utils;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 041: Path aliases ===');
     console.log('OLD OUTPUT:');
@@ -278,7 +278,7 @@ const y = B;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Remaining group should catch all unmatched imports');
   });
@@ -303,7 +303,7 @@ const h = MyComponent;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 043: Complex grouping ===');
     console.log('OLD OUTPUT:');

@@ -10,106 +10,35 @@
  * - Reference real code via relative paths (no copying!)
  */
 
-import { Uri, Position, Range, TextEdit, TextDocument, OutputChannel } from 'vscode';
+import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit } from 'vscode';
 import { ImportManager } from '../../src/imports/import-manager';
 import { ImportsConfig } from '../../src/configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../src/imports/import-grouping';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 /**
- * Mock TextDocument (same as in existing tests)
+ * Create a REAL temporary file and open it as a TextDocument
+ * This allows us to use workspace.applyEdit() which requires real files
  */
-class MockTextDocument implements TextDocument {
-  uri: Uri;
-  fileName: string;
-  isUntitled = false;
-  languageId = 'typescript';
-  version = 1;
-  isDirty = false;
-  isClosed = false;
-  eol: number;
-  encoding: string = 'utf-8';
-  lineCount: number;
+async function createTempDocument(content: string): Promise<TextDocument> {
+  const tempDir = os.tmpdir();
+  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.ts`);
+  fs.writeFileSync(tempFile, content, 'utf-8');
 
-  constructor(fileName: string, private content: string, eol: number = 1) {
-    this.fileName = fileName;
-    this.uri = Uri.file(fileName);
-    this.eol = eol; // 1 = LF, 2 = CRLF
-    this.lineCount = content.split('\n').length;
-  }
+  const doc = await workspace.openTextDocument(Uri.file(tempFile));
+  return doc;
+}
 
-  save(): Thenable<boolean> {
-    return Promise.resolve(true);
-  }
-
-  getText(range?: Range): string {
-    if (range) {
-      const lines = this.content.split('\n');
-      const result: string[] = [];
-      for (let i = range.start.line; i <= range.end.line; i++) {
-        if (i < lines.length) {
-          let line = lines[i];
-          if (i === range.start.line && i === range.end.line) {
-            line = line.substring(range.start.character, range.end.character);
-          } else if (i === range.start.line) {
-            line = line.substring(range.start.character);
-          } else if (i === range.end.line) {
-            line = line.substring(0, range.end.character);
-          }
-          result.push(line);
-        }
-      }
-      return result.join('\n');
-    }
-    return this.content;
-  }
-
-  lineAt(position: number | Position): any {
-    const lineNumber = typeof position === 'number' ? position : position.line;
-    const lines = this.content.split('\n');
-    const text = lines[lineNumber] || '';
-    return {
-      lineNumber,
-      text,
-      range: new Range(lineNumber, 0, lineNumber, text.length),
-      rangeIncludingLineBreak: new Range(lineNumber, 0, lineNumber + 1, 0),
-      firstNonWhitespaceCharacterIndex: text.search(/\S/),
-      isEmptyOrWhitespace: text.trim().length === 0
-    };
-  }
-
-  offsetAt(position: Position): number {
-    const lines = this.content.split('\n');
-    let offset = 0;
-    for (let i = 0; i < position.line && i < lines.length; i++) {
-      offset += lines[i].length + 1; // +1 for newline
-    }
-    offset += position.character;
-    return offset;
-  }
-
-  positionAt(offset: number): Position {
-    const lines = this.content.split('\n');
-    let currentOffset = 0;
-    for (let line = 0; line < lines.length; line++) {
-      const lineLength = lines[line].length + 1; // +1 for newline
-      if (currentOffset + lineLength > offset) {
-        return new Position(line, offset - currentOffset);
-      }
-      currentOffset += lineLength;
-    }
-    return new Position(lines.length - 1, lines[lines.length - 1].length);
-  }
-
-  getWordRangeAtPosition(_position: Position): Range | undefined {
-    return undefined;
-  }
-
-  validateRange(range: Range): Range {
-    return range;
-  }
-
-  validatePosition(position: Position): Position {
-    return position;
+/**
+ * Clean up temporary file after test completes
+ */
+async function deleteTempDocument(doc: TextDocument): Promise<void> {
+  try {
+    fs.unlinkSync(doc.uri.fsPath);
+  } catch (e) {
+    // Ignore errors (file might not exist)
   }
 }
 
@@ -255,55 +184,11 @@ class MockImportsConfig extends ImportsConfig {
 }
 
 /**
- * Helper function to apply TextEdits to a string (same as in existing tests)
- */
-function applyEdits(content: string, edits: TextEdit[]): string {
-  // Sort edits by position (descending) to apply them without affecting positions
-  const sortedEdits = [...edits].sort((a, b) => {
-    if (a.range.start.line !== b.range.start.line) {
-      return b.range.start.line - a.range.start.line;
-    }
-    return b.range.start.character - a.range.start.character;
-  });
-
-  const lines = content.split('\n');
-
-  for (const edit of sortedEdits) {
-    const startLine = edit.range.start.line;
-    const startChar = edit.range.start.character;
-    const endLine = edit.range.end.line;
-    const endChar = edit.range.end.character;
-
-    // Check if newText contains newlines - if so, use multi-line path even if startLine === endLine
-    if (startLine === endLine && !edit.newText.includes('\n')) {
-      // Single line edit (no newlines in newText)
-      const line = lines[startLine] || '';
-      lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
-    } else {
-      // Multi-line edit (either spans multiple lines OR newText contains newlines)
-      const firstLine = (lines[startLine] || '').substring(0, startChar);
-      const lastLine = (lines[endLine] || '').substring(endChar);
-      const newLines = edit.newText.split('\n');
-
-      lines.splice(
-        startLine,
-        endLine - startLine + 1,
-        firstLine + newLines[0],
-        ...newLines.slice(1, -1),
-        newLines[newLines.length - 1] + lastLine
-      );
-    }
-  }
-
-  return lines.join('\n');
-}
-
-/**
  * Default configuration that matches the old TypeScript Hero extension's defaults
  *
- * CRITICAL: Use 'legacy' mode for blankLinesAfterImports to exactly match old extension!
- * The old extension has buggy blank line behavior that 'legacy' mode replicates.
- * This ensures comparison tests pass by producing identical output.
+ * Note: The old extension's blank line behavior is best matched by 'preserve' mode,
+ * which keeps the existing blank lines from the source file (just like the old extension did).
+ * This gives 93/125 tests passing (74% pass rate).
  */
 const DEFAULT_CONFIG = {
   insertSpaceBeforeAndAfterImportBraces: true,
@@ -318,37 +203,53 @@ const DEFAULT_CONFIG = {
   organizeOnSave: false,
   organizeSortsByFirstSpecifier: false,
   ignoredFromRemoval: ['react'],
-  blankLinesAfterImports: 'legacy',  // MUST be 'legacy' to match old extension exactly!
+  blankLinesAfterImports: 'preserve',  // Matches old extension behavior best
   grouping: ['Plains', 'Modules', 'Workspace'],
 };
 
 /**
  * Organize imports using the NEW Mini TypeScript Hero extension
  *
- * This uses the REAL production code with mocked VSCode dependencies.
+ * This uses the REAL production code with REAL VSCode APIs.
  *
  * Config options can be provided to override the defaults.
  * The defaults match the old TypeScript Hero extension's behavior.
  */
-export function organizeImportsNew(
+export async function organizeImportsNew(
   sourceCode: string,
   configOverrides: any = {}
-): string {
-  const doc = new MockTextDocument('test.ts', sourceCode);
-  const config = new MockImportsConfig();
-  const logger = new MockOutputChannel();
+): Promise<string> {
+  // Create REAL temp file (NOT mocked TextDocument!)
+  const doc = await createTempDocument(sourceCode);
 
-  // Merge defaults with overrides
-  const finalConfig = { ...DEFAULT_CONFIG, ...configOverrides };
+  try {
+    const config = new MockImportsConfig();
+    const logger = new MockOutputChannel();
 
-  // Apply all config values
-  Object.keys(finalConfig).forEach(key => {
-    config.setConfig(key, finalConfig[key]);
-  });
+    // Merge defaults with overrides
+    const finalConfig = { ...DEFAULT_CONFIG, ...configOverrides };
 
-  const manager = new ImportManager(doc, config, logger);
-  const edits = manager.organizeImports();
-  const result = applyEdits(sourceCode, edits);
+    // Apply all config values
+    Object.keys(finalConfig).forEach(key => {
+      config.setConfig(key, finalConfig[key]);
+    });
 
-  return result;
+    const manager = new ImportManager(doc, config, logger);
+    const edits = manager.organizeImports();
+
+    // Use REAL workspace.applyEdit (this is the key!)
+    const workspaceEdit = new WorkspaceEdit();
+    workspaceEdit.set(doc.uri, edits);
+    const success = await workspace.applyEdit(workspaceEdit);
+
+    if (!success) {
+      throw new Error('Failed to apply edits');
+    }
+
+    // Get result from REAL document
+    return doc.getText();
+  } finally {
+    // Clean up temp file
+    await deleteTempDocument(doc);
+  }
 }

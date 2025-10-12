@@ -32,7 +32,7 @@ export class BooksComponent implements OnInit {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 101: Angular component ===');
     console.log('OLD OUTPUT:');
@@ -66,7 +66,7 @@ export function UserProfile({ userId }: { userId: string }) {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 102: React component ===');
     console.log('OLD OUTPUT:');
@@ -104,7 +104,7 @@ export class BooksController {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 103: NestJS controller ===');
     console.log('OLD OUTPUT:');
@@ -139,7 +139,7 @@ export default defineComponent({
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 104: Vue component ===');
     console.log('OLD OUTPUT:');
@@ -174,7 +174,7 @@ export class DataService {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 105: RxJS service ===');
     console.log('OLD OUTPUT:');
@@ -214,7 +214,7 @@ export default router;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Express route handler imports should be organized correctly');
   });
@@ -242,7 +242,7 @@ export class FileProcessor {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 107: Node.js module ===');
     console.log('OLD OUTPUT:');
@@ -281,7 +281,7 @@ export class AppComponent {
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 108: Monorepo ===');
     console.log('OLD OUTPUT:');
@@ -307,7 +307,7 @@ const w = express;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Mixed framework imports should be sorted alphabetically');
   });
@@ -331,7 +331,7 @@ const l1 = Local1; const l2 = Local2; const l3 = Local3;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 110: Large file ===');
     console.log('OLD OUTPUT:');

@@ -16,7 +16,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 044: Remove unused ===');
     console.log('OLD OUTPUT:');
@@ -35,7 +35,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Only used specifiers should be kept');
   });
@@ -47,7 +47,7 @@ let x: MyType;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Type-only usage counts as used');
   });
@@ -60,7 +60,7 @@ const x = 1;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 047: ignoredFromRemoval ===');
     console.log('OLD OUTPUT:');
@@ -85,7 +85,7 @@ const x = 1;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Custom ignoredFromRemoval should be honored');
   });
@@ -98,7 +98,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Unused default import should be removed');
   });
@@ -111,7 +111,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Unused namespace import should be removed');
   });
@@ -124,7 +124,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'String imports should always be kept');
   });
@@ -136,7 +136,7 @@ export { A };
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Unused specifiers in re-export should be removed');
   });
@@ -148,7 +148,7 @@ export { A, B };
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'All re-exported symbols should be kept');
   });
@@ -162,7 +162,7 @@ const sum = doubled.reduce((a, b) => a + b, 0);
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 054: Property access ===');
     console.log('OLD OUTPUT:');
@@ -184,7 +184,7 @@ const x = Injectable;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Local declarations should shadow imports');
   });
@@ -201,7 +201,7 @@ const x = Used;
     };
 
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'All imports should be kept when removal disabled');
   });
@@ -213,7 +213,7 @@ const x = UsedNamed;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 057: Partial removal ===');
     console.log('OLD OUTPUT:');

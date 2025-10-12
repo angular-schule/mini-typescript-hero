@@ -24,7 +24,10 @@
       "Bash(npm test:*)",
       "Bash(tee:*)",
       "WebFetch(domain:github.com)",
-      "SlashCommand(/document-end)"
+      "SlashCommand(/document-end)",
+      "Bash(for file in *.test.ts)",
+      "Bash(do sed -i.bak 's/const newResult = organizeImportsNew(/const newResult = await organizeImportsNew(/g' \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

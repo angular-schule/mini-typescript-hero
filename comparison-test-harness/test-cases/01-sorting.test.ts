@@ -24,7 +24,7 @@ const z: OnInit = null as any;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     // First, let's see what the old extension actually produces
     console.log('\n=== TEST 001: Mixed-case specifiers ===');
@@ -45,7 +45,7 @@ const z: OnInit = null as any;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should match for all-capital specifiers');
   });
@@ -59,7 +59,7 @@ const z = tap;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should match for all-lowercase specifiers');
   });
@@ -74,7 +74,7 @@ const z = map;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 004: Complex mixed case ===');
     console.log('OLD OUTPUT:');
@@ -97,7 +97,7 @@ const w = z;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Libraries should be sorted alphabetically');
   });
@@ -111,7 +111,7 @@ const y = zoo;
 `;
 
     const oldResult = await organizeImportsOld(input, { organizeSortsByFirstSpecifier: true });
-    const newResult = organizeImportsNew(input, { organizeSortsByFirstSpecifier: true });
+    const newResult = await organizeImportsNew(input, { organizeSortsByFirstSpecifier: true });
 
     console.log('\n=== TEST 006: Sort by first specifier ===');
     console.log('OLD OUTPUT:');
@@ -133,7 +133,7 @@ const y = map;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 007: String imports first ===');
     console.log('OLD OUTPUT:');
@@ -152,7 +152,7 @@ import 'monkey';
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     // EXPECTED DIFFERENCE: Old extension adds blank line after imports even when there's
     // no code after (ends with \n\n). New extension is smarter and doesn't add pointless
@@ -171,7 +171,7 @@ const z: Init = null as any;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 009: Aliases ===');
     console.log('OLD OUTPUT:');
@@ -192,7 +192,7 @@ const z = useEffect;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     // BUG FOUND: New extension skips specifier sorting for imports in ignoredFromRemoval list.
     // ignoredFromRemoval defaults to ['react'], so React imports don't get specifiers sorted.
@@ -218,7 +218,7 @@ const y = RxJS;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Namespace imports should be sorted by alias');
   });
@@ -232,7 +232,7 @@ const w = z;
 `;
 
     const oldResult = await organizeImportsOld(input, { disableImportsSorting: true });
-    const newResult = organizeImportsNew(input, { disableImportsSorting: true });
+    const newResult = await organizeImportsNew(input, { disableImportsSorting: true });
 
     assert.equal(newResult, oldResult, 'Should preserve order when sorting disabled');
   });
@@ -248,7 +248,7 @@ const z = c;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Library names should be sorted case-insensitively');
   });
@@ -263,7 +263,7 @@ const d = test10;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 014: Numbers in names ===');
     console.log('OLD OUTPUT:');
@@ -286,7 +286,7 @@ const z = c;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Scoped packages should be sorted correctly');
   });

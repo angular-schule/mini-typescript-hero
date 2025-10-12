@@ -18,7 +18,7 @@ const y = B;
 
     // DEBUG: Test with NO config to see original behavior
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 016: Basic merging (NO CONFIG) ===');
     console.log('OLD OUTPUT:');
@@ -41,7 +41,7 @@ const z = C;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should merge three imports');
   });
@@ -56,7 +56,7 @@ const z = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 018: Default + named merging ===');
     console.log('OLD OUTPUT:');
@@ -78,7 +78,7 @@ const z = C;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should deduplicate specifiers');
   });
@@ -92,7 +92,7 @@ const y = Lib2;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Namespace imports should remain separate');
   });
@@ -103,7 +103,7 @@ import './lib';
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     // No code after imports, so trim trailing blank line difference
     const oldTrimmed = oldResult.replace(/\n\n$/, '\n');
@@ -119,7 +119,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 022: Merging after /index removal ===');
     console.log('OLD OUTPUT:');
@@ -140,7 +140,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should merge only used specifiers');
   });
@@ -156,7 +156,7 @@ const z = Z;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Merged imports should have sorted specifiers');
   });
@@ -170,7 +170,7 @@ const y = AliasA;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should merge default with aliased named imports');
   });
@@ -188,7 +188,7 @@ const d = B2;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should merge each module separately');
   });
@@ -204,7 +204,7 @@ const z = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 027: Mixed import types ===');
     console.log('OLD OUTPUT:');
@@ -238,7 +238,7 @@ const user = UserDetail;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 028: Real Angular example ===');
     console.log('OLD OUTPUT:');

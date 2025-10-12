@@ -20,7 +20,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 058: Blank lines (legacy mode) ===');
     console.log('OLD OUTPUT:');
@@ -41,7 +41,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 059: Blank before imports ===');
     console.log('OLD OUTPUT:');
@@ -62,7 +62,7 @@ const y = MyService;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 060: Between groups ===');
     console.log('OLD OUTPUT:');
@@ -83,7 +83,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'Leading blank lines should be removed');
   });
@@ -97,7 +97,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     // Old may add trailing blank, new doesn't
     const oldTrimmed = oldResult.replace(/\n+$/, '\n');
@@ -113,7 +113,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 063: Shebang ===');
     console.log('OLD OUTPUT:');
@@ -133,7 +133,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'use strict should be preserved before imports');
   });
@@ -147,7 +147,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'Copyright header should be preserved');
   });
@@ -162,7 +162,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 066: Multiple blanks ===');
     console.log('OLD OUTPUT:');
@@ -181,7 +181,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     assert.equal(newResult, oldResult, 'No blank line before imports when no header');
   });
@@ -196,7 +196,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 068: Block comment ===');
     console.log('OLD OUTPUT:');
@@ -218,7 +218,7 @@ const y = MyService;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 069: Three groups ===');
     console.log('OLD OUTPUT:');
@@ -239,7 +239,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
 
     console.log('\n=== TEST 070: After header ===');
     console.log('OLD OUTPUT:');

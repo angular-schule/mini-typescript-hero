@@ -12,7 +12,7 @@ suite('Edge Cases', () => {
     const input = ``;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Empty file should remain empty');
   });
@@ -23,7 +23,7 @@ const y = 2;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'File without imports should remain unchanged');
   });
@@ -34,7 +34,7 @@ import 'reflect-metadata';
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     // Handle EOF blank line difference
     const oldTrimmed = oldResult.replace(/\n\n$/, '\n');
@@ -50,7 +50,7 @@ const y = Lib2;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Only default imports should be sorted');
   });
@@ -64,7 +64,7 @@ const y = Lib2;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Only namespace imports should be sorted');
   });
@@ -80,7 +80,7 @@ const e = VeryLongSpecifierName5;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 076: Long import ===');
     console.log('OLD OUTPUT:');
@@ -103,7 +103,7 @@ const z = Utils;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 077: Path aliases ===');
     console.log('OLD OUTPUT:');
@@ -124,7 +124,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 078: Remove /index ===');
     console.log('OLD OUTPUT:');
@@ -146,7 +146,7 @@ const y = B;
 
     const config = { removeTrailingIndex: false };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, '/index should be kept when disabled');
   });
@@ -159,7 +159,7 @@ const y = import('./dynamic');
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Dynamic import() should not be confused with static imports');
   });
@@ -172,7 +172,7 @@ const url = import.meta.url;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'import.meta should not be confused with imports');
   });
@@ -185,7 +185,7 @@ const x = Used;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 082: Empty specifiers ===');
     console.log('OLD OUTPUT:');
@@ -207,7 +207,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 083: Comments between ===');
     console.log('OLD OUTPUT:');
@@ -227,7 +227,7 @@ const str = \`import { B } from 'fake'\`;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Template strings with import keyword should not be confused');
   });
@@ -240,7 +240,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 085: Triple-slash ===');
     console.log('OLD OUTPUT:');
@@ -261,7 +261,7 @@ let y: MyType;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 086: Type-only import ===');
     console.log('OLD OUTPUT:');
@@ -282,7 +282,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Shebang should be preserved at line 1');
   });
@@ -295,7 +295,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'use strict (single quotes) should be preserved');
   });
@@ -308,7 +308,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'use strict (double quotes) should be preserved');
   });
@@ -322,7 +322,7 @@ const y = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 120: import = require() ===');
     console.log('OLD OUTPUT:');
@@ -345,7 +345,7 @@ const service = Injectable;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 121: Local shadowing ===');
     console.log('OLD OUTPUT:');
@@ -366,7 +366,7 @@ const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 122: Property access ===');
     console.log('OLD OUTPUT:');

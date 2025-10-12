@@ -15,7 +15,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     console.log('\n=== TEST 087: Quote style ===');
     console.log('OLD OUTPUT:');
@@ -35,7 +35,7 @@ const x = A;
 
     const config = { stringQuoteStyle: '"' };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should use double quotes when configured');
   });
@@ -47,7 +47,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should add semicolons by default');
   });
@@ -60,7 +60,7 @@ const x = A;
 
     const config = { insertSemicolons: false };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 090: No semicolons ===');
     console.log('OLD OUTPUT:');
@@ -79,7 +79,7 @@ const x = A;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should add spaces in braces by default');
   });
@@ -92,7 +92,7 @@ const x = A;
 
     const config = { insertSpaceBeforeAndAfterImportBraces: false };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 092: No spaces ===');
     console.log('OLD OUTPUT:');
@@ -114,7 +114,7 @@ const c = VeryLongName3;
 
     const config = { multiLineWrapThreshold: 40 };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 093: Multiline ===');
     console.log('OLD OUTPUT:');
@@ -139,7 +139,7 @@ const c = VeryLongName3;
       multiLineTrailingComma: true,
     };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should add trailing comma in multiline');
   });
@@ -157,7 +157,7 @@ const c = VeryLongName3;
       multiLineTrailingComma: false,
     };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 095: No trailing comma ===');
     console.log('OLD OUTPUT:');
@@ -182,7 +182,7 @@ const y = B;
       insertSpaceBeforeAndAfterImportBraces: false,
     };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 096: Combined config ===');
     console.log('OLD OUTPUT:');
@@ -204,7 +204,7 @@ const y = Z;
 
     const config = { disableImportsSorting: true };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should preserve order when sorting disabled');
   });
@@ -218,7 +218,7 @@ const x = Used;
 
     const config = { disableImportRemovalOnOrganize: true };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should keep unused imports when removal disabled');
   });
@@ -233,7 +233,7 @@ const y = zoo;
 
     const config = { organizeSortsByFirstSpecifier: true };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 099: Sort by first specifier ===');
     console.log('OLD OUTPUT:');
@@ -261,7 +261,7 @@ const y = zoo;
       disableImportRemovalOnOrganize: true,
     };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 100: All options ===');
     console.log('OLD OUTPUT:');
@@ -283,7 +283,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, 'Should remove trailing /index by default');
   });
@@ -298,7 +298,7 @@ const y = B;
 
     const config = { removeTrailingIndex: false };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should preserve /index when disabled');
   });
@@ -312,7 +312,7 @@ const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input);
 
     assert.equal(newResult, oldResult, '/index removal should happen before merging');
   });
@@ -327,7 +327,7 @@ const x = A;
 
     const config = { ignoredFromRemoval: [] };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should remove unused React when not in ignore list');
   });
@@ -342,7 +342,7 @@ const x = A;
 
     const config = { ignoredFromRemoval: ['react', 'vue'] };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     assert.equal(newResult, oldResult, 'Should keep unused React and Vue when in ignore list');
   });
@@ -357,7 +357,7 @@ const z = useEffect;
 
     const config = { ignoredFromRemoval: ['react'] };
     const oldResult = await organizeImportsOld(input, config);
-    const newResult = organizeImportsNew(input, config);
+    const newResult = await organizeImportsNew(input, config);
 
     console.log('\n=== TEST 116: Ignored imports specifier sorting ===');
     console.log('OLD OUTPUT:');
