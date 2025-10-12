@@ -371,15 +371,10 @@ export class ImportManager {
         }
 
         // Multiple imports from same module
-        const stringImports = imports.filter(i => i instanceof StringImport);
-        const namespaceImports = imports.filter(i => i instanceof NamespaceImport);
         const namedImports = imports.filter(i => i instanceof NamedImport) as NamedImport[];
 
-        // String imports and namespace imports cannot be merged - keep separate
-        merged.push(...stringImports);
-        merged.push(...namespaceImports);
-
-        // Merge named imports
+        // Merge ONLY named imports - keep others in original order
+        let mergedNamed: NamedImport | null = null;
         if (namedImports.length > 0) {
           const allSpecifiers: SymbolSpecifier[] = [];
           let mergedDefault: string | undefined;
@@ -405,11 +400,27 @@ export class ImportManager {
           // Sort specifiers
           finalSpecifiers.sort(specifierSort);
 
-          merged.push(new NamedImport(
+          mergedNamed = new NamedImport(
             namedImports[0].libraryName,
             finalSpecifiers,
             mergedDefault,
-          ));
+          );
+        }
+
+        // Now go through in ORIGINAL order and add imports
+        // Replace all NamedImports with the merged one (first occurrence)
+        let namedAdded = false;
+        for (const imp of imports) {
+          if (imp instanceof NamedImport) {
+            if (!namedAdded && mergedNamed) {
+              merged.push(mergedNamed);
+              namedAdded = true;
+            }
+            // Skip other NamedImports (already merged)
+          } else {
+            // String or Namespace - cannot merge, keep as-is
+            merged.push(imp);
+          }
         }
       }
 
