@@ -518,3 +518,218 @@ if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName))
 
 **Session End**: 2025-10-12
 **Commit**: 436f460 "feat: implement real file approach for test harness - 95/125 passing (76%)"
+
+---
+
+## Session 19: 2025-10-12 - Deep Investigation of Test Failures & Sorting Behavior
+
+### ✅ Completed Tasks
+
+1. **Comprehensive Test Failure Analysis** (95/125 passing, 76%)
+   - Ran full comparison test suite and captured detailed output
+   - Categorized all 30 failing tests into 5 groups
+   - Created `FAILURE-ANALYSIS.md` with detailed breakdown
+   - Created `SESSION-19-SUMMARY.md` with executive summary
+
+2. **Discovered Old Extension's Two-Level Sorting Bug**
+   - Level 1 (import-manager.ts:210-221): Respects `disableImportsSorting` & `organizeSortsByFirstSpecifier`
+   - Level 2 (typescript-hero.ts:60): Generator ALWAYS calls `group.sortedImports` (ignores configs!)
+   - **BUG**: Configs only affect BETWEEN-group sorting, not WITHIN-group sorting
+   - Verified in actual old extension source code
+
+3. **Analyzed Migration Strategy from README**
+   - Confirmed existing migration strategy handles behavior differences
+   - New users get modern behavior, migrated users get `"legacy"` mode
+   - Strategy eliminates need to replicate SOME bugs
+
+4. **Categorized All 30 Test Failures**
+   - 8 tests: Old extension bugs we fixed (multiline wrapping, empty files, disableImportsSorting)
+   - 6 tests: Intentional improvements (deduplication, smart merging)
+   - 11 tests: Blank line discrepancies (old extension inconsistent)
+   - 2 tests: Demo tests (depend on other fixes)
+   - 1-2 tests: Config behavior needs investigation
+   - 1 test: Empty specifiers behavior (decision needed)
+
+### 🔄 In-Progress Tasks
+
+1. **Understanding Sorting Behavior**
+   - Clarified: Import statement sorting vs specifier sorting within `{ }`
+   - Identified two-level sorting in old extension
+   - Need to PROVE behavior with actual test code (not just analysis)
+
+### 🚧 Blocked Items / Open Questions
+
+1. **PRIORITY for Next Session: Prove with Code, Not Analysis**
+   - Write actual test code that demonstrates old extension's two-level sorting bug
+   - Show configs work at Level 1 but fail at Level 2
+   - No more speculation - need concrete proof
+
+2. **Legacy Config Switch Design**
+   - Need to implement switch that replicates exact old behavior
+   - Should control Level 2 sorting (within-group behavior)
+   - Must work alongside existing config options
+
+3. **Empty Import Specifiers Decision** (Test 082)
+   - When all specifiers removed: convert to side-effect import or remove entirely?
+   - OLD: Removes entirely
+   - NEW: Converts to `import './lib';`
+
+### 📁 Files Modified
+
+1. **comparison-test-harness/FAILURE-ANALYSIS.md** (CREATED)
+   - Detailed analysis of all 30 failing tests
+   - Categorized by bug type and severity
+   - Recommendations for each category
+
+2. **comparison-test-harness/SESSION-19-SUMMARY.md** (CREATED)
+   - Executive summary of investigation
+   - Key discoveries and recommendations
+   - Migration strategy benefits
+
+3. **src/imports/import-manager.ts** (lines 513-519)
+   - Updated comments to clarify sorting logic
+   - No functional changes - just documentation
+
+### 💡 Key Discoveries
+
+1. **Old Extension Has Two-Level Sorting**
+   ```
+   Level 1: Import statement order (RESPECTS configs) ✅
+            Lines 210-221: if (!disableImportsSorting) { ... }
+   
+   Level 2: Within-group sorting (IGNORES configs) ❌
+            Line 60: group.sortedImports.map(...) 
+                     ↑ ALWAYS sorts by library name!
+   ```
+
+2. **Test 097 (`disableImportsSorting`) Failure Explained**
+   - Not a bug in NEW extension - it's correct!
+   - OLD extension has bug: Level 2 re-sorts despite config
+   - NEW extension only has Level 1 sorting (correct behavior)
+
+3. **Migration Strategy Already Handles Most Differences**
+   - `blankLinesAfterImports: "legacy"` for migrated users
+   - Modern behavior for new users
+   - Most test failures are intentional improvements
+
+### 🎯 Next Session - HIGHEST PRIORITY
+
+**Task: PROVE Old Extension Behavior with Code**
+
+1. Create test file that demonstrates:
+   ```typescript
+   // Test case: Same group, disableImportsSorting: true
+   import { Z } from './z';  // Both in "Workspace" group
+   import { A } from './a';
+   
+   // OLD extension result: A then Z (sorted despite config!)
+   // WHY: Level 2 sorting overrides Level 1
+   ```
+
+2. Write proof-of-concept code showing:
+   - Level 1 sorting respects config
+   - Level 2 sorting ignores config
+   - How they interact
+
+3. Implement legacy config switch:
+   - Design: `legacyCompatibilityMode: boolean` or similar
+   - Effect: Controls whether Level 2 sorting happens
+   - Location: Config option + logic in generateTextEdits()
+
+4. Test Results:
+   - With legacy mode: Match old extension exactly
+   - Without legacy mode: Correct behavior (respect all configs)
+
+### 📊 Test Results Summary
+
+**Current**: 95/125 passing (76%)
+
+**Failure Breakdown**:
+- Intentional bug fixes: 8 tests
+- Intentional improvements: 6 tests  
+- Blank line differences: 11 tests (migration handles)
+- Config behavior: 2-3 tests (need investigation)
+- Demo tests: 2 tests (depend on fixes)
+
+**Expected After Fixes**: ~105-110/125 (84-88%)
+
+### 🔧 Implementation Plan for Next Session
+
+1. **Create Proof Test** (`comparison-test-harness/test-cases/sorting-proof.test.ts`)
+   - Test within-group sorting with `disableImportsSorting: true`
+   - Test within-group sorting with `organizeSortsByFirstSpecifier: true`
+   - Prove old extension ignores these configs at Level 2
+
+2. **Add Legacy Config Option**
+   - Location: `src/configuration/imports-config.ts`
+   - Name: `legacyWithinGroupSorting` or `legacyCompatibilityMode`
+   - Default: `false` (new users get correct behavior)
+   - Migration: Set to `true` for migrated users
+
+3. **Implement Legacy Sorting Logic**
+   - Location: `src/imports/import-manager.ts` lines 508-525
+   - Logic: If legacy mode, always use `group.sortedImports`
+   - Otherwise: Respect `disableImportsSorting` and `organizeSortsByFirstSpecifier`
+
+4. **Update Tests**
+   - Run test suite with legacy mode
+   - Verify it matches old extension exactly
+   - Document remaining differences
+
+### 📝 Documentation Updates Needed
+
+1. Update README.md:
+   - Add "Bug Fixes & Improvements" section
+   - Document `legacyCompatibilityMode` config
+   - Explain two-level sorting fix
+
+2. Update CHANGELOG.md:
+   - List bug fixes (disableImportsSorting now works)
+   - List improvements (deduplication, smart merging)
+   - Note legacy mode for exact compatibility
+
+3. Update comparison-test-harness/README.md:
+   - Explain expected test results
+   - Document that some failures are intentional improvements
+
+### ⚠️ Critical Reminders
+
+1. **NO MORE ANALYSIS - ONLY CODE**
+   - User wants proof, not speculation
+   - Write actual tests that demonstrate behavior
+   - Show the bug in action
+
+2. **Legacy Switch is Required**
+   - Must replicate exact old behavior for 100% compatibility
+   - Even if behavior is buggy
+   - Users need migration path
+
+3. **Two Types of Sorting**
+   - Import statements (between imports)
+   - Specifiers (within `{ }` braces)
+   - Old extension: Both levels
+   - Config controls: Only Level 1 (bug!)
+
+### 🎓 Key Learnings
+
+1. **Old Extension Source Code**
+   - `import-manager.ts`: Does respect configs
+   - `typescript-hero.ts`: Generator ignores configs (bug)
+   - Generator always calls `group.sortedImports`
+
+2. **Test Failures Are Not All Bugs**
+   - Many are intentional improvements
+   - Some test buggy old behavior
+   - 76% pass rate is actually good given old bugs
+
+3. **Migration Strategy is Smart**
+   - Handles most differences automatically
+   - No need to replicate every old bug
+   - Legacy mode can handle specific compatibility needs
+
+---
+
+**Session End**: 2025-10-12
+**Status**: Investigation complete, ready for implementation
+**Next Action**: Prove sorting behavior with code, implement legacy switch
+

@@ -510,8 +510,10 @@ export class ImportManager {
         continue;
       }
 
-      // If sorting by first specifier, preserve pre-sorted order
-      // Otherwise, re-sort by library name within each group
+      // Choose which import list to use:
+      // - If sorting is DISABLED: use pre-sorted order (group.imports)
+      // - If sorting by FIRST SPECIFIER: use pre-sorted order (group.imports) - sorted in organizeImports()
+      // - If sorting by LIBRARY NAME: re-sort within group (group.sortedImports)
       const importsToUse = (useSorting && !useFirstSpecifierSort)
         ? group.sortedImports
         : group.imports;
