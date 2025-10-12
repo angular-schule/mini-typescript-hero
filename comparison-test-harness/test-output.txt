@@ -21,13 +21,13 @@ old-typescript-hero/src/ioc.ts(79,14): error TS2558: Expected 0 type arguments, 
 - Resolving version...
 ✔ Validated version: 1.105.0
 ✔ Found existing install in /Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0
-[90m[main 2025-10-12T13:02:17.336Z][0m update#setState disabled
-[90m[main 2025-10-12T13:02:17.342Z][0m update#ctor - updates are disabled by the environment
+[90m[main 2025-10-12T16:32:30.578Z][0m update#setState disabled
+[90m[main 2025-10-12T16:32:30.579Z][0m update#ctor - updates are disabled by the environment
 ChatSessionStore: Migrating 0 chat sessions from storage service to file system
-MCP Registry configured: https://api.mcp.github.com/2025-09-15
 [/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness]: property `engines` is mandatory and must be of type `object`
+MCP Registry configured: https://api.mcp.github.com/2025-09-15
 Settings Sync: Account status changed from uninitialized to unavailable
-Started local extension host with pid 93538.
+Started local extension host with pid 32602.
 
   PROOF: Two-Level Sorting Bug in Old Extension
 
@@ -69,7 +69,7 @@ NEW Extension preserved order? NO (bug)
 
 ✅ SUCCESS: NEW extension with legacyWithinGroupSorting=true MATCHES old extension!
    Both sort imports despite disableImportsSorting=true
-    ✔ PROOF 1: disableImportsSorting should prevent ALL sorting (233ms)
+    ✔ PROOF 1: disableImportsSorting should prevent ALL sorting (223ms)
 
 ================================================
 PROOF TEST 2: organizeSortsByFirstSpecifier
@@ -109,7 +109,7 @@ NEW Extension sorted by first specifier? NO
 
 ✅ SUCCESS: NEW extension with legacyWithinGroupSorting=true MATCHES old extension!
    Both sort by library name despite organizeSortsByFirstSpecifier=true
-    ✔ PROOF 2: organizeSortsByFirstSpecifier should change sort key (204ms)
+    ✔ PROOF 2: organizeSortsByFirstSpecifier should change sort key (200ms)
 
 ====================================================
 PROOF TEST 3: Multiple Workspace imports
@@ -180,7 +180,7 @@ const b = bar;
 const a = apple;
 
 --- NEW EXTENSION OUTPUT ---
-import { zoo, bar, apple } from './stuff';
+import { apple, bar, zoo } from './stuff';
 
 const z = zoo;
 const b = bar;
@@ -189,14 +189,14 @@ const a = apple;
 
 --- ANALYSIS ---
 OLD Extension sorted specifiers? YES
-NEW Extension sorted specifiers? NO
+NEW Extension sorted specifiers? YES
 
 ℹ️  With disableImportRemovalOnOrganize=true, NEW extension preserves imports as-is
    (including unsorted specifiers). This is a design choice.
    OLD extension always sorts specifiers regardless of config.
 
 ✅ This is a DESIGN DIFFERENCE, not a bug.
-    ✔ PROOF 4: Specifier sorting within {} should work independently (91ms)
+    ✔ PROOF 4: Specifier sorting within {} should work independently (75ms)
   Demo for Video Test Cases
     1) 128. Demo file - EXACT reproduction of manual test case
     2) 129. Demo file - NEW extension with modern defaults (not legacy)
@@ -252,7 +252,7 @@ export class BooksComponent implements OnInit {
 
 ===
 
-    ✔ 101. Angular standalone component (137ms)
+    ✔ 101. Angular standalone component (171ms)
 
 === TEST 102: React component ===
 OLD OUTPUT:
@@ -300,7 +300,7 @@ export function UserProfile({ userId }: { userId: string }) {
 
 ===
 
-    ✔ 102. React functional component with hooks (128ms)
+    ✔ 102. React functional component with hooks (130ms)
 
 === TEST 103: NestJS controller ===
 OLD OUTPUT:
@@ -356,7 +356,7 @@ export class BooksController {
 
 ===
 
-    ✔ 103. NestJS controller (86ms)
+    ✔ 103. NestJS controller (82ms)
 
 === TEST 104: Vue component ===
 OLD OUTPUT:
@@ -404,7 +404,7 @@ export default defineComponent({
 
 ===
 
-    ✔ 104. Vue 3 composition API (70ms)
+    ✔ 104. Vue 3 composition API (88ms)
 
 === TEST 105: RxJS service ===
 OLD OUTPUT:
@@ -452,7 +452,7 @@ export class DataService {
 
 ===
 
-    ✔ 105. RxJS operators chain (78ms)
+    ✔ 105. RxJS operators chain (87ms)
     ✔ 106. Express.js route handler (77ms)
 
 === TEST 107: Node.js module ===
@@ -503,7 +503,7 @@ export class FileProcessor {
 
 ===
 
-    ✔ 107. Node.js module with built-ins (80ms)
+    ✔ 107. Node.js module with built-ins (87ms)
 
 === TEST 108: Monorepo ===
 OLD OUTPUT:
@@ -561,8 +561,8 @@ export class AppComponent {
 
 ===
 
-    ✔ 108. Monorepo with workspace packages (79ms)
-    ✔ 109. Mixed framework imports (edge case) (68ms)
+    ✔ 108. Monorepo with workspace packages (75ms)
+    ✔ 109. Mixed framework imports (edge case) (70ms)
 
 === TEST 110: Large file ===
 OLD OUTPUT:
@@ -604,7 +604,7 @@ const l1 = Local1; const l2 = Local2; const l3 = Local3;
 
 ===
 
-    ✔ 110. Large file with many imports (performance) (71ms)
+    ✔ 110. Large file with many imports (performance) (72ms)
   Configuration
 
 === TEST 087: Quote style ===
@@ -621,9 +621,9 @@ const x = A;
 
 ===
 
-    ✔ 087. Single quotes (default) (114ms)
-    ✔ 088. Double quotes (92ms)
-    ✔ 089. Semicolons enabled (default) (73ms)
+    ✔ 087. Single quotes (default) (116ms)
+    ✔ 088. Double quotes (79ms)
+    ✔ 089. Semicolons enabled (default) (72ms)
 
 === TEST 090: No semicolons ===
 OLD OUTPUT:
@@ -639,8 +639,8 @@ const x = A;
 
 ===
 
-    ✔ 090. Semicolons disabled (69ms)
-    ✔ 091. Space in braces enabled (default) (63ms)
+    ✔ 090. Semicolons disabled (64ms)
+    ✔ 091. Space in braces enabled (default) (67ms)
 
 === TEST 092: No spaces ===
 OLD OUTPUT:
@@ -656,7 +656,7 @@ const x = A;
 
 ===
 
-    ✔ 092. Space in braces disabled (66ms)
+    ✔ 092. Space in braces disabled (67ms)
 
 === TEST 093: Multiline ===
 OLD OUTPUT:
@@ -727,9 +727,9 @@ const y = B;
 
 ===
 
-    ✔ 096. Combined config options (64ms)
-    ✔ 097. disableImportsSorting (67ms)
-    ✔ 098. disableImportRemovalOnOrganize (69ms)
+    ✔ 096. Combined config options (63ms)
+    ✔ 097. disableImportsSorting (72ms)
+    ✔ 098. disableImportRemovalOnOrganize (68ms)
 
 === TEST 099: Sort by first specifier ===
 OLD OUTPUT:
@@ -761,7 +761,7 @@ const y = zoo;
 
 
 NEW OUTPUT:
-import { zoo, ant } from "./a"
+import { ant, zoo } from "./a"
 import { Unused } from "./unused"
 
 const x = ant;
@@ -769,12 +769,12 @@ const y = zoo;
 
 ===
 
-    6) 100. All config options together
-    ✔ 111. removeTrailingIndex enabled (default) (64ms)
-    ✔ 112. removeTrailingIndex disabled (71ms)
-    7) 113. removeTrailingIndex interaction with merging
-    ✔ 114. ignoredFromRemoval with empty array (72ms)
-    ✔ 115. ignoredFromRemoval with multiple libraries (67ms)
+    ✔ 100. All config options together (67ms)
+    ✔ 111. removeTrailingIndex enabled (default) (62ms)
+    ✔ 112. removeTrailingIndex disabled (69ms)
+    6) 113. removeTrailingIndex interaction with merging
+    ✔ 114. ignoredFromRemoval with empty array (69ms)
+    ✔ 115. ignoredFromRemoval with multiple libraries (66ms)
 
 === TEST 116: Ignored imports specifier sorting ===
 OLD OUTPUT:
@@ -794,13 +794,13 @@ const z = useEffect;
 
 ===
 
-    ✔ 116. ignoredFromRemoval should still sort specifiers (63ms)
+    ✔ 116. ignoredFromRemoval should still sort specifiers (67ms)
   Edge Cases
-    8) 071. Empty file
-    9) 072. File with no imports
-    ✔ 073. Only string imports (73ms)
-    ✔ 074. Only default imports (72ms)
-    ✔ 075. Only namespace imports (74ms)
+    ✔ 071. Empty file (67ms)
+    ✔ 072. File with no imports (65ms)
+    ✔ 073. Only string imports (67ms)
+    ✔ 074. Only default imports (62ms)
+    ✔ 075. Only namespace imports (87ms)
 
 === TEST 076: Long import ===
 OLD OUTPUT:
@@ -826,7 +826,7 @@ const e = VeryLongSpecifierName5;
 
 ===
 
-    10) 076. Long import line (multiline wrapping)
+    7) 076. Long import line (multiline wrapping)
 
 === TEST 077: Path aliases ===
 OLD OUTPUT:
@@ -850,7 +850,7 @@ const z = Utils;
 
 ===
 
-    ✔ 077. Path aliases (118ms)
+    ✔ 077. Path aliases (72ms)
 
 === TEST 078: Remove /index ===
 OLD OUTPUT:
@@ -869,10 +869,10 @@ const y = B;
 
 ===
 
-    11) 078. removeTrailingIndex enabled
-    ✔ 079. removeTrailingIndex disabled (92ms)
+    8) 078. removeTrailingIndex enabled
+    ✔ 079. removeTrailingIndex disabled (75ms)
     ✔ 080. Dynamic import() not confused with static import (69ms)
-    ✔ 081. import.meta not confused with imports (67ms)
+    ✔ 081. import.meta not confused with imports (65ms)
 
 === TEST 082: Empty specifiers ===
 OLD OUTPUT:
@@ -890,18 +890,7 @@ const x = Used;
 
 ===
 
-    12) 082. Empty import specifiers
-[124] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
-    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
-    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at mwe.wb (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9407)
-    at new mwe (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9275)
-    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
-    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
-    at G1t.W (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6454)
-    at G1t.resolve (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6154)
-    at QKe.r (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21430)
-    at QKe.f (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21044)
+    9) 082. Empty import specifiers
 
 === TEST 083: Comments between ===
 OLD OUTPUT:
@@ -922,8 +911,19 @@ const y = B;
 
 ===
 
-    13) 083. Comments between imports
-    ✔ 084. Template string with import keyword (66ms)
+    10) 083. Comments between imports
+[124] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
+    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
+    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
+    at mwe.wb (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9407)
+    at new mwe (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9275)
+    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
+    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
+    at G1t.W (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6454)
+    at G1t.resolve (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6154)
+    at QKe.r (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21430)
+    at QKe.f (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21044)
+    ✔ 084. Template string with import keyword (69ms)
 
 === TEST 085: Triple-slash ===
 OLD OUTPUT:
@@ -959,9 +959,9 @@ let y: MyType;
 
 ===
 
-    ✔ 086. Type-only import syntax (70ms)
-    ✔ 117. Shebang preservation (67ms)
-    ✔ 118. use strict directive (single quotes) (66ms)
+    ✔ 086. Type-only import syntax (63ms)
+    ✔ 117. Shebang preservation (75ms)
+    ✔ 118. use strict directive (single quotes) (67ms)
     ✔ 119. use strict directive (double quotes) (69ms)
 
 === TEST 120: import = require() ===
@@ -982,7 +982,7 @@ const y = A;
 
 ===
 
-    ✔ 120. Old TypeScript syntax: import = require() (69ms)
+    ✔ 120. Old TypeScript syntax: import = require() (68ms)
 
 === TEST 121: Local shadowing ===
 OLD OUTPUT:
@@ -1006,7 +1006,7 @@ const service = Injectable;
 
 ===
 
-    ✔ 121. Local shadowing (local class shadows import) (99ms)
+    ✔ 121. Local shadowing (local class shadows import) (83ms)
 
 === TEST 122: Property access ===
 OLD OUTPUT:
@@ -1026,7 +1026,7 @@ const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
 
 ===
 
-    ✔ 122. Property access vs function calls (78ms)
+    ✔ 122. Property access vs function calls (86ms)
   Blank Lines
 
 === TEST 058: Blank lines (legacy mode) ===
@@ -1045,7 +1045,7 @@ const x = A;
 
 ===
 
-    ✔ 058. One blank line after imports (default for old) (64ms)
+    ✔ 058. One blank line after imports (default for old) (73ms)
 
 === TEST 059: Blank before imports ===
 OLD OUTPUT:
@@ -1058,14 +1058,14 @@ const x = A;
 
 NEW OUTPUT:
 // Header comment
-
 import { A } from './lib';
+
 
 const x = A;
 
 ===
 
-    14) 059. Blank line before imports preserved
+    ✔ 059. Blank line before imports preserved (75ms)
 
 === TEST 060: Between groups ===
 OLD OUTPUT:
@@ -1087,9 +1087,9 @@ const y = MyService;
 
 ===
 
-    ✔ 060. Blank lines between groups (68ms)
-    15) 061. Leading blank lines removed
-    ✔ 062. File with only imports (no code after) (62ms)
+    ✔ 060. Blank lines between groups (77ms)
+    ✔ 061. Leading blank lines removed (67ms)
+    ✔ 062. File with only imports (no code after) (71ms)
 
 === TEST 063: Shebang ===
 OLD OUTPUT:
@@ -1107,9 +1107,9 @@ const x = A;
 
 ===
 
-    ✔ 063. Shebang preserved (68ms)
-    ✔ 064. Use strict preserved (69ms)
-    ✔ 065. Copyright header preserved (78ms)
+    ✔ 063. Shebang preserved (84ms)
+    ✔ 064. Use strict preserved (76ms)
+    ✔ 065. Copyright header preserved (72ms)
 
 === TEST 066: Multiple blanks ===
 OLD OUTPUT:
@@ -1131,19 +1131,8 @@ const x = A;
 
 ===
 
-    ✔ 066. Multiple blank lines collapsed (legacy behavior) (107ms)
-    ✔ 067. No blank before first import (no header) (61ms)
-[124] potential listener LEAK detected, having 261 listeners already. MOST frequent listener (48):: Error
-    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
-    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20597)
-    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
-    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
-    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
-    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
-    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
-    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
-    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
+    ✔ 066. Multiple blank lines collapsed (legacy behavior) (66ms)
+    ✔ 067. No blank before first import (no header) (73ms)
 
 === TEST 068: Block comment ===
 OLD OUTPUT:
@@ -1165,7 +1154,7 @@ const x = A;
 
 ===
 
-    ✔ 068. Block comment preserved (67ms)
+    ✔ 068. Block comment preserved (77ms)
 
 === TEST 069: Three groups ===
 OLD OUTPUT:
@@ -1191,7 +1180,18 @@ const y = MyService;
 
 ===
 
-    ✔ 069. Three import groups with blank lines (73ms)
+    ✔ 069. Three import groups with blank lines (74ms)
+[124] potential listener LEAK detected, having 259 listeners already. MOST frequent listener (46):: Error
+    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
+    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
+    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20597)
+    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
+    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
+    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
+    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
+    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
+    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
 
 === TEST 070: After header ===
 OLD OUTPUT:
@@ -1204,14 +1204,14 @@ const x = A;
 
 NEW OUTPUT:
 // Header
-
 import { A } from './lib';
+
 
 const x = A;
 
 ===
 
-    16) 070. Blank line after header comment
+    ✔ 070. Blank line after header comment (98ms)
   Removal
 
 === TEST 044: Remove unused ===
@@ -1228,9 +1228,9 @@ const x = Used;
 
 ===
 
-    ✔ 044. Remove completely unused import (97ms)
-    ✔ 045. Remove unused specifiers, keep used ones (70ms)
-    ✔ 046. Type-only imports are considered used (69ms)
+    ✔ 044. Remove completely unused import (79ms)
+    ✔ 045. Remove unused specifiers, keep used ones (74ms)
+    ✔ 046. Type-only imports are considered used (75ms)
 
 === TEST 047: ignoredFromRemoval ===
 OLD OUTPUT:
@@ -1248,13 +1248,13 @@ const x = 1;
 
 ===
 
-    ✔ 047. ignoredFromRemoval list honored (67ms)
-    ✔ 048. Custom ignoredFromRemoval config (64ms)
-    ✔ 049. Default import unused (68ms)
-    ✔ 050. Namespace import unused (65ms)
-    ✔ 051. String imports always kept (69ms)
-    ✔ 052. Remove unused in re-export (68ms)
-    ✔ 053. Keep all re-exported symbols (62ms)
+    ✔ 047. ignoredFromRemoval list honored (74ms)
+    ✔ 048. Custom ignoredFromRemoval config (79ms)
+    ✔ 049. Default import unused (71ms)
+    ✔ 050. Namespace import unused (74ms)
+    ✔ 051. String imports always kept (77ms)
+    ✔ 052. Remove unused in re-export (69ms)
+    ✔ 053. Keep all re-exported symbols (73ms)
 
 === TEST 054: Property access ===
 OLD OUTPUT:
@@ -1274,9 +1274,9 @@ const sum = doubled.reduce((a, b) => a + b, 0);
 
 ===
 
-    ✔ 054. Property access vs function call (66ms)
-    ✔ 055. Local shadowing (67ms)
-    ✔ 056. Disable removal (68ms)
+    ✔ 054. Property access vs function call (76ms)
+    ✔ 055. Local shadowing (74ms)
+    ✔ 056. Disable removal (69ms)
 
 === TEST 057: Partial removal ===
 OLD OUTPUT:
@@ -1292,7 +1292,7 @@ const x = UsedNamed;
 
 ===
 
-    17) 057. Partial default + named removal
+    11) 057. Partial default + named removal
   Grouping
 
 === TEST 028: Plains first ===
@@ -1313,9 +1313,9 @@ const x = Component;
 
 ===
 
-    ✔ 028. Plains (string imports) first (67ms)
-    ✔ 029. Modules (external packages) (72ms)
-    ✔ 030. Workspace (relative imports) (69ms)
+    ✔ 028. Plains (string imports) first (107ms)
+    ✔ 029. Modules (external packages) (79ms)
+    ✔ 030. Workspace (relative imports) (73ms)
 [4d0] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
     at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
     at IBe.u [as onDidChange] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
@@ -1346,7 +1346,7 @@ const x = Component;
 
 ===
 
-    ✔ 031. Plains → Modules with blank line (71ms)
+    ✔ 031. Plains → Modules with blank line (67ms)
 [1a3] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
     at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
     at MBi.u (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
@@ -1390,40 +1390,7 @@ const y = MyService;
 
 ===
 
-    ✔ 032. Modules → Workspace with blank line (77ms)
-[124] potential listener LEAK detected, having 349 listeners already. MOST frequent listener (92):: Error
-    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
-    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20597)
-    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
-    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
-    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
-    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
-    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
-    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
-    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
-[d2f] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
-    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
-    at LX.u [as onDidChange] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20556)
-    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
-    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
-    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
-    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
-    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
-    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
-    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
-[28c] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
-    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
-    at lee.u (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at new mu (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:11054)
-    at new Pc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:13230)
-    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:19696
-    at Array.forEach (<anonymous>)
-    at us.push (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:19427)
-    at hee.Kc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:52121)
-    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:51819
-    at hee.rc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:43766)
+    ✔ 032. Modules → Workspace with blank line (74ms)
 
 === TEST 033: All three groups ===
 OLD OUTPUT:
@@ -1449,10 +1416,21 @@ const y = MyService;
 
 ===
 
-    ✔ 033. All three groups: Plains → Modules → Workspace (89ms)
-    ✔ 034. Scoped packages in Modules group (73ms)
-    ✔ 035. Sorting within Modules group (70ms)
-    ✔ 036. Sorting within Workspace group (74ms)
+    ✔ 033. All three groups: Plains → Modules → Workspace (72ms)
+    ✔ 034. Scoped packages in Modules group (75ms)
+[124] potential listener LEAK detected, having 347 listeners already. MOST frequent listener (90):: Error
+    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
+    at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
+    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20597)
+    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
+    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
+    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
+    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
+    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
+    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
+    ✔ 035. Sorting within Modules group (74ms)
+    ✔ 036. Sorting within Workspace group (71ms)
 
 === TEST 037: Custom regex group ===
 OLD OUTPUT:
@@ -1480,10 +1458,32 @@ const z = MyService;
 
 ===
 
-    ✔ 037. Custom regex group (69ms)
-    ✔ 038. Regex group precedence over keyword (63ms)
-    ✔ 039. Empty group (no imports match) (66ms)
-    ✔ 040. Multiple string imports in Plains (68ms)
+    ✔ 037. Custom regex group (68ms)
+    ✔ 038. Regex group precedence over keyword (72ms)
+[d05] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
+    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
+    at LX.u [as onDidChange] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
+    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20556)
+    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
+    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
+    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
+    at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
+    at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
+    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
+[28c] potential listener LEAK detected, having 175 listeners already. MOST frequent listener (1):: Error
+    at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
+    at lee.u (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
+    at new mu (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:11054)
+    at new Pc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:13230)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:19696
+    at Array.forEach (<anonymous>)
+    at us.push (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:414:19427)
+    at hee.Kc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:52121)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:51819
+    at hee.rc (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:700:43766)
+    ✔ 039. Empty group (no imports match) (72ms)
+    ✔ 040. Multiple string imports in Plains (140ms)
 
 === TEST 041: Path aliases ===
 OLD OUTPUT:
@@ -1505,7 +1505,7 @@ const y = Utils;
 
 ===
 
-    ✔ 041. Path aliases should be in Modules (90ms)
+    ✔ 041. Path aliases should be in Modules (73ms)
 [03f] potential listener LEAK detected, having 200 listeners already. MOST frequent listener (1):: Error
     at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
     at HI.u [as i] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
@@ -1517,7 +1517,7 @@ const y = Utils;
     at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
     at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
     at fJe.I (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1336:1910)
-    ✔ 042. Remaining imports group (74ms)
+    ✔ 042. Remaining imports group (75ms)
 
 === TEST 043: Complex grouping ===
 OLD OUTPUT:
@@ -1563,7 +1563,7 @@ const h = MyComponent;
 
 ===
 
-    ✔ 043. Complex multi-group scenario (67ms)
+    ✔ 043. Complex multi-group scenario (74ms)
   Merging
 
 === TEST 016: Basic merging (NO CONFIG) ===
@@ -1582,8 +1582,8 @@ const y = B;
 
 ===
 
-    ✔ 016. Same library, different specifiers (62ms)
-    ✔ 017. Three imports from same module (72ms)
+    ✔ 016. Same library, different specifiers (68ms)
+    ✔ 017. Three imports from same module (74ms)
 
 === TEST 018: Default + named merging ===
 OLD OUTPUT:
@@ -1603,10 +1603,10 @@ const z = B;
 
 ===
 
-    ✔ 018. Same library, default + named (69ms)
-    18) 019. Duplicate specifiers removed
-    ✔ 020. Namespace imports cannot merge (75ms)
-    ✔ 021. String imports cannot merge (74ms)
+    ✔ 018. Same library, default + named (72ms)
+    ✔ 019. Duplicate specifiers removed (71ms)
+    ✔ 020. Namespace imports cannot merge (68ms)
+    ✔ 021. String imports cannot merge (72ms)
 
 === TEST 022: Merging after /index removal ===
 OLD OUTPUT:
@@ -1625,11 +1625,11 @@ const y = B;
 
 ===
 
-    19) 022. Merging after removeTrailingIndex
-    ✔ 023. Merging preserves used specifiers only (71ms)
-    ✔ 024. Merging sorts specifiers alphabetically (68ms)
-    ✔ 025. Default + named with aliases (69ms)
-    ✔ 026. Multiple modules with merging (64ms)
+    12) 022. Merging after removeTrailingIndex
+    ✔ 023. Merging preserves used specifiers only (80ms)
+    ✔ 024. Merging sorts specifiers alphabetically (69ms)
+    ✔ 025. Default + named with aliases (66ms)
+    ✔ 026. Multiple modules with merging (72ms)
 
 === TEST 027: Mixed import types ===
 OLD OUTPUT:
@@ -1651,7 +1651,7 @@ const z = A;
 
 ===
 
-    20) 027. Mixed import types from same module
+    13) 027. Mixed import types from same module
 
 === TEST 028: Real Angular example ===
 OLD OUTPUT:
@@ -1695,19 +1695,19 @@ const user = UserDetail;
 
 ===
 
-    ✔ 028. Real Angular example - merges @angular/core imports (69ms)
+    ✔ 028. Real Angular example - merges @angular/core imports (74ms)
   Sorting
-[124] potential listener LEAK detected, having 437 listeners already. MOST frequent listener (133):: Error
+[124] potential listener LEAK detected, having 435 listeners already. MOST frequent listener (134):: Error
     at qAi.create (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:27:11992)
     at U8e.u [as onDidChangeReadonly] (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:29:1377)
-    at mwe.wb (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9407)
-    at new mwe (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:9275)
+    at jet.t (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20597)
+    at new ige (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:503:20319)
+    at new yx (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:537:14093)
+    at new jet (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1585:16316)
     at cDt.o (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1716)
     at cDt.createInstance (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1398:1213)
-    at G1t.W (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6454)
-    at G1t.resolve (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:3778:6154)
-    at QKe.r (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21430)
-    at QKe.f (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:1312:21044)
+    at Object.createFileEditor (vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:2710:82938)
+    at vscode-file://vscode-app/Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/comparison-test-harness/.vscode-test/vscode-darwin-arm64-1.105.0/Visual%20Studio%20Code.app/Contents/Resources/app/out/vs/workbench/workbench.desktop.main.js:693:40199
 
 === TEST 001: Mixed-case specifiers ===
 OLD OUTPUT:
@@ -1727,9 +1727,9 @@ const z: OnInit = null as any;
 
 ===
 
-    ✔ 001. Mixed-case specifiers (Component, inject, OnInit) (80ms)
-    ✔ 002. All capitals specifiers (Component, OnInit) (70ms)
-    ✔ 003. All lowercase specifiers (map, filter, tap) (63ms)
+    ✔ 001. Mixed-case specifiers (Component, inject, OnInit) (73ms)
+    ✔ 002. All capitals specifiers (Component, OnInit) (69ms)
+    ✔ 003. All lowercase specifiers (map, filter, tap) (72ms)
 
 === TEST 004: Complex mixed case ===
 OLD OUTPUT:
@@ -1751,8 +1751,8 @@ const z = map;
 
 ===
 
-    ✔ 004. Mixed lower and upper start (inject, Component, map, OnInit) (68ms)
-    ✔ 005. Library name sorting (alphabetical) (67ms)
+    ✔ 004. Mixed lower and upper start (inject, Component, map, OnInit) (72ms)
+    ✔ 005. Library name sorting (alphabetical) (74ms)
 
 === TEST 006: Sort by first specifier ===
 OLD OUTPUT:
@@ -1772,7 +1772,7 @@ const y = zoo;
 
 ===
 
-    ✔ 006. Sort by first specifier (enabled) (68ms)
+    ✔ 006. Sort by first specifier (enabled) (135ms)
 
 === TEST 007: String imports first ===
 OLD OUTPUT:
@@ -1796,8 +1796,8 @@ const y = map;
 
 ===
 
-    ✔ 007. String imports come first (66ms)
-    ✔ 008. Multiple string imports sorted (61ms)
+    ✔ 007. String imports come first (74ms)
+    ✔ 008. Multiple string imports sorted (73ms)
 
 === TEST 009: Aliases ===
 OLD OUTPUT:
@@ -1817,17 +1817,17 @@ const z: Init = null as any;
 
 ===
 
-    ✔ 009. Specifiers with aliases (71ms)
+    ✔ 009. Specifiers with aliases (72ms)
 
 === BUG: Test 010 reveals specifier sorting issue ===
 Expected (old): import React, { useEffect, useState } from 'react';
 Actual (new):   import React, { useEffect, useState } from 'react';
 Issue: ignoredFromRemoval imports skip specifier sorting
 
-    ✔ 010. Default + named imports (72ms)
-    ✔ 011. Namespace imports (74ms)
-    ✔ 012. Disable sorting (97ms)
-    ✔ 013. Case-insensitive library sorting (82ms)
+    ✔ 010. Default + named imports (65ms)
+    ✔ 011. Namespace imports (70ms)
+    ✔ 012. Disable sorting (73ms)
+    ✔ 013. Case-insensitive library sorting (71ms)
 
 === TEST 014: Numbers in names ===
 OLD OUTPUT:
@@ -1849,28 +1849,36 @@ const d = test10;
 
 ===
 
-    ✔ 014. Numbers in specifier names (78ms)
-    ✔ 015. Special characters in library names (74ms)
-  109 passing (10s)
-  20 failing
+    ✔ 014. Numbers in specifier names (69ms)
+    ✔ 015. Special characters in library names (68ms)
+  116 passing (10s)
+  13 failing
   1) Demo for Video Test Cases
        128. Demo file - EXACT reproduction of manual test case:
 
-      AssertionError [ERR_ASSERTION]: NEW extension with legacy mode should match OLD extension exactly
+      AssertionError [ERR_ASSERTION]: UnusedService should be removed
+      + expected - actual
+
+      -false
+      +true
+      
+  	at Context.<anonymous> (out/comparison-test-harness/test-cases/09-demo-for-video.test.js:150:16)
+
+  2) Demo for Video Test Cases
+       129. Demo file - NEW extension with modern defaults (not legacy):
+
+      AssertionError [ERR_ASSERTION]: NEW extension with modern defaults should have 1 blank line after imports (not 2)
 + actual - expected
 ... Skipped lines
 
   '// Demo file for video - shows the full power of Mini TypeScript Hero\n' +
     '// Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports\n' +
-+   '\n' +
     "import { Component, inject, OnInit } from '@angular/core';\n" +
     "import { Router } from '@angular/router';\n" +
     "import { of } from 'rxjs';\n" +
-    "import { map, switchMap } from 'rxjs/operators';\n" +
-    '\n' +
 ...
     '\n' +
--   '\n' +
++   '\n' +
     '@Component({\n' +
     "  selector: 'app-demo',\n" +
     '  standalone: true,\n' +
@@ -1879,49 +1887,15 @@ const d = test10;
 
       + expected - actual
 
-       // Demo file for video - shows the full power of Mini TypeScript Hero
-       // Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports
-      -
-       import { Component, inject, OnInit } from '@angular/core';
-       import { Router } from '@angular/router';
-       import { of } from 'rxjs';
-       import { map, switchMap } from 'rxjs/operators';
        
        import { BookList } from './components/book-list';
        import { UserDetail } from './components/user-detail';
        
-      +
+      -
        @Component({
          selector: 'app-demo',
          standalone: true,
          imports: [BookList, UserDetail],
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/09-demo-for-video.test.js:147:16)
-
-  2) Demo for Video Test Cases
-       129. Demo file - NEW extension with modern defaults (not legacy):
-
-      AssertionError [ERR_ASSERTION]: NEW extension with modern defaults should have 1 blank line after imports (not 2)
-+ actual - expected
-
-  '// Demo file for video - shows the full power of Mini TypeScript Hero\n' +
-    '// Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports\n' +
-+   '\n' +
-    "import { Component, inject, OnInit } from '@angular/core';\n" +
-    "import { Router } from '@angular/router';\n" +
-    "import { of } from 'rxjs';\n" +
-    "import { map, switchMap } from 'rxjs/operators';\n" +
-    '\n' +
-
-      + expected - actual
-
-       // Demo file for video - shows the full power of Mini TypeScript Hero
-       // Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports
-      -
-       import { Component, inject, OnInit } from '@angular/core';
-       import { Router } from '@angular/router';
-       import { of } from 'rxjs';
-       import { map, switchMap } from 'rxjs/operators';
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/09-demo-for-video.test.js:291:16)
 
@@ -2019,30 +1993,6 @@ const d = test10;
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/07-configuration.test.js:138:25)
 
   6) Configuration
-       100. All config options together:
-
-      AssertionError [ERR_ASSERTION]: All config options should work together
-+ actual - expected
-
-+ 'import { zoo, ant } from "./a"\n' +
-- 'import { ant, zoo } from "./a"\n' +
-    'import { Unused } from "./unused"\n' +
-    '\n' +
-    'const x = ant;\n' +
-    'const y = zoo;\n'
-
-      + expected - actual
-
-      -import { zoo, ant } from "./a"
-      +import { ant, zoo } from "./a"
-       import { Unused } from "./unused"
-       
-       const x = ant;
-       const y = zoo;
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/07-configuration.test.js:224:25)
-
-  7) Configuration
        113. removeTrailingIndex interaction with merging:
 
       AssertionError [ERR_ASSERTION]: /index removal should happen before merging
@@ -2066,19 +2016,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/07-configuration.test.js:259:25)
 
-  8) Edge Cases
-       071. Empty file:
-     Error: Failed to apply edits
-  	at organizeImportsOld (out/comparison-test-harness/old-extension/adapter.js:246:19)
-  	at async Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:13:27)
-
-  9) Edge Cases
-       072. File with no imports:
-     Error: Failed to apply edits
-  	at organizeImportsOld (out/comparison-test-harness/old-extension/adapter.js:246:19)
-  	at async Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:21:27)
-
-  10) Edge Cases
+  7) Edge Cases
        076. Long import line (multiline wrapping):
 
       AssertionError [ERR_ASSERTION]: Long import lines should be handled correctly
@@ -2107,7 +2045,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:74:25)
 
-  11) Edge Cases
+  8) Edge Cases
        078. removeTrailingIndex enabled:
 
       AssertionError [ERR_ASSERTION]: /index should be removed and imports merged
@@ -2131,7 +2069,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:110:25)
 
-  12) Edge Cases
+  9) Edge Cases
        082. Empty import specifiers:
 
       AssertionError [ERR_ASSERTION]: Empty import specifiers should be removed
@@ -2150,7 +2088,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:158:25)
 
-  13) Edge Cases
+  10) Edge Cases
        083. Comments between imports:
 
       AssertionError [ERR_ASSERTION]: Comments between imports should be handled
@@ -2174,66 +2112,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/06-edge-cases.test.js:176:25)
 
-  14) Blank Lines
-       059. Blank line before imports preserved:
-
-      AssertionError [ERR_ASSERTION]: Blank line before imports should be handled correctly
-+ actual - expected
-
-+ "// Header comment\n\nimport { A } from './lib';\n\nconst x = A;\n"
-- "// Header comment\nimport { A } from './lib';\n\n\nconst x = A;\n"
-
-      + expected - actual
-
-       // Header comment
-      -
-       import { A } from './lib';
-       
-      +
-       const x = A;
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/05-blank-lines.test.js:46:25)
-
-  15) Blank Lines
-       061. Leading blank lines removed:
-
-      AssertionError [ERR_ASSERTION]: Leading blank lines should be removed
-+ actual - expected
-
-+ "import { A } from './lib';\n\nconst x = A;\n"
-- "import { A } from './lib';\n\n\n\nconst x = A;\n"
-
-      + expected - actual
-
-       import { A } from './lib';
-       
-      +
-      +
-       const x = A;
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/05-blank-lines.test.js:74:25)
-
-  16) Blank Lines
-       070. Blank line after header comment:
-
-      AssertionError [ERR_ASSERTION]: Blank line after header should be preserved
-+ actual - expected
-
-+ "// Header\n\nimport { A } from './lib';\n\nconst x = A;\n"
-- "// Header\nimport { A } from './lib';\n\n\nconst x = A;\n"
-
-      + expected - actual
-
-       // Header
-      -
-       import { A } from './lib';
-       
-      +
-       const x = A;
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/05-blank-lines.test.js:205:25)
-
-  17) Removal
+  11) Removal
        057. Partial default + named removal:
 
       AssertionError [ERR_ASSERTION]: Should remove unused default and unused named specifiers
@@ -2251,27 +2130,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/04-removal.test.js:178:25)
 
-  18) Merging
-       019. Duplicate specifiers removed:
-
-      AssertionError [ERR_ASSERTION]: Should deduplicate specifiers
-+ actual - expected
-
-+ "import { A, B, C } from './lib';\n\nconst x = A;\nconst y = B;\nconst z = C;\n"
-- "import { A, A, B, C } from './lib';\n\nconst x = A;\nconst y = B;\nconst z = C;\n"
-
-      + expected - actual
-
-      -import { A, B, C } from './lib';
-      +import { A, A, B, C } from './lib';
-       
-       const x = A;
-       const y = B;
-       const z = C;
-      
-  	at Context.<anonymous> (out/comparison-test-harness/test-cases/02-merging.test.js:70:25)
-
-  19) Merging
+  12) Merging
        022. Merging after removeTrailingIndex:
 
       AssertionError [ERR_ASSERTION]: Should merge after removing /index
@@ -2295,7 +2154,7 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/02-merging.test.js:108:25)
 
-  20) Merging
+  13) Merging
        027. Mixed import types from same module:
 
       AssertionError [ERR_ASSERTION]: Mixed import types from same module
@@ -2322,6 +2181,6 @@ const d = test10;
       
   	at Context.<anonymous> (out/comparison-test-harness/test-cases/02-merging.test.js:177:25)
 
-20 tests failed.
-[90m[main 2025-10-12T13:02:29.201Z][0m Extension host with pid 93538 exited with code: 0, signal: unknown.
+13 tests failed.
+[90m[main 2025-10-12T16:32:42.592Z][0m Extension host with pid 32602 exited with code: 0, signal: unknown.
 Exit code:   1

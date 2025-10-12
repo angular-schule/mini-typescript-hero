@@ -205,7 +205,7 @@ class MockImportsConfig extends ImportsConfig {
  * Simply enable legacyMode: true to replicate ALL old behaviors:
  * - Within-group sorting bug (always sorts by library name)
  * - Blank line preservation (keeps existing blank lines)
- * - No import merging (coupled with removal in old extension)
+ * - Wrong merge order (merges BEFORE removeTrailingIndex)
  */
 const DEFAULT_CONFIG = {
   insertSpaceBeforeAndAfterImportBraces: true,
@@ -215,7 +215,7 @@ const DEFAULT_CONFIG = {
   multiLineWrapThreshold: 125,
   multiLineTrailingComma: true,
   disableImportRemovalOnOrganize: false,
-  mergeImportsFromSameModule: true,
+  mergeImportsFromSameModule: true,  // OLD extension DOES merge, but BEFORE removeTrailingIndex
   disableImportsSorting: false,
   organizeOnSave: false,
   organizeSortsByFirstSpecifier: false,

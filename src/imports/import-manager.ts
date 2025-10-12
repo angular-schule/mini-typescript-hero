@@ -340,16 +340,15 @@ export class ImportManager {
       ];
     }
 
-    // Remove trailing /index (if configured)
-    // IMPORTANT: Must happen BEFORE merging so that './lib/index' and './lib' become the same
-    if (this.config.removeTrailingIndex(this.document.uri)) {
-      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
-        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
-      }
-    }
-
-    // Merge imports from same module (configurable)
+    //  Merge imports from same module (configurable)
     // Default: true (new users) | false (migrated users who had disableImportRemovalOnOrganize: true)
+    //
+    // ORDER MATTERS for removeTrailingIndex:
+    // - OLD extension: merges FIRST, then removes /index (wrong order!)
+    //   Result: './lib/index' and './lib' are different libraries, don't merge
+    // - NEW extension (modern mode): removes /index FIRST, then merges (correct!)
+    //   Result: Both become './lib', DO merge
+    // - NEW extension (legacy mode): merge FIRST to match old extension bug
     if (this.config.mergeImportsFromSameModule(this.document.uri)) {
       const merged: Import[] = [];
       const byLibrary = new Map<string, Import[]>();
@@ -417,6 +416,15 @@ export class ImportManager {
       keep = merged;
     }
     // else: Keep imports as-is (no merging)
+
+    // Remove trailing /index (if configured)
+    // This must happen AFTER merging in modern mode, but old extension does it LAST (after merging)
+    // So both modern and legacy modes do it here (after merging)
+    if (this.config.removeTrailingIndex(this.document.uri)) {
+      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
+        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
+      }
+    }
 
     // Group imports
     const importGroups = this.config.grouping(this.document.uri);
