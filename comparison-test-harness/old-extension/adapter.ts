@@ -203,9 +203,9 @@ export async function organizeImportsOld(
   const doc = await createTempDocument(sourceCode);
 
   try {
-    // Parse with typescript-parser
+    // Parse with typescript-parser - use REAL document text and fileName!
     const parser = new TypescriptParser();
-    const parsedDocument: File = await parser.parseSource(sourceCode, getScriptKind('test.ts'));
+    const parsedDocument: File = await parser.parseSource(doc.getText(), getScriptKind(doc.fileName));
 
     const config = new MockConfiguration();
     const logger = new MockLogger() as any;
