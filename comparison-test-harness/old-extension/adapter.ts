@@ -64,7 +64,7 @@ class MockLogger {
  * Mock Configuration for old extension
  */
 class MockConfiguration extends Configuration {
-  public readonly imports: ImportsConfig = new MockImportsConfig() as any;
+  public readonly imports = new MockImportsConfig();
 
   constructor() {
     // Create minimal ExtensionContext mock
@@ -90,8 +90,9 @@ class MockConfiguration extends Configuration {
 
 /**
  * Mock ImportsConfig for old extension
+ * IMPORTANT: Does NOT extend ImportsConfig to avoid calling workspace.getConfiguration()
  */
-class MockImportsConfig extends ImportsConfig {
+class MockImportsConfig {
   private mockConfig: Map<string, any> = new Map();
 
   setConfig(key: string, value: any): void {

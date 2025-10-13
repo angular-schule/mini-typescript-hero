@@ -1,5 +1,62 @@
 # Mini TypeScript Hero - Session Context
 
+## 🚨 SESSION 23 - CRITICAL MUST-PASS TEST
+
+### ⚠️ LASER-FOCUSED GOAL: FIX TEST HARNESS TO MATCH REAL OLD EXTENSION BEHAVIOR
+
+**USER'S GROUND TRUTH TEST**:
+
+**BEFORE** (input - NOT ALLOWED TO CHANGE):
+```typescript
+import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
+
+const a = VeryLongName1;
+const b = VeryLongName2;
+const c = VeryLongName3;
+```
+
+**SETTINGS**: `"typescriptHero.imports.multiLineWrapThreshold": 40` (rest are defaults)
+
+**AFTER** - Real old TypeScript Hero output (GROUND TRUTH - NOT ALLOWED TO CHANGE):
+```typescript
+import {
+    VeryLongName1,
+    VeryLongName2,
+    VeryLongName3,
+} from './lib';
+
+
+const a = VeryLongName1;
+const b = VeryLongName2;
+const c = VeryLongName3;
+```
+
+**CURRENT TEST HARNESS OUTPUT** (WRONG!):
+```typescript
+import {
+,
+} from './lib';
+
+const a = VeryLongName1;
+const b = VeryLongName2;
+const c = VeryLongName3;
+```
+
+**THE TASK**:
+- Test harness old-extension adapter MUST output EXACTLY what real extension outputs
+- Test harness new-extension adapter MUST match old extension output for THIS specific test
+- NO EXCUSES - figure out why test harness is wrong
+- NO HALLUCINATED BUGS - user proved real extension works correctly
+- Files: `comparison-test-harness/test-cases/999-manual-proof.test.ts` and `manual-test-cases/test-multiline-bug.ts`
+
+**ACCEPTANCE CRITERIA**:
+- Test 999 MUST PASS with both extensions producing EXACT ground truth output
+- NO broken code like `import { , }`
+- ALL specifiers present in output
+- Correct multiline formatting
+
+---
+
 ## 📖 Project Overview
 
 **Goal**: Extract and modernize the "Sort and organize your imports" feature from TypeScript Hero into a new, minimal extension called `mini-typescript-hero`.
