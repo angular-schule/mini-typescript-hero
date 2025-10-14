@@ -33,13 +33,15 @@ We want to tell the full story.
 
 ## 5. How to Append Your Session Summary to the CLAUDE_TODO.md file
 
+**CRITICAL: Always use git root to locate the file correctly!**
+
 **Use Bash to append without reading the entire file:**
 
 Use the Bash tool with `>>` redirect to append your session summary directly to `CLAUDE_TODO.md` without needing to read the existing content first.
 
-Example:
+**ALWAYS use this pattern to locate the file:**
 ```bash
-cat >> CLAUDE_TODO.md << 'EOF'
+cat >> "$(git rev-parse --show-toplevel)/CLAUDE_TODO.md" << 'EOF'
 
 ---
 
@@ -50,7 +52,7 @@ Your session summary content here...
 EOF
 ```
 
-This allows efficient appending to arbitrarily large files without token concerns.
+This ensures the file is ALWAYS written to the correct location (git root), regardless of your current working directory. This allows efficient appending to arbitrarily large files without token concerns.
 
 ## 6. Commit All Changes
 

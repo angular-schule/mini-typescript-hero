@@ -26,7 +26,7 @@ export class ImportManager {
   constructor(
     private readonly document: TextDocument,
     private readonly config: ImportsConfig,
-    // @ts-expect-error - logger parameter kept for future debugging capabilities
+    // Logger parameter kept for future debugging capabilities (currently unused)
     private readonly logger: OutputChannel,
   ) {
     // Detect and use the document's line ending style (LF or CRLF)

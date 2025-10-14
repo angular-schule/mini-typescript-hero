@@ -12,9 +12,13 @@ Please help me continue where we left off. Follow these steps:
 
 ### Step-by-Step Process (EXECUTE EXACTLY - NO DEVIATIONS):
 
-**STEP 1 - Count Total Lines (MANDATORY FIRST STEP)**:
+**STEP 0 - Locate Git Root (ALWAYS FIRST)**:
 
-Run `wc -l CLAUDE_TODO.md` to determine the file size.
+Run `git rev-parse --show-toplevel` to find the project root directory. The `CLAUDE_TODO.md` file is ALWAYS at `$(git rev-parse --show-toplevel)/CLAUDE_TODO.md`.
+
+**STEP 1 - Count Total Lines (MANDATORY SECOND STEP)**:
+
+Run `wc -l $(git rev-parse --show-toplevel)/CLAUDE_TODO.md` to determine the file size.
 
 **STEP 2 - Calculate Chunks Needed**:
 - Chunk size: 2000 lines per chunk
