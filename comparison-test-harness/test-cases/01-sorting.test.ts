@@ -194,18 +194,6 @@ const z = useEffect;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    // BUG FOUND: New extension skips specifier sorting for imports in ignoredFromRemoval list.
-    // ignoredFromRemoval defaults to ['react'], so React imports don't get specifiers sorted.
-    // Location: src/imports/import-manager.ts:270 - continue statement skips sorting logic
-    // Expected: { useEffect, useState } (alphabetical)
-    // Actual: { useState, useEffect } (original order preserved)
-    // This needs to be fixed in the main extension code!
-
-    console.log('\n=== BUG: Test 010 reveals specifier sorting issue ===');
-    console.log('Expected (old):', oldResult.split('\n')[0]);
-    console.log('Actual (new):  ', newResult.split('\n')[0]);
-    console.log('Issue: ignoredFromRemoval imports skip specifier sorting\n');
-
     assert.equal(newResult, oldResult, 'Default import should come before named imports');
   });
 
