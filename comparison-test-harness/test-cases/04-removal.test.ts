@@ -280,8 +280,8 @@ const x = Used;
 const x = UsedNamed;
 `;
 
-    // Both default import and UnusedNamed are unused
-    const expected = `import { UsedNamed } from './lib';
+    // ACTUAL: Old extension KEEPS unused default import, only removes unused named specifier
+    const expected = `import Lib, { UsedNamed } from './lib';
 
 const x = UsedNamed;
 `;

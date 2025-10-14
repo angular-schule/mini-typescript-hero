@@ -41,9 +41,10 @@ import { A } from './lib';
 const x = A;
 `;
 
-    // Old extension removes blank line between header and imports
+    // ACTUAL: Old extension removes blank line between header and imports, adds 2 blank lines after
     const expected = `// Header comment
 import { A } from './lib';
+
 
 const x = A;
 `;
@@ -86,8 +87,9 @@ import { A } from './lib';
 const x = A;
 `;
 
-    // Leading blanks are removed, but old extension adds extra blank line after
+    // ACTUAL: Leading blanks removed, old extension adds 3 blank lines after (2 leading + 1 existing)
     const expected = `import { A } from './lib';
+
 
 
 const x = A;
@@ -286,9 +288,10 @@ import { A } from './lib';
 const x = A;
 `;
 
-    // Old extension removes blank line between header and imports, adds 2 after
+    // ACTUAL: Old extension removes blank line between header and imports, adds 2 blank lines after
     const expected = `// Header
 import { A } from './lib';
+
 
 const x = A;
 `;

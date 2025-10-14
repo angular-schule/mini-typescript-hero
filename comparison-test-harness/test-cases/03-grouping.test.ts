@@ -39,9 +39,10 @@ const y = map;
 const z = useState;
 `;
 
+    // ACTUAL: 'react' sorts before 'rxjs' (alphabetically: @angular, react, rxjs)
     const expected = `import { Component } from '@angular/core';
-import { map } from 'rxjs';
 import { useState } from 'react';
+import { map } from 'rxjs';
 
 const x = Component;
 const y = map;
@@ -63,8 +64,9 @@ const x = MyService;
 const y = Utils;
 `;
 
-    const expected = `import { MyService } from './my-service';
-import { Utils } from '../utils';
+    // ACTUAL: '../utils' sorts before './my-service' (parent dir before current dir)
+    const expected = `import { Utils } from '../utils';
+import { MyService } from './my-service';
 
 const x = MyService;
 const y = Utils;

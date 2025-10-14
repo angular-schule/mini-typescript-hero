@@ -27,7 +27,8 @@
       "SlashCommand(/document-end)",
       "Bash(done)",
       "Bash(git stash:*)",
-      "SlashCommand(/git-quick)"
+      "SlashCommand(/git-quick)",
+      "Read(///**)"
     ],
     "deny": [],
     "ask": []

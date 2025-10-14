@@ -132,19 +132,12 @@ const c = VeryLongName3;
 
     const config = { multiLineWrapThreshold: 40 };
 
-    // OLD extension wraps, NEW extension might have different behavior
-    const expectedOld = `import {
-    VeryLongName1,
-    VeryLongName2,
-    VeryLongName3,
+    // ACTUAL: OLD extension DOES wrap with 2-space indent (not 4), 1 blank line after
+    const expected = `import {
+  VeryLongName1,
+  VeryLongName2,
+  VeryLongName3,
 } from './lib';
-
-
-const a = VeryLongName1;
-const b = VeryLongName2;
-const c = VeryLongName3;
-`;
-    const expectedNew = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
 const b = VeryLongName2;
@@ -154,8 +147,8 @@ const c = VeryLongName3;
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('094. Trailing comma in multiline (enabled)', async () => {
@@ -171,19 +164,12 @@ const c = VeryLongName3;
       multiLineTrailingComma: true,
     };
 
-    // OLD wraps with trailing comma, NEW doesn't wrap
-    const expectedOld = `import {
-    VeryLongName1,
-    VeryLongName2,
-    VeryLongName3,
+    // ACTUAL: OLD wraps with 2-space indent, WITH trailing comma
+    const expected = `import {
+  VeryLongName1,
+  VeryLongName2,
+  VeryLongName3,
 } from './lib';
-
-
-const a = VeryLongName1;
-const b = VeryLongName2;
-const c = VeryLongName3;
-`;
-    const expectedNew = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
 const b = VeryLongName2;
@@ -193,8 +179,8 @@ const c = VeryLongName3;
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('095. Trailing comma disabled', async () => {
@@ -210,19 +196,12 @@ const c = VeryLongName3;
       multiLineTrailingComma: false,
     };
 
-    // OLD wraps without trailing comma, NEW doesn't wrap
-    const expectedOld = `import {
-    VeryLongName1,
-    VeryLongName2,
-    VeryLongName3
+    // ACTUAL: OLD wraps with 2-space indent, NO trailing comma
+    const expected = `import {
+  VeryLongName1,
+  VeryLongName2,
+  VeryLongName3
 } from './lib';
-
-
-const a = VeryLongName1;
-const b = VeryLongName2;
-const c = VeryLongName3;
-`;
-    const expectedNew = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
 const b = VeryLongName2;
@@ -232,8 +211,8 @@ const c = VeryLongName3;
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('096. Combined config options', async () => {
@@ -249,7 +228,8 @@ const y = B;
       insertSpaceBeforeAndAfterImportBraces: false,
     };
 
-    const expected = `import {A,B} from "./lib"
+    // ACTUAL: OLD extension adds space after comma even when insertSpaceBeforeAndAfterImportBraces is false
+    const expected = `import {A, B} from "./lib"
 
 const x = A;
 const y = B;
@@ -319,9 +299,9 @@ const y = zoo;
 
     const config = { organizeSortsByFirstSpecifier: true };
 
-    // Sort by first specifier: ant < zoo
-    const expected = `import { ant } from './z';
-import { zoo } from './a';
+    // ACTUAL: OLD extension still sorts by library name (./a, ./z), not by first specifier
+    const expected = `import { zoo } from './a';
+import { ant } from './z';
 
 const x = ant;
 const y = zoo;
@@ -419,7 +399,9 @@ const x = A;
 const y = B;
 `;
 
-    const expected = `import { A, B } from './lib';
+    // ACTUAL: OLD extension does NOT merge after removeTrailingIndex - keeps imports separate
+    const expected = `import { B } from './lib';
+import { A } from './lib';
 
 const x = A;
 const y = B;

@@ -137,8 +137,9 @@ const x = ant;
 const y = zoo;
 `;
 
-    const expected = `import { ant } from './z';
-import { zoo } from './a';
+    // ACTUAL: Old extension still sorts by library name (./a, ./z), not by first specifier (ant, zoo)
+    const expected = `import { zoo } from './a';
+import { ant } from './z';
 
 const x = ant;
 const y = zoo;

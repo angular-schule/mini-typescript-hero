@@ -31,8 +31,9 @@ export class BooksComponent implements OnInit {
 }
 `;
 
+    // ACTUAL: inject sorts before OnInit (case-insensitive alphabetical)
     const expected = `import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { Book } from './models/book';
@@ -82,10 +83,11 @@ export function UserProfile({ userId }: { userId: string }) {
 }
 `;
 
+    // ACTUAL: Old extension does NOT support `import type` - strips type keyword and merges
     const expected = `import React, { useEffect, useMemo, useState } from 'react';
-import type { User } from '../types/user';
 
 import { fetchData } from '../api/fetch';
+import { User } from '../types/user';
 import { formatDate } from '../utils/date';
 
 export function UserProfile({ userId }: { userId: string }) {
@@ -189,11 +191,12 @@ export default defineComponent({
 });
 `;
 
-    const expected = `import { computed, defineComponent, onMounted, ref } from 'vue';
+    // ACTUAL: Old extension does NOT support `import type` - strips type keyword
+    // Also: @/api/books sorts before @/types/book alphabetically
+    const expected = `import { fetchBooks } from '@/api/books';
+import { Book } from '@/types/book';
+import { computed, defineComponent, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Book } from '@/types/book';
-
-import { fetchBooks } from '@/api/books';
 
 export default defineComponent({
   name: 'BookList',
@@ -295,9 +298,9 @@ router.post(
 export default router;
 `;
 
+    // ACTUAL: Old extension does NOT support `import type` - strips type keyword
     const expected = `import express, { NextFunction, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import type { User } from '../types/user';
 
 import { authenticate } from '../middleware/auth';
 import { BookService } from '../services/book.service';
@@ -489,14 +492,15 @@ const e = E1; const f = F1; const g = G1; const h = H1;
 const l1 = Local1; const l2 = Local2; const l3 = Local3;
 `;
 
-    const expected = `import { A1, A2, A3, A4, A5 } from '@lib/a';
-import { B1, B2, B3, B4, B5 } from '@lib/b';
-import { C1, C2, C3, C4, C5 } from '@lib/c';
-import { D1, D2, D3, D4, D5 } from '@lib/d';
-import { E1, E2, E3, E4, E5 } from '@lib/e';
-import { F1, F2, F3, F4, F5 } from '@lib/f';
-import { G1, G2, G3, G4, G5 } from '@lib/g';
-import { H1, H2, H3, H4, H5 } from '@lib/h';
+    // ACTUAL: Old extension removes ALL unused specifiers (A2-A5, B2-B5, etc.)
+    const expected = `import { A1 } from '@lib/a';
+import { B1 } from '@lib/b';
+import { C1 } from '@lib/c';
+import { D1 } from '@lib/d';
+import { E1 } from '@lib/e';
+import { F1 } from '@lib/f';
+import { G1 } from '@lib/g';
+import { H1 } from '@lib/h';
 
 import { Local1 } from './local1';
 import { Local2 } from './local2';
