@@ -51,8 +51,6 @@ export class DemoComponent implements OnInit {
     return of(value);
   }
 }
-
-// Note: UnusedService is imported but never used - it will be removed!
 `;
 
     // EXPECTED OUTPUT: What the user gets when running old TypeScript Hero
@@ -99,8 +97,6 @@ export class DemoComponent implements OnInit {
     return of(value);
   }
 }
-
-// Note: UnusedService is imported but never used - it will be removed!
 `;
 
     // Test OLD extension
@@ -128,15 +124,9 @@ export class DemoComponent implements OnInit {
 
     // Additional verification: Check specific transformations
 
-    // 1. UnusedService IMPORT should be removed (not just the string in comments)
-    const oldHasUnusedImport = oldResult.split('\n').some(line =>
-      line.trim().startsWith('import') && line.includes('UnusedService')
-    );
-    const newHasUnusedImport = newResult.split('\n').some(line =>
-      line.trim().startsWith('import') && line.includes('UnusedService')
-    );
-    assert.ok(!oldHasUnusedImport, 'UnusedService import should be removed');
-    assert.ok(!newHasUnusedImport, 'UnusedService import should be removed (new)');
+    // 1. UnusedService should be removed
+    assert.ok(!oldResult.includes('UnusedService'), 'UnusedService should be removed');
+    assert.ok(!newResult.includes('UnusedService'), 'UnusedService should be removed (new)');
 
     // 2. @angular/core imports should be merged and sorted
     const angularImportLineOld = oldResult.split('\n').find(line => line.includes('@angular/core'));
@@ -241,8 +231,6 @@ export class DemoComponent implements OnInit {
     return of(value);
   }
 }
-
-// Note: UnusedService is imported but never used - it will be removed!
 `;
 
     // Test NEW extension with MODERN defaults (recommended for new users)
@@ -294,8 +282,6 @@ export class DemoComponent implements OnInit {
     return of(value);
   }
 }
-
-// Note: UnusedService is imported but never used - it will be removed!
 `;
 
     assert.strictEqual(
