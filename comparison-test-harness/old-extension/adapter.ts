@@ -11,7 +11,7 @@
  */
 
 import 'reflect-metadata';
-import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions } from 'typescript-parser';
+import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions, MultiLineImportRule } from 'typescript-parser';
 import { Uri, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit } from 'vscode';
 import { ImportManager } from '../old-typescript-hero/src/imports/import-manager';
 import { Configuration } from '../old-typescript-hero/src/configuration';
@@ -82,8 +82,12 @@ class MockConfiguration extends Configuration {
       multiLineWrapThreshold: this.imports.multiLineWrapThreshold(resource),
       spaceBraces: this.imports.insertSpaceBeforeAndAfterImportBraces(resource),
       stringQuoteStyle: this.imports.stringQuoteStyle(resource),
-      tabSize: 2,
-      wrapMethod: 1, // MultiLineImportRule.oneImportPerLineOnlyAfterThreshold
+      // Match original extension logic: try activeTextEditor.options.tabSize, fallback to editor.tabSize (default: 4)
+      tabSize:
+        window.activeTextEditor && window.activeTextEditor.options.tabSize
+          ? (window.activeTextEditor.options.tabSize as any) * 1
+          : workspace.getConfiguration('editor', resource).get('tabSize', 4),
+      wrapMethod: MultiLineImportRule.oneImportPerLineOnlyAfterThreshold,
     };
   }
 }
@@ -221,8 +225,11 @@ export async function organizeImportsOld(
       return new TypescriptCodeGenerator(config.typescriptGeneratorOptions(resource));
     };
 
-    // Mock window.activeTextEditor (needed by getImportInsertPosition)
-    const mockEditor = { document: doc } as unknown as TextEditor;
+    // Mock window.activeTextEditor (needed by getImportInsertPosition and tabSize)
+    const mockEditor = {
+      document: doc,
+      options: { tabSize: 2 } // Default tabSize for tests
+    } as unknown as TextEditor;
     const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'activeTextEditor');
     Object.defineProperty(window, 'activeTextEditor', {
       get: () => mockEditor,
