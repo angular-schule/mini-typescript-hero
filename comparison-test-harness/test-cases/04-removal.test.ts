@@ -15,17 +15,16 @@ import { Used } from './other';
 const x = Used;
 `;
 
+    const expected = `import { Used } from './other';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 044: Remove unused ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Completely unused import should be removed');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('045. Remove unused specifiers, keep used ones', async () => {
@@ -34,10 +33,16 @@ const x = Used;
 const x = Used;
 `;
 
+    const expected = `import { Used } from './lib';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Only used specifiers should be kept');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('046. Type-only imports are considered used', async () => {
@@ -46,10 +51,16 @@ const x = Used;
 let x: MyType;
 `;
 
+    const expected = `import { MyType } from './lib';
+
+let x: MyType;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Type-only usage counts as used');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('047. ignoredFromRemoval list honored', async () => {
@@ -59,17 +70,17 @@ let x: MyType;
 const x = 1;
 `;
 
+    const expected = `import React from 'react';
+
+// React not used but should be kept
+const x = 1;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 047: ignoredFromRemoval ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'React should be kept even when unused (ignoredFromRemoval)');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('048. Custom ignoredFromRemoval config', async () => {
@@ -84,10 +95,17 @@ const x = 1;
       ignoredFromRemoval: ['custom-lib'],
     };
 
+    const expected = `import { CustomLib } from 'custom-lib';
+
+// Neither used, but CustomLib should be kept
+const x = 1;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(newResult, oldResult, 'Custom ignoredFromRemoval should be honored');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('049. Default import unused', async () => {
@@ -97,10 +115,16 @@ import { Used } from './other';
 const x = Used;
 `;
 
+    const expected = `import { Used } from './other';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Unused default import should be removed');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('050. Namespace import unused', async () => {
@@ -110,10 +134,16 @@ import { Used } from './other';
 const x = Used;
 `;
 
+    const expected = `import { Used } from './other';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Unused namespace import should be removed');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('051. String imports always kept', async () => {
@@ -123,10 +153,18 @@ import { Used } from './lib';
 const x = Used;
 `;
 
+    const expected = `import './side-effects';
+
+import { Used } from './lib';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'String imports should always be kept');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('052. Remove unused in re-export', async () => {
@@ -135,10 +173,16 @@ const x = Used;
 export { A };
 `;
 
+    const expected = `import { A } from './lib';
+
+export { A };
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Unused specifiers in re-export should be removed');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('053. Keep all re-exported symbols', async () => {
@@ -147,10 +191,16 @@ export { A };
 export { A, B };
 `;
 
+    const expected = `import { A, B } from './lib';
+
+export { A, B };
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'All re-exported symbols should be kept');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('054. Property access vs function call', async () => {
@@ -161,17 +211,19 @@ const doubled = map(arr, x => x * 2);
 const sum = doubled.reduce((a, b) => a + b, 0);
 `;
 
+    // 'reduce' is a property access on Array, not the imported reduce
+    const expected = `import { map } from 'lodash';
+
+const arr = [1, 2, 3];
+const doubled = map(arr, x => x * 2);
+const sum = doubled.reduce((a, b) => a + b, 0);
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 054: Property access ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Property access should not count as import usage');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('055. Local shadowing', async () => {
@@ -183,10 +235,19 @@ class Component {}
 const x = Injectable;
 `;
 
+    // Component is shadowed by local class, so import is unused
+    const expected = `import { Injectable } from '@angular/core';
+
+class Component {}
+
+const x = Injectable;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Local declarations should shadow imports');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('056. Disable removal', async () => {
@@ -200,10 +261,17 @@ const x = Used;
       disableImportRemovalOnOrganize: true,
     };
 
+    const expected = `import { Unused } from './lib';
+import { Used } from './other';
+
+const x = Used;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(newResult, oldResult, 'All imports should be kept when removal disabled');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('057. Partial default + named removal', async () => {
@@ -212,16 +280,16 @@ const x = Used;
 const x = UsedNamed;
 `;
 
+    // Both default import and UnusedNamed are unused
+    const expected = `import { UsedNamed } from './lib';
+
+const x = UsedNamed;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 057: Partial removal ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should remove unused default and unused named specifiers');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 });

@@ -1,10 +1,10 @@
 /**
  * Test Suite 5: Blank Line Handling
- * Tests the 4 modes: "one", "two", "preserve", "legacy"
+ * Tests blank line behavior with legacyMode enabled
  *
- * NOTE: Old TypeScript Hero uses "legacy" behavior by default.
+ * NOTE: Old TypeScript Hero uses "preserve" behavior by default (legacyMode).
  * New Mini TypeScript Hero defaults to "one" for new users.
- * For accurate comparison, we test with matching configs.
+ * For accurate comparison, we test with legacyMode: true.
  */
 
 import { strict as assert } from 'assert';
@@ -19,17 +19,18 @@ suite('Blank Lines', () => {
 const x = A;
 `;
 
+    // Legacy mode preserves existing blank lines (2 blank lines preserved)
+    const expected = `import { A } from './lib';
+
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 058: Blank lines (legacy mode) ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should match old behavior (legacy mode)');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('059. Blank line before imports preserved', async () => {
@@ -40,17 +41,18 @@ import { A } from './lib';
 const x = A;
 `;
 
+    // Old extension removes blank line between header and imports
+    const expected = `// Header comment
+import { A } from './lib';
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 059: Blank before imports ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Blank line before imports should be handled correctly');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('060. Blank lines between groups', async () => {
@@ -61,17 +63,19 @@ const x = Component;
 const y = MyService;
 `;
 
+    const expected = `import { Component } from '@angular/core';
+
+import { MyService } from './my-service';
+
+const x = Component;
+const y = MyService;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 060: Between groups ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should have blank line between import groups');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('061. Leading blank lines removed', async () => {
@@ -82,10 +86,18 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    // Leading blanks are removed, but old extension adds extra blank line after
+    const expected = `import { A } from './lib';
 
-    assert.equal(newResult, oldResult, 'Leading blank lines should be removed');
+
+const x = A;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('062. File with only imports (no code after)', async () => {
@@ -96,13 +108,18 @@ const x = A;
 const y = B;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const expected = `import { A } from './lib';
+import { B } from './other';
 
-    // Old may add trailing blank, new doesn't
-    const oldTrimmed = oldResult.replace(/\n+$/, '\n');
-    const newTrimmed = newResult.replace(/\n+$/, '\n');
-    assert.equal(newTrimmed, oldTrimmed, 'Should handle files with code after imports');
+const x = A;
+const y = B;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('063. Shebang preserved', async () => {
@@ -112,17 +129,17 @@ import { A } from './lib';
 const x = A;
 `;
 
+    const expected = `#!/usr/bin/env node
+import { A } from './lib';
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 063: Shebang ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Shebang should be preserved at file start');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('064. Use strict preserved', async () => {
@@ -132,10 +149,17 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const expected = `'use strict';
+import { A } from './lib';
 
-    assert.equal(newResult, oldResult, 'use strict should be preserved before imports');
+const x = A;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('065. Copyright header preserved', async () => {
@@ -146,10 +170,19 @@ import { A } from './lib';
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    // Old extension removes blank between header and imports
+    const expected = `// Copyright 2025
+// Author: Test
+import { A } from './lib';
 
-    assert.equal(newResult, oldResult, 'Copyright header should be preserved');
+const x = A;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('066. Multiple blank lines collapsed (legacy behavior)', async () => {
@@ -161,17 +194,20 @@ const x = A;
 const x = A;
 `;
 
+    // Legacy mode preserves existing blank lines (4 blanks preserved)
+    const expected = `import { A } from './lib';
+
+
+
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 066: Multiple blanks ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should handle multiple blank lines (legacy mode)');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('067. No blank before first import (no header)', async () => {
@@ -180,10 +216,16 @@ const x = A;
 const x = A;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const expected = `import { A } from './lib';
 
-    assert.equal(newResult, oldResult, 'No blank line before imports when no header');
+const x = A;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('068. Block comment preserved', async () => {
@@ -195,17 +237,19 @@ import { A } from './lib';
 const x = A;
 `;
 
+    const expected = `/**
+ * Module description
+ */
+import { A } from './lib';
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 068: Block comment ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Block comment should be preserved');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('069. Three import groups with blank lines', async () => {
@@ -217,17 +261,21 @@ const x = Component;
 const y = MyService;
 `;
 
+    const expected = `import 'zone.js';
+
+import { Component } from '@angular/core';
+
+import { MyService } from './my-service';
+
+const x = Component;
+const y = MyService;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 069: Three groups ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Three groups should have blank lines between each');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('070. Blank line after header comment', async () => {
@@ -238,16 +286,17 @@ import { A } from './lib';
 const x = A;
 `;
 
+    // Old extension removes blank line between header and imports, adds 2 after
+    const expected = `// Header
+import { A } from './lib';
+
+const x = A;
+`;
+
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input, { blankLinesAfterImports: 'legacy' });
+    const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 070: After header ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Blank line after header should be preserved');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 });

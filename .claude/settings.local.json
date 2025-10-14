@@ -26,7 +26,8 @@
       "WebFetch(domain:github.com)",
       "SlashCommand(/document-end)",
       "Bash(done)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "SlashCommand(/git-quick)"
     ],
     "deny": [],
     "ask": []

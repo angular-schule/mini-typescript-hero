@@ -15,17 +15,18 @@ import 'zone.js';
 const x = Component;
 `;
 
+    const expected = `import 'zone.js';
+
+import { Component } from '@angular/core';
+
+const x = Component;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 028: Plains first ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'String imports should be in Plains group (first)');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('029. Modules (external packages)', async () => {
@@ -38,10 +39,20 @@ const y = map;
 const z = useState;
 `;
 
+    const expected = `import { Component } from '@angular/core';
+import { map } from 'rxjs';
+import { useState } from 'react';
+
+const x = Component;
+const y = map;
+const z = useState;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'External packages should be in Modules group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('030. Workspace (relative imports)', async () => {
@@ -52,10 +63,18 @@ const x = MyService;
 const y = Utils;
 `;
 
+    const expected = `import { MyService } from './my-service';
+import { Utils } from '../utils';
+
+const x = MyService;
+const y = Utils;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Relative imports should be in Workspace group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('031. Plains → Modules with blank line', async () => {
@@ -65,17 +84,18 @@ import { Component } from '@angular/core';
 const x = Component;
 `;
 
+    const expected = `import 'zone.js';
+
+import { Component } from '@angular/core';
+
+const x = Component;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 031: Plains → Modules ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should have blank line between Plains and Modules');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('032. Modules → Workspace with blank line', async () => {
@@ -86,17 +106,19 @@ const x = Component;
 const y = MyService;
 `;
 
+    const expected = `import { Component } from '@angular/core';
+
+import { MyService } from './my-service';
+
+const x = Component;
+const y = MyService;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 032: Modules → Workspace ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should have blank line between Modules and Workspace');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('033. All three groups: Plains → Modules → Workspace', async () => {
@@ -108,17 +130,21 @@ const x = Component;
 const y = MyService;
 `;
 
+    const expected = `import 'zone.js';
+
+import { Component } from '@angular/core';
+
+import { MyService } from './my-service';
+
+const x = Component;
+const y = MyService;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 033: All three groups ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Should have proper grouping: Plains → Modules → Workspace');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('034. Scoped packages in Modules group', async () => {
@@ -131,10 +157,19 @@ const y = Injectable;
 const z = map;
 `;
 
+    const expected = `import { Component, Injectable } from '@angular/core';
+import { map } from 'rxjs';
+
+const x = Component;
+const y = Injectable;
+const z = map;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Scoped packages should be in Modules group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('035. Sorting within Modules group', async () => {
@@ -147,10 +182,20 @@ const y = m;
 const w = z;
 `;
 
+    const expected = `import { a } from 'aardvark';
+import { m } from 'monkey';
+import { z } from 'zebra';
+
+const x = a;
+const y = m;
+const w = z;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Modules should be sorted alphabetically within group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('036. Sorting within Workspace group', async () => {
@@ -163,10 +208,20 @@ const y = M;
 const z = Z;
 `;
 
+    const expected = `import { M } from '../m';
+import { A } from './a';
+import { Z } from './z';
+
+const x = A;
+const y = M;
+const z = Z;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Workspace imports should be sorted alphabetically');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('037. Custom regex group', async () => {
@@ -183,17 +238,22 @@ const z = MyService;
       grouping: ['Plains', '/^@angular/', 'Modules', 'Workspace'],
     };
 
+    const expected = `import { Component } from '@angular/core';
+
+import { map } from 'rxjs';
+
+import { MyService } from './my-service';
+
+const x = Component;
+const y = map;
+const z = MyService;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    console.log('\n=== TEST 037: Custom regex group ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Custom regex group should work');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('038. Regex group precedence over keyword', async () => {
@@ -208,10 +268,19 @@ const y = map;
       grouping: ['/^@angular/', 'Modules'],
     };
 
+    const expected = `import { Component } from '@angular/core';
+
+import { map } from 'rxjs';
+
+const x = Component;
+const y = map;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(newResult, oldResult, 'Regex groups should have precedence over keywords');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('039. Empty group (no imports match)', async () => {
@@ -224,10 +293,16 @@ const x = Component;
       grouping: ['Plains', '/^never-matches/', 'Modules'],
     };
 
+    const expected = `import { Component } from '@angular/core';
+
+const x = Component;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(newResult, oldResult, 'Empty groups should not add extra blank lines');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('040. Multiple string imports in Plains', async () => {
@@ -238,10 +313,19 @@ import 'reflect-metadata';
 const x = Component;
 `;
 
+    const expected = `import 'reflect-metadata';
+import 'zone.js';
+
+import { Component } from '@angular/core';
+
+const x = Component;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(newResult, oldResult, 'Multiple string imports should all be in Plains group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('041. Path aliases should be in Modules', async () => {
@@ -252,17 +336,19 @@ const x = Service;
 const y = Utils;
 `;
 
+    const expected = `import { Service } from '@app/services';
+
+import { Utils } from './utils';
+
+const x = Service;
+const y = Utils;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 041: Path aliases ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Path aliases (@app/*) should be in Modules group');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('042. Remaining imports group', async () => {
@@ -277,10 +363,18 @@ const y = B;
       grouping: ['Plains', 'Remaining'],
     };
 
+    const expected = `import { A } from 'pkg-a';
+import { B } from 'pkg-b';
+
+const x = A;
+const y = B;
+`;
+
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(newResult, oldResult, 'Remaining group should catch all unmatched imports');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
   test('043. Complex multi-group scenario', async () => {
@@ -302,16 +396,30 @@ const g = MyService;
 const h = MyComponent;
 `;
 
+    const expected = `import 'zone.js';
+
+import { HttpClient } from '@angular/common/http';
+import { Component, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
+
+import { MyService } from '../services/my-service';
+import { MyComponent } from './components/my-component';
+
+const a = Component;
+const b: OnInit = null as any;
+const c = HttpClient;
+const d = Observable;
+const e = map;
+const f = filter;
+const g = MyService;
+const h = MyComponent;
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    console.log('\n=== TEST 043: Complex grouping ===');
-    console.log('OLD OUTPUT:');
-    console.log(oldResult);
-    console.log('\nNEW OUTPUT:');
-    console.log(newResult);
-    console.log('===\n');
-
-    assert.equal(newResult, oldResult, 'Complex multi-group scenario should be organized correctly');
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 });
