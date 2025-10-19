@@ -44,7 +44,7 @@
  */
 
 import * as assert from 'assert';
-import { Uri, Position, Range, TextEdit, TextDocument, OutputChannel } from 'vscode';
+import { Uri, Position, Range, TextEdit, TextDocument } from 'vscode';
 import { ImportManager } from '../../imports/import-manager';
 import { ImportsConfig } from '../../configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../imports/import-grouping';
@@ -163,34 +163,6 @@ class MockTextDocument implements TextDocument {
  *
  * Note: We removed most logging in Phase 9.6, so this is mainly for future debugging.
  */
-class MockOutputChannel implements OutputChannel {
-  name = 'Test';
-  private lines: string[] = [];
-
-  append(value: string): void {
-    this.lines.push(value);
-  }
-
-  appendLine(value: string): void {
-    this.lines.push(value + '\n');
-  }
-
-  replace(value: string): void {
-    this.lines = [value];
-  }
-
-  clear(): void {
-    this.lines = [];
-  }
-
-  show(): void {}
-  hide(): void {}
-  dispose(): void {}
-
-  getOutput(): string {
-    return this.lines.join('');
-  }
-}
 
 /**
  * Mock ImportsConfig for testing
@@ -304,17 +276,21 @@ class MockImportsConfig extends ImportsConfig {
  * This mimics what VSCode does when applying edits to a real document.
  */
 function applyEdits(content: string, edits: TextEdit[]): string {
-  // Sort edits by position (descending) to apply them without affecting positions
+  if (edits.length === 0) {
+    return content;
+  }
+
+  // Sort edits by position (reverse order - bottom to top)
   const sortedEdits = [...edits].sort((a, b) => {
-    if (a.range.start.line !== b.range.start.line) {
-      return b.range.start.line - a.range.start.line;
-    }
+    const lineDiff = b.range.start.line - a.range.start.line;
+    if (lineDiff !== 0) return lineDiff;
     return b.range.start.character - a.range.start.character;
   });
 
-  const lines = content.split('\n');
+  let result = content;
 
   for (const edit of sortedEdits) {
+    const lines = result.split('\n');
     const startLine = edit.range.start.line;
     const startChar = edit.range.start.character;
     const endLine = edit.range.end.line;
@@ -324,32 +300,47 @@ function applyEdits(content: string, edits: TextEdit[]): string {
       // Single line edit
       const line = lines[startLine] || '';
       lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
+      result = lines.join('\n');
     } else {
-      // Multi-line edit
-      const firstLine = (lines[startLine] || '').substring(0, startChar);
-      const lastLine = (lines[endLine] || '').substring(endChar);
-      const newLines = edit.newText.split('\n');
+      // Multi-line edit - rebuild from parts
+      const before = lines.slice(0, startLine);
+      const after = lines.slice(endLine + 1);
 
-      lines.splice(
-        startLine,
-        endLine - startLine + 1,
-        firstLine + newLines[0],
-        ...newLines.slice(1, -1),
-        newLines[newLines.length - 1] + lastLine
-      );
+      const firstLinePart = (lines[startLine] || '').substring(0, startChar);
+      const lastLinePart = (lines[endLine] || '').substring(endChar);
+
+      let newResult = '';
+
+      // Add lines before the edit
+      if (before.length > 0) {
+        newResult += before.join('\n') + '\n';
+      }
+
+      // Add the edited content
+      if (edit.newText || firstLinePart || lastLinePart) {
+        newResult += firstLinePart + edit.newText + lastLinePart;
+      }
+
+      // Add lines after the edit
+      if (after.length > 0) {
+        if (newResult.length > 0 && !newResult.endsWith('\n')) {
+          newResult += '\n';
+        }
+        newResult += after.join('\n');
+      }
+
+      result = newResult;
     }
   }
 
-  return lines.join('\n');
+  return result;
 }
 
 suite('ImportManager Tests', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
-    logger = new MockOutputChannel();
   });
 
   test('1. Remove unused imports', () => {
@@ -361,7 +352,7 @@ import { Used } from 'other';
 const x = Used;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -379,7 +370,7 @@ const x = A;
 const y = C;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -397,7 +388,7 @@ import { Unused } from 'other';
 // React is not used but should be kept
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -414,7 +405,7 @@ import { Unused } from 'other';
 let x: MyType;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -437,7 +428,7 @@ class Component {
 }
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -450,7 +441,7 @@ class Component {
 const x = AngularComponent;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -464,7 +455,7 @@ import * as Unused from 'unused-lib';
 const element = React.createElement('div');
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -479,7 +470,7 @@ import Vue from 'vue';
 const x = React;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -496,7 +487,7 @@ const y = useState;
 const z = ref;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -523,7 +514,7 @@ const x = Component;
 const y = LocalClass;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -543,7 +534,7 @@ const x = Component;
 const y = map;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -560,7 +551,7 @@ const x = filter;
 const y = map;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -584,7 +575,7 @@ const y = inject;
 const z: OnInit = null as any;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -608,7 +599,7 @@ const z: OnInit = null as any;
 const x = Used;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -622,7 +613,7 @@ const x = Used;
 const x = Used;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -637,7 +628,7 @@ const x = Used;
 const x = Used;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -653,7 +644,7 @@ const x = Component;
 const y = LocalClass;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -674,7 +665,7 @@ const y = LocalClass;
 const x = Used;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -690,7 +681,7 @@ import { AlsoUnused } from 'other';
 // Nothing is used
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -712,7 +703,7 @@ const x = Component;
 const y = map;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -730,7 +721,7 @@ import 'reflect-metadata';
 // String imports are always kept
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -744,7 +735,7 @@ import 'reflect-metadata';
 export { Foo, Bar };
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -761,7 +752,7 @@ export { Foo, Bar };
 export default MyClass;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -775,7 +766,7 @@ import * as Unused from './unused';
 export { Utils };
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -794,7 +785,7 @@ export const MyComponent = () => {
 `;
     const doc = new MockTextDocument('test.tsx', content);
     doc.languageId = 'typescriptreact';
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -813,7 +804,7 @@ import UnusedDefault from './unused';
 export { MyDefault };
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -833,7 +824,7 @@ function myFunction() {
 `;
     const doc = new MockTextDocument('test.js', content);
     doc.languageId = 'javascript';
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -853,7 +844,7 @@ export default function MyComponent() {
 `;
     const doc = new MockTextDocument('test.jsx', content);
     doc.languageId = 'javascriptreact';
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -873,7 +864,7 @@ const instance = new UsedClass();
 `;
     const doc = new MockTextDocument('test.js', content);
     doc.languageId = 'javascript';
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -895,7 +886,7 @@ const e = FifthSymbol;
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 50); // Very low threshold to force multiline
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -914,7 +905,7 @@ const c = VeryLongSymbolNameThree;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 40); // Force multiline
     config.setConfig('multiLineTrailingComma', true);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -933,7 +924,7 @@ const c = VeryLongSymbolNameThree;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 40); // Force multiline
     config.setConfig('multiLineTrailingComma', false);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -953,7 +944,7 @@ console.log(foo, bar);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('organizeSortsByFirstSpecifier', true);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -976,7 +967,7 @@ const b = names;
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 125); // Default high threshold
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -988,7 +979,7 @@ const b = names;
   test('34. Empty file produces no edits', () => {
     const content = '';
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
 
     assert.strictEqual(edits.length, 0, 'Empty file should produce no edits');
@@ -999,7 +990,7 @@ const b = names;
 console.log(x);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
 
     assert.strictEqual(edits.length, 0, 'File with no imports should produce no edits');
@@ -1013,7 +1004,7 @@ import { Unused3 } from './c';
 const x = 42;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1029,7 +1020,7 @@ const x = 42;
 const x: MyType = { value: 42 };
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1043,7 +1034,7 @@ const x: MyType = { value: 42 };
 const x = 42;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1073,7 +1064,7 @@ MyHelper;
       'Workspace'         // Local files
     ]);
 
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1090,7 +1081,7 @@ MyHelper;
   test('40. File with only whitespace produces no edits', () => {
     const content = '\n\n  \n\t\n';
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
 
     assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
@@ -1105,7 +1096,7 @@ import { B } from './lib';
 console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1129,7 +1120,7 @@ console.log(A, B);
     const doc = new MockTextDocument('test.ts', content);
     const customConfig = new MockImportsConfig();
     customConfig.setConfig('mergeImportsFromSameModule', false);
-    const manager = new ImportManager(doc, customConfig, logger);
+    const manager = new ImportManager(doc, customConfig);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1153,7 +1144,7 @@ console.log(A, B);
     const customConfig = new MockImportsConfig();
     customConfig.setConfig('mergeImportsFromSameModule', false);
     customConfig.setConfig('disableImportRemovalOnOrganize', false);
-    const manager = new ImportManager(doc, customConfig, logger);
+    const manager = new ImportManager(doc, customConfig);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1174,7 +1165,7 @@ import { Named } from './lib';
 console.log(DefaultExport, Named);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1195,7 +1186,7 @@ import { Named } from './lib';
 console.log(Lib, Named);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1215,7 +1206,7 @@ import './lib';
 console.log('side effects');
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1232,7 +1223,7 @@ console.log('side effects');
 const x: typeof MyClass = null as any;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1248,7 +1239,7 @@ import { A, B } from './lib';
 console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1272,7 +1263,7 @@ import { B } from './lib';
 console.log(AliasA, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1294,7 +1285,7 @@ import Default from './lib';
 console.log(A, B, C, Default);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1318,7 +1309,7 @@ import { M } from './lib';
 console.log(Z, A, M);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1338,7 +1329,7 @@ console.log(VeryLongNameOne, VeryLongNameTwo);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 30); // Force multiline
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1361,7 +1352,7 @@ console.log(A, B, C, D);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('grouping', ['/angular/', 'Workspace']);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1384,7 +1375,7 @@ console.log(Z, A);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('organizeSortsByFirstSpecifier', true);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1404,7 +1395,7 @@ import { Component as Comp2 } from '@angular/core';
 console.log(Comp1, Comp2);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1426,7 +1417,7 @@ console.log(Default1, Named);
 // Default2 is unused, will be removed
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1449,7 +1440,7 @@ console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('removeTrailingIndex', true);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1471,7 +1462,7 @@ const a: TypeA = null as any;
 const b: TypeB = null as any;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1491,7 +1482,7 @@ import { Named } from './lib';
 console.log(Named);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1512,7 +1503,7 @@ import { Named } from './lib';
 console.log(Lib, Named);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1533,7 +1524,7 @@ import { B } from './lib';
 console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1553,7 +1544,7 @@ import * as Lib2 from './lib';
 console.log(Lib1, Lib2);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1574,7 +1565,7 @@ console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('removeTrailingIndex', false);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1594,7 +1585,7 @@ import Default2 from './lib';
 console.log(Default1, Default2);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1619,7 +1610,7 @@ const result = filter(doubled, x => x > 5)
   .reduce((acc, val) => acc + val, 0);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1641,7 +1632,7 @@ import { bar } from 'new-lib';
 console.log(foo, bar);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1661,7 +1652,7 @@ import { bar } from 'new-lib';
 console.log(bar);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1685,7 +1676,7 @@ const lib = oldLib;
 const local = MyClass;
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1717,7 +1708,7 @@ console.log(foo);
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('stringQuoteStyle', "'");
     config.setConfig('insertSemicolons', false);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1744,7 +1735,7 @@ import { unused } from './unused';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1771,7 +1762,7 @@ import { unused } from './unused';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1796,7 +1787,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1820,7 +1811,7 @@ import { unused } from './unused';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1852,7 +1843,7 @@ import { unused } from './unused';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1881,7 +1872,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1915,7 +1906,7 @@ const demo = new Component();
 console.log(UserDetail);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1942,7 +1933,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1970,7 +1961,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -1998,7 +1989,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2021,7 +2012,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2042,7 +2033,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc0 = new MockTextDocument('test.ts', content0);
-    const manager0 = new ImportManager(doc0, config, logger);
+    const manager0 = new ImportManager(doc0, config);
     const result0 = applyEdits(content0, manager0.organizeImports());
     const lines0 = result0.split('\n');
     const comment0 = lines0.findIndex(l => l.includes('Comment'));
@@ -2057,7 +2048,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc1 = new MockTextDocument('test.ts', content1);
-    const manager1 = new ImportManager(doc1, config, logger);
+    const manager1 = new ImportManager(doc1, config);
     const result1 = applyEdits(content1, manager1.organizeImports());
     const lines1 = result1.split('\n');
     const comment1 = lines1.findIndex(l => l.includes('Comment'));
@@ -2073,7 +2064,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc2 = new MockTextDocument('test.ts', content2);
-    const manager2 = new ImportManager(doc2, config, logger);
+    const manager2 = new ImportManager(doc2, config);
     const result2 = applyEdits(content2, manager2.organizeImports());
     const lines2 = result2.split('\n');
     const comment2 = lines2.findIndex(l => l.includes('Comment'));
@@ -2090,7 +2081,7 @@ import { used } from './lib';
 console.log(used);
 `;
     const doc3 = new MockTextDocument('test.ts', content3);
-    const manager3 = new ImportManager(doc3, config, logger);
+    const manager3 = new ImportManager(doc3, config);
     const result3 = applyEdits(content3, manager3.organizeImports());
     const lines3 = result3.split('\n');
     const comment3 = lines3.findIndex(l => l.includes('Comment'));
@@ -2116,7 +2107,7 @@ async function loadModule() {
 console.log(helper);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2144,7 +2135,7 @@ const dirname = import.meta.dirname;
 console.log(helper, currentUrl);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2162,7 +2153,7 @@ import { used } from './used';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2179,7 +2170,7 @@ import { used } from './used';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2200,7 +2191,7 @@ import { B } from './b';
 import { C } from './c';
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2219,7 +2210,7 @@ import { foo } from './lib';
 console.log(x, foo);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
 
     // Should not throw error
     let threw = false;
@@ -2250,7 +2241,7 @@ import { B } from './b';
 console.log(A, B);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2270,7 +2261,7 @@ console.log(SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentif
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.setConfig('multiLineWrapThreshold', 40); // Low threshold to force wrapping
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2298,7 +2289,7 @@ import { unused } from './unused';
 console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
 
     // Should not throw error
     let threw = false;
@@ -2327,7 +2318,7 @@ const code = "import { X } from 'lib';";
 console.log(helper, message);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2357,7 +2348,7 @@ console.log(A, B);
     const badConfig = new MockImportsConfig();
     badConfig.setConfig('grouping', ['INVALID_GROUP_IDENTIFIER']); // This will throw in parser
 
-    const manager = new ImportManager(doc, badConfig, logger);
+    const manager = new ImportManager(doc, badConfig);
 
     // Should not throw - must fall back to defaults
     let threw = false;
@@ -2386,7 +2377,7 @@ const instance = new UsedClass();
 console.log(instance);
 `;
     const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2419,7 +2410,7 @@ console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2446,7 +2437,7 @@ console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2470,7 +2461,7 @@ console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2492,7 +2483,7 @@ console.log(used);
 console.log(used);
 `;
     const doc0 = new MockTextDocument('test.ts', content0);
-    const manager0 = new ImportManager(doc0, config, logger);
+    const manager0 = new ImportManager(doc0, config);
     const result0 = applyEdits(content0, manager0.organizeImports());
     const lines0 = result0.split('\n');
     const import0 = lines0.findIndex(l => l.includes('import'));
@@ -2505,7 +2496,7 @@ console.log(used);
 console.log(used);
 `;
     const doc1 = new MockTextDocument('test.ts', content1);
-    const manager1 = new ImportManager(doc1, config, logger);
+    const manager1 = new ImportManager(doc1, config);
     const result1 = applyEdits(content1, manager1.organizeImports());
     const lines1 = result1.split('\n');
     const import1 = lines1.findIndex(l => l.includes('import'));
@@ -2519,7 +2510,7 @@ console.log(used);
 console.log(used);
 `;
     const doc2 = new MockTextDocument('test.ts', content2);
-    const manager2 = new ImportManager(doc2, config, logger);
+    const manager2 = new ImportManager(doc2, config);
     const result2 = applyEdits(content2, manager2.organizeImports());
     const lines2 = result2.split('\n');
     const import2 = lines2.findIndex(l => l.includes('import'));
@@ -2534,7 +2525,7 @@ console.log(used);
 console.log(used);
 `;
     const doc3 = new MockTextDocument('test.ts', content3);
-    const manager3 = new ImportManager(doc3, config, logger);
+    const manager3 = new ImportManager(doc3, config);
     const result3 = applyEdits(content3, manager3.organizeImports());
     const lines3 = result3.split('\n');
     const import3 = lines3.findIndex(l => l.includes('import'));
@@ -2557,7 +2548,7 @@ console.log(used);
 `;
     const doc = new MockTextDocument('test.ts', content);
     config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 
@@ -2581,7 +2572,7 @@ console.log(used);
 
     // Create document with CRLF (EndOfLine = 2)
     const doc = new MockTextDocument('test.ts', content, 2);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
 
     // CRITICAL: The edit newText should contain CRLF, not LF
@@ -2595,7 +2586,7 @@ console.log(used);
     config.setConfig('multiLineWrapThreshold', 10); // Force multiline
     const content2 = `import { VeryLongNameA, VeryLongNameB } from './lib';\n\nconsole.log(VeryLongNameA, VeryLongNameB);\n`;
     const doc2 = new MockTextDocument('test.ts', content2, 2);
-    const manager2 = new ImportManager(doc2, config, logger);
+    const manager2 = new ImportManager(doc2, config);
     const edits2 = manager2.organizeImports();
 
     // Multiline import should have CRLF after opening brace and before closing brace
@@ -2622,7 +2613,7 @@ const r = React;
 
     config.setConfig('ignoredFromRemoval', ['react']);
     const doc = new MockTextDocument('test.tsx', content);
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
     const result = applyEdits(content, edits);
 

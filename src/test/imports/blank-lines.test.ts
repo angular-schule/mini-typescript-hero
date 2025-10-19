@@ -36,10 +36,17 @@ class MockTextDocument {
 
   lineAt(line: number): { text: string; range: any; rangeIncludingLineBreak: any } {
     const lines = this.content.split(/\r?\n/);
+    const lineText = lines[line] || '';
+
+    // Create proper Range objects for the line
+    const start = { line, character: 0 };
+    const end = { line, character: lineText.length };
+    const endIncludingLineBreak = { line: line + 1, character: 0 };
+
     return {
-      text: lines[line] || '',
-      range: null as any,
-      rangeIncludingLineBreak: null as any,
+      text: lineText,
+      range: { start, end },
+      rangeIncludingLineBreak: { start, end: endIncludingLineBreak },
     };
   }
 
@@ -60,15 +67,6 @@ class MockTextDocument {
   }
 }
 
-class MockOutputChannel {
-  appendLine(_message: string): void {
-    // No-op for tests
-  }
-
-  dispose(): void {
-    // No-op
-  }
-}
 
 class MockImportsConfig extends ImportsConfig {
   private overrides: Map<string, any> = new Map();
@@ -130,48 +128,54 @@ class MockImportsConfig extends ImportsConfig {
 /**
  * Helper to apply TextEdits to a document string.
  *
- * A TextEdit REPLACE operation replaces text from startLine to endLine.
- * The newText is inserted at startLine, and lines from startLine to endLine-1 are removed.
+ * Applies edits in reverse order (bottom to top) to avoid position shifts.
+ * This matches how VSCode's applyEdit() works with multiple edits.
  */
 function applyTextEdits(originalText: string, edits: any[]): string {
   if (edits.length === 0) {
     return originalText;
   }
 
-  // For blank line tests, we typically have a single REPLACE edit
-  const edit = edits[0];
-  const lines = originalText.split(/\r?\n/);
+  // Sort edits by position (reverse order - bottom to top)
+  const sortedEdits = [...edits].sort((a, b) => {
+    const lineDiff = b.range.start.line - a.range.start.line;
+    if (lineDiff !== 0) return lineDiff;
+    return b.range.start.character - a.range.start.character;
+  });
 
-  // Extract range - VSCode uses 0-based line numbers
-  const startLine = edit.range.start.line;
-  const endLine = edit.range.end.line;
+  let result = originalText;
 
-  // Build result:
-  // - Lines before startLine stay as-is
-  // - Lines from startLine to endLine-1 are removed
-  // - newText is inserted
-  // - Lines from endLine onward stay as-is
-  const before = lines.slice(0, startLine);
-  const after = lines.slice(endLine);
+  for (const edit of sortedEdits) {
+    const lines = result.split(/\r?\n/);
+    const startLine = edit.range.start.line;
+    const endLine = edit.range.end.line;
 
-  // Assemble the result
-  let result = '';
+    // Build result by removing lines and inserting newText
+    const before = lines.slice(0, startLine);
+    const after = lines.slice(endLine);
 
-  // Add lines before the edit
-  if (before.length > 0) {
-    result += before.join('\n') + '\n';
-  }
+    let newResult = '';
 
-  // Add the new text (which already includes its own line endings)
-  result += edit.newText;
-
-  // Add lines after the edit
-  // Only add a connecting newline if newText doesn't end with one
-  if (after.length > 0) {
-    if (edit.newText && !edit.newText.endsWith('\n')) {
-      result += '\n';
+    // Add lines before the edit
+    if (before.length > 0) {
+      newResult += before.join('\n') + '\n';
     }
-    result += after.join('\n');
+
+    // Add the new text (which already includes its own line endings)
+    if (edit.newText) {
+      newResult += edit.newText;
+    }
+
+    // Add lines after the edit
+    // Only add a connecting newline if newText doesn't end with one
+    if (after.length > 0) {
+      if (newResult.length > 0 && !newResult.endsWith('\n')) {
+        newResult += '\n';
+      }
+      newResult += after.join('\n');
+    }
+
+    result = newResult;
   }
 
   return result;
@@ -179,13 +183,11 @@ function applyTextEdits(originalText: string, edits: any[]): string {
 
 suite('Blank Lines - Mode "one" (default)', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'one');
     config.override('disableImportRemovalOnOrganize', true); // Don't remove unused imports for blank line tests
-    logger = new MockOutputChannel();
   });
 
   test('TC-001: 0 blank lines after → 1 blank line after', () => {
@@ -193,7 +195,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -205,7 +207,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -217,7 +219,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -229,7 +231,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -241,7 +243,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -251,13 +253,11 @@ suite('Blank Lines - Mode "one" (default)', () => {
 
 suite('Blank Lines - Mode "two"', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'two');
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-010: 0 blank lines after → 2 blank lines after', () => {
@@ -265,7 +265,7 @@ suite('Blank Lines - Mode "two"', () => {
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -277,7 +277,7 @@ suite('Blank Lines - Mode "two"', () => {
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -289,7 +289,7 @@ suite('Blank Lines - Mode "two"', () => {
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -301,7 +301,7 @@ suite('Blank Lines - Mode "two"', () => {
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -311,13 +311,11 @@ suite('Blank Lines - Mode "two"', () => {
 
 suite('Blank Lines - Mode "preserve"', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'preserve');
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-020: 0 blank lines after → 0 blank lines after', () => {
@@ -325,7 +323,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const expected = `import { A } from './a';\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -337,7 +335,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -349,7 +347,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -361,7 +359,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const expected = `import { A } from './a';\n\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -373,7 +371,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const expected = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -384,13 +382,11 @@ suite('Blank Lines - Mode "preserve"', () => {
 
 suite('Blank Lines - Header Detection', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'one');
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-100: Leading blank lines removed (no header)', () => {
@@ -398,7 +394,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -410,7 +406,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -422,7 +418,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -434,7 +430,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `// Comment\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -446,7 +442,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `// Comment\n\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -458,7 +454,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `// Copyright 2025\n// Info\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -470,7 +466,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `#!/usr/bin/env node\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -482,7 +478,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `#!/usr/bin/env node\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -494,7 +490,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `'use strict';\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -506,7 +502,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `'use strict';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -518,7 +514,7 @@ suite('Blank Lines - Header Detection', () => {
     const expected = `"use strict";\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -528,13 +524,11 @@ suite('Blank Lines - Header Detection', () => {
 
 suite('Blank Lines - Import Group Separation', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'one');
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-200: Modules only - no group separation', () => {
@@ -542,7 +536,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const expected = `import { A } from '@angular/core';\nimport { B } from 'rxjs';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -554,7 +548,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const expected = `import { A } from './a';\nimport { B } from './b';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -566,7 +560,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const expected = `import { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -578,7 +572,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const expected = `import './polyfills';\n\nimport { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -588,12 +582,10 @@ suite('Blank Lines - Import Group Separation', () => {
 
 suite('Blank Lines - Combined Scenarios', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-300: Mode "one" + Header with blanks', () => {
@@ -603,7 +595,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     const expected = `// Header\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -617,7 +609,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     const expected = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -628,13 +620,11 @@ suite('Blank Lines - Combined Scenarios', () => {
 
 suite('Blank Lines - Edge Cases', () => {
   let config: MockImportsConfig;
-  let logger: MockOutputChannel;
 
   setup(() => {
     config = new MockImportsConfig();
     config.override('blankLinesAfterImports', 'one');
     config.override('disableImportRemovalOnOrganize', true);
-    logger = new MockOutputChannel();
   });
 
   test('TC-400: File with only imports (no code after)', () => {
@@ -642,7 +632,7 @@ suite('Blank Lines - Edge Cases', () => {
     const expected = `import { A } from './a';\n`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -653,7 +643,7 @@ suite('Blank Lines - Edge Cases', () => {
     const input = `export class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
 
     // No edits should be made
@@ -664,7 +654,7 @@ suite('Blank Lines - Edge Cases', () => {
     const input = ``;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
 
     assert.strictEqual(edits.length, 0);
@@ -674,7 +664,7 @@ suite('Blank Lines - Edge Cases', () => {
     const input = `\n\n\n`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
 
     // No imports means no edits
@@ -686,7 +676,7 @@ suite('Blank Lines - Edge Cases', () => {
     const expected = `import { A } from './a';\r\n\r\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input, EndOfLine.CRLF);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 
@@ -698,7 +688,7 @@ suite('Blank Lines - Edge Cases', () => {
     const expected = `import './polyfills';\n\nimport * as React from 'react';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
     const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config, logger as any);
+    const manager = new ImportManager(doc as any, config);
     const edits = manager.organizeImports();
     const result = applyTextEdits(input, edits);
 

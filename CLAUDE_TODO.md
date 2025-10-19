@@ -2265,3 +2265,137 @@ All technical questions resolved. Test suite is complete and verified.
 **Session 26 (Continued) End:** 2025-10-14
 **Final Status:** ✅ Documentation complete, ready for Session 27 (final pre-release tasks)
 
+
+---
+
+## Session: 2025-10-19 - All Tests Fixed + Logger Cleanup
+
+### 1. Current Work Status
+
+#### ✅ Completed Tasks
+1. **Fixed all 21 remaining failing tests** - achieved 100% test pass rate (205/205)
+2. **Header blank line handling** - Fixed logic to preserve exact number of blank lines between headers and imports
+3. **removeTrailingIndex + merging order** - Fixed modern mode to remove `/index` BEFORE merging (test 56)
+4. **Single edit optimization** - Refactored from multiple DELETE edits to single REPLACE edit (test 88)
+5. **Removed unused logger parameter** - Cleaned up `ImportManager` constructor, removed `OutputChannel` dependency
+6. **All test infrastructure updated** - Removed logger mocks and parameters from all test files
+
+#### 🎯 Test Results
+- **Main Extension Tests**: 205/205 passing (100%)
+- **Previously**: 184/205 passing (90%)
+- **Fixed**: 21 tests in this session
+
+### 2. Technical Context
+
+#### 📝 Files Modified
+
+**Production Code:**
+- `src/imports/import-manager.ts`:
+  - Removed `logger: OutputChannel` parameter from constructor
+  - Fixed header blank line preservation logic (lines 763-770)
+  - Added `/index` removal before merging in modern mode (lines 353-360)
+  - Added `/index` removal after merging in legacy mode (lines 450-457)
+  - Refactored edit generation to use single REPLACE edit instead of multiple DELETEs (lines 504-620)
+  - Added proper handling of leading blank lines before headers
+  - Removed `OutputChannel` import
+
+- `src/imports/import-organizer.ts`:
+  - Updated `ImportManager` instantiation to remove logger parameter (line 130)
+
+**Test Files:**
+- `src/test/imports/blank-lines.test.ts`:
+  - Removed `MockOutputChannel` class
+  - Removed logger parameter from all `ImportManager` instantiations
+  - Removed logger variable declarations
+
+- `src/test/imports/import-manager.test.ts`:
+  - Removed `MockOutputChannel` class
+  - Removed logger parameter from all `ImportManager` instantiations
+  - Removed `OutputChannel` import
+  - Removed logger variable declarations
+
+- `src/test/imports/import-organizer.test.ts`:
+  - (No changes - already didn't use logger)
+
+### 3. Important Decisions
+
+#### Architecture Choices
+1. **Single REPLACE edit pattern**: Changed from multiple DELETE + INSERT edits to a single REPLACE edit
+   - Reason: More efficient, cleaner, and fixes test 88 (CRLF handling)
+   - Trade-off: Slightly more complex range calculation, but more correct behavior
+
+2. **Header blank line preservation**: Headers are now preserved exactly as-is, with exact blank line counts maintained
+   - Leading blanks BEFORE headers are deleted (separate edit)
+   - Blank lines AFTER headers are preserved exactly
+   - Import section is replaced as one unit
+
+3. **Logger removal**: Removed unused `logger` parameter from `ImportManager`
+   - Reason: Parameter was marked as "intentionally unused, kept for future use" but adds unnecessary complexity
+   - User requested removal
+   - Simplifies constructor signature and test infrastructure
+
+#### Implementation Details
+- Modern mode: `/index` removal happens BEFORE merging (correct)
+- Legacy mode: `/index` removal happens AFTER merging (replicates old bug)
+- Header detection regex: `/^\s*(?:\/\/|\/\*|\*\/|\*|#!|(['"])use strict\1)/`
+- Blank line handling: Tracks both `blankLinesBefore` and `hasLeadingBlanks` separately
+
+### 4. Next Steps
+
+#### ✅ Immediate Status
+All work for this session is **COMPLETE**. No pending tasks.
+
+#### 🚀 Ready for Next Phase
+The extension is now fully functional with:
+- ✅ 205/205 tests passing (100%)
+- ✅ All edge cases handled
+- ✅ Clean code (no unused parameters)
+- ✅ Efficient edit generation (single REPLACE)
+- ✅ Proper CRLF support
+- ✅ Header preservation working correctly
+
+#### 📋 Future Considerations (Not Blocking)
+- Consider adding more tests for edge cases discovered during development
+- Consider performance profiling with very large files (1000+ imports)
+- Consider adding telemetry/logging infrastructure if needed for production debugging
+
+### 5. Testing Summary
+
+#### Tests Fixed in This Session
+1. **Header blank line tests (10 tests)**:
+   - TC-101, TC-110, TC-111, TC-112, TC-113
+   - TC-120, TC-121, TC-130, TC-131, TC-132
+   - TC-300, TC-310
+
+2. **Test 56**: Merging + removeTrailingIndex order
+
+3. **Test 88**: Windows line endings (CRLF)
+
+#### Test Categories - All Passing
+- ✅ Blank line handling (all modes: one, two, preserve)
+- ✅ Header detection (comments, shebangs, 'use strict')
+- ✅ Import grouping and sorting
+- ✅ Unused import removal
+- ✅ Merging and deduplication
+- ✅ Configuration options (all 13 settings)
+- ✅ Edge cases (empty files, CRLF, etc.)
+
+### 6. Code Quality
+
+#### Compilation Status
+- ✅ TypeScript: No errors
+- ⚠️ ESLint: 2 warnings (curly brace style - cosmetic only)
+  - `blank-lines.test.ts:142` - if statement formatting
+  - `import-manager.test.ts:286` - if statement formatting
+- ✅ Build: Successful
+
+#### Test Execution
+- ✅ Duration: ~10 seconds
+- ✅ All suites passing
+- ✅ No flaky tests
+- ✅ No skipped tests
+
+---
+
+**Session Outcome**: 🎉 **100% SUCCESS** - All tests passing, code cleaned up, ready for release!
+

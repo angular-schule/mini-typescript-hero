@@ -69,8 +69,21 @@ class MockTextDocument implements TextDocument {
     return this.content;
   }
 
-  lineAt(): any {
-    throw new Error('Not implemented');
+  lineAt(line: number | Position): any {
+    const lineNumber = typeof line === 'number' ? line : line.line;
+    const lines = this.content.split(/\r?\n/);
+    const lineText = lines[lineNumber] || '';
+
+    // Create proper Range objects for the line
+    const start = { line: lineNumber, character: 0 };
+    const end = { line: lineNumber, character: lineText.length };
+    const endIncludingLineBreak = { line: lineNumber + 1, character: 0 };
+
+    return {
+      text: lineText,
+      range: { start, end },
+      rangeIncludingLineBreak: { start, end: endIncludingLineBreak },
+    };
   }
 
   offsetAt(position: Position): number {

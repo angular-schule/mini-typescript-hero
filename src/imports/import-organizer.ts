@@ -127,7 +127,7 @@ export class ImportOrganizer implements Disposable {
     }
 
     try {
-      const manager = new ImportManager(document, this.config, this.logger);
+      const manager = new ImportManager(document, this.config);
       return manager.organizeImports();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
