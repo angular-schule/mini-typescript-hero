@@ -1,5 +1,8 @@
 import * as assert from 'assert';
-import { EndOfLine, Uri } from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit } from 'vscode';
 
 import { ImportsConfig } from '../../configuration';
 import { ImportManager } from '../../imports/import-manager';
@@ -14,60 +17,37 @@ import { ImportManager } from '../../imports/import-manager';
  * Test IDs correspond to the specification in README-how-we-handle-blank-lines.md
  */
 
-// Mock implementations
-class MockTextDocument {
-  constructor(
-    public readonly fileName: string,
-    private readonly content: string,
-    public readonly eol: EndOfLine = EndOfLine.LF,
-  ) {}
+// Helper functions for real file testing
+async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
+  const tempDir = os.tmpdir();
+  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
+  fs.writeFileSync(tempFile, content, 'utf-8');
+  const doc = await workspace.openTextDocument(Uri.file(tempFile));
+  return doc;
+}
 
-  getText(): string {
-    return this.content;
-  }
-
-  get uri(): Uri {
-    return Uri.file(this.fileName);
-  }
-
-  get lineCount(): number {
-    return this.content.split(/\r?\n/).length;
-  }
-
-  lineAt(line: number): { text: string; range: any; rangeIncludingLineBreak: any } {
-    const lines = this.content.split(/\r?\n/);
-    const lineText = lines[line] || '';
-
-    // Create proper Range objects for the line
-    const start = { line, character: 0 };
-    const end = { line, character: lineText.length };
-    const endIncludingLineBreak = { line: line + 1, character: 0 };
-
-    return {
-      text: lineText,
-      range: { start, end },
-      rangeIncludingLineBreak: { start, end: endIncludingLineBreak },
-    };
-  }
-
-  positionAt(offset: number): any {
-    const lines = this.content.split(/\r?\n/);
-    let currentOffset = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const lineLength = lines[i].length;
-      if (currentOffset + lineLength >= offset) {
-        return { line: i, character: offset - currentOffset };
-      }
-      currentOffset += lineLength + 1; // +1 for newline character
-    }
-
-    // If offset is at or past the end, return last position
-    return { line: lines.length - 1, character: lines[lines.length - 1].length };
+async function deleteTempDocument(doc: TextDocument): Promise<void> {
+  try {
+    fs.unlinkSync(doc.uri.fsPath);
+  } catch (e) {
+    // Ignore errors
   }
 }
 
+async function applyEditsToDocument(doc: TextDocument, edits: TextEdit[]): Promise<string> {
+  if (edits.length === 0) {
+    return doc.getText();
+  }
+  const workspaceEdit = new WorkspaceEdit();
+  workspaceEdit.set(doc.uri, edits);
+  const success = await workspace.applyEdit(workspaceEdit);
+  if (!success) {
+    throw new Error('Failed to apply edits');
+  }
+  return doc.getText();
+}
 
+// Mock config for testing
 class MockImportsConfig extends ImportsConfig {
   private overrides: Map<string, any> = new Map();
 
@@ -125,62 +105,6 @@ class MockImportsConfig extends ImportsConfig {
   }
 }
 
-/**
- * Helper to apply TextEdits to a document string.
- *
- * Applies edits in reverse order (bottom to top) to avoid position shifts.
- * This matches how VSCode's applyEdit() works with multiple edits.
- */
-function applyTextEdits(originalText: string, edits: any[]): string {
-  if (edits.length === 0) {
-    return originalText;
-  }
-
-  // Sort edits by position (reverse order - bottom to top)
-  const sortedEdits = [...edits].sort((a, b) => {
-    const lineDiff = b.range.start.line - a.range.start.line;
-    if (lineDiff !== 0) return lineDiff;
-    return b.range.start.character - a.range.start.character;
-  });
-
-  let result = originalText;
-
-  for (const edit of sortedEdits) {
-    const lines = result.split(/\r?\n/);
-    const startLine = edit.range.start.line;
-    const endLine = edit.range.end.line;
-
-    // Build result by removing lines and inserting newText
-    const before = lines.slice(0, startLine);
-    const after = lines.slice(endLine);
-
-    let newResult = '';
-
-    // Add lines before the edit
-    if (before.length > 0) {
-      newResult += before.join('\n') + '\n';
-    }
-
-    // Add the new text (which already includes its own line endings)
-    if (edit.newText) {
-      newResult += edit.newText;
-    }
-
-    // Add lines after the edit
-    // Only add a connecting newline if newText doesn't end with one
-    if (after.length > 0) {
-      if (newResult.length > 0 && !newResult.endsWith('\n')) {
-        newResult += '\n';
-      }
-      newResult += after.join('\n');
-    }
-
-    result = newResult;
-  }
-
-  return result;
-}
-
 suite('Blank Lines - Mode "one" (default)', () => {
   let config: MockImportsConfig;
 
@@ -190,64 +114,84 @@ suite('Blank Lines - Mode "one" (default)', () => {
     config.override('disableImportRemovalOnOrganize', true); // Don't remove unused imports for blank line tests
   });
 
-  test('TC-001: 0 blank lines after → 1 blank line after', () => {
+  test('TC-001: 0 blank lines after → 1 blank line after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-002: 1 blank line after → 1 blank line after (preserved)', () => {
+  test('TC-002: 1 blank line after → 1 blank line after (preserved)', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-003: 2 blank lines after → 1 blank line after (normalized)', () => {
+  test('TC-003: 2 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-004: 3 blank lines after → 1 blank line after (normalized)', () => {
+  test('TC-004: 3 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-005: 5 blank lines after → 1 blank line after (normalized)', () => {
+  test('TC-005: 5 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
 
@@ -260,52 +204,68 @@ suite('Blank Lines - Mode "two"', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-010: 0 blank lines after → 2 blank lines after', () => {
+  test('TC-010: 0 blank lines after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-011: 1 blank line after → 2 blank lines after', () => {
+  test('TC-011: 1 blank line after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-012: 2 blank lines after → 2 blank lines after (preserved)', () => {
+  test('TC-012: 2 blank lines after → 2 blank lines after (preserved)', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-013: 3 blank lines after → 2 blank lines after (normalized)', () => {
+  test('TC-013: 3 blank lines after → 2 blank lines after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
 
@@ -318,64 +278,84 @@ suite('Blank Lines - Mode "preserve"', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-020: 0 blank lines after → 0 blank lines after', () => {
+  test('TC-020: 0 blank lines after → 0 blank lines after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-021: 1 blank line after → 1 blank line after', () => {
+  test('TC-021: 1 blank line after → 1 blank line after', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-022: 2 blank lines after → 2 blank lines after', () => {
+  test('TC-022: 2 blank lines after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-023: 3 blank lines after → 3 blank lines after', () => {
+  test('TC-023: 3 blank lines after → 3 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-024: 5 blank lines after → 5 blank lines after', () => {
+  test('TC-024: 5 blank lines after → 5 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
 
@@ -389,136 +369,180 @@ suite('Blank Lines - Header Detection', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-100: Leading blank lines removed (no header)', () => {
+  test('TC-100: Leading blank lines removed (no header)', async () => {
     const input = `\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-101: Leading blank lines before comment removed', () => {
+  test('TC-101: Leading blank lines before comment removed', async () => {
     const input = `\n\n// Comment\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-110: Header with no blank lines preserved', () => {
+  test('TC-110: Header with no blank lines preserved', async () => {
     const input = `// Comment\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-111: Header with 1 blank line preserved', () => {
+  test('TC-111: Header with 1 blank line preserved', async () => {
     const input = `// Comment\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-112: Header with 2 blank lines preserved', () => {
+  test('TC-112: Header with 2 blank lines preserved', async () => {
     const input = `// Comment\n\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\n\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-113: Multiple header lines with blank preserved', () => {
+  test('TC-113: Multiple header lines with blank preserved', async () => {
     const input = `// Copyright 2025\n// Info\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Copyright 2025\n// Info\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-120: Shebang with no blank preserved', () => {
+  test('TC-120: Shebang with no blank preserved', async () => {
     const input = `#!/usr/bin/env node\nimport { A } from './a';\nexport class Test {}`;
     const expected = `#!/usr/bin/env node\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-121: Shebang with blank preserved', () => {
+  test('TC-121: Shebang with blank preserved', async () => {
     const input = `#!/usr/bin/env node\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `#!/usr/bin/env node\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-130: use strict with no blank preserved', () => {
+  test('TC-130: use strict with no blank preserved', async () => {
     const input = `'use strict';\nimport { A } from './a';\nexport class Test {}`;
     const expected = `'use strict';\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-131: use strict with blank preserved', () => {
+  test('TC-131: use strict with blank preserved', async () => {
     const input = `'use strict';\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `'use strict';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-132: double-quoted use strict preserved', () => {
+  test('TC-132: double-quoted use strict preserved', async () => {
     const input = `"use strict";\nimport { A } from './a';\nexport class Test {}`;
     const expected = `"use strict";\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
 
@@ -531,52 +555,68 @@ suite('Blank Lines - Import Group Separation', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-200: Modules only - no group separation', () => {
+  test('TC-200: Modules only - no group separation', async () => {
     const input = `import { A } from '@angular/core';\nimport { B } from 'rxjs';\nexport class Test {}`;
     const expected = `import { A } from '@angular/core';\nimport { B } from 'rxjs';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-201: Workspace only - no group separation', () => {
+  test('TC-201: Workspace only - no group separation', async () => {
     const input = `import { A } from './a';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import { A } from './a';\nimport { B } from './b';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-202: Modules + Workspace - 1 blank between groups', () => {
+  test('TC-202: Modules + Workspace - 1 blank between groups', async () => {
     const input = `import { A } from '@angular/core';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-203: Plains + Modules + Workspace - 2 blanks total (1 between each)', () => {
+  test('TC-203: Plains + Modules + Workspace - 2 blanks total (1 between each)', async () => {
     const input = `import './polyfills';\nimport { A } from '@angular/core';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import './polyfills';\n\nimport { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
 
@@ -588,32 +628,40 @@ suite('Blank Lines - Combined Scenarios', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-300: Mode "one" + Header with blanks', () => {
+  test('TC-300: Mode "one" + Header with blanks', async () => {
     config.override('blankLinesAfterImports', 'one');
 
     const input = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
     const expected = `// Header\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-310: Mode "preserve" + Header', () => {
+  test('TC-310: Mode "preserve" + Header', async () => {
     config.override('blankLinesAfterImports', 'preserve');
 
     const input = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
     const expected = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
 });
@@ -627,71 +675,95 @@ suite('Blank Lines - Edge Cases', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-400: File with only imports (no code after)', () => {
+  test('TC-400: File with only imports (no code after)', async () => {
     const input = `import { A } from './a';`;
     const expected = `import { A } from './a';\n`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-401: File with no imports', () => {
+  test('TC-401: File with no imports', async () => {
     const input = `export class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    // No edits should be made
-    assert.strictEqual(edits.length, 0);
+      // No edits should be made
+      assert.strictEqual(edits.length, 0);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-402: Empty file', () => {
+  test('TC-402: Empty file', async () => {
     const input = ``;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    assert.strictEqual(edits.length, 0);
+      assert.strictEqual(edits.length, 0);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-403: Whitespace-only file becomes empty', () => {
+  test('TC-403: Whitespace-only file becomes empty', async () => {
     const input = `\n\n\n`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    // No imports means no edits
-    assert.strictEqual(edits.length, 0);
+      // No imports means no edits
+      assert.strictEqual(edits.length, 0);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-404: CRLF line endings preserved', () => {
+  test('TC-404: CRLF line endings preserved', async () => {
     const input = `import { A } from './a';\r\nexport class Test {}`;
     const expected = `import { A } from './a';\r\n\r\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input, EndOfLine.CRLF);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('TC-405: Mixed import types handled correctly', () => {
+  test('TC-405: Mixed import types handled correctly', async () => {
     const input = `import './polyfills';\nimport * as React from 'react';\nimport { A } from './a';\nexport class Test {}`;
     const expected = `import './polyfills';\n\nimport * as React from 'react';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
-    const doc = new MockTextDocument('test.ts', input);
-    const manager = new ImportManager(doc as any, config);
-    const edits = manager.organizeImports();
-    const result = applyTextEdits(input, edits);
+    const doc = await createTempDocument(input);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.strictEqual(result, expected);
+      assert.strictEqual(result, expected);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });

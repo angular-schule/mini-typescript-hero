@@ -4,16 +4,28 @@
  * TESTING STRATEGY:
  * ================
  * These tests validate the core import organization logic of Mini TypeScript Hero.
- * They use real production code with mocked VSCode dependencies.
+ * They use REAL VSCode APIs with REAL temporary files on disk.
  *
  * WHAT'S REAL:
  * - ImportManager: The actual production class being tested
  * - ts-morph library: Real TypeScript parser analyzing code
  * - Import grouping logic: Real production code
+ * - TextDocument: REAL VSCode documents created from temp files (workspace.openTextDocument)
+ * - Edit application: REAL VSCode workspace.applyEdit() API
+ * - Document methods: REAL lineAt(), offsetAt(), positionAt() implementations
  *
  * WHAT'S MOCKED:
- * - VSCode APIs: TextDocument, OutputChannel (not available in test environment)
  * - Configuration: Controllable test values instead of reading VSCode settings
+ *
+ * WHY REAL FILES (NOT MOCKS):
+ * ===========================
+ * Previous approach used a homemade MockTextDocument with custom implementations of
+ * lineAt(), offsetAt(), positionAt() and a line-based applyEdits() function.
+ * This created bugs in the test code itself (not the extension), making it impossible
+ * to distinguish real bugs from mock implementation bugs.
+ *
+ * Current approach: Use workspace.openTextDocument() with real temp files in os.tmpdir().
+ * This gives us VSCode's actual implementations - battle-tested and correct.
  *
  * KEY INSIGHT - IN-MEMORY PARSING:
  * ================================
@@ -44,114 +56,40 @@
  */
 
 import * as assert from 'assert';
-import { Uri, Position, Range, TextEdit, TextDocument } from 'vscode';
+import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit } from 'vscode';
 import { ImportManager } from '../../imports/import-manager';
 import { ImportsConfig } from '../../configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../imports/import-grouping';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 /**
- * Mock TextDocument for testing
+ * Create a REAL temporary file and open it as a TextDocument
  *
- * Implements the VSCode TextDocument interface with in-memory string storage.
- * This allows us to test document operations without requiring a real VSCode environment.
+ * This uses the actual VSCode workspace.openTextDocument() API to get a REAL TextDocument.
+ * No mocking of lineAt(), offsetAt(), positionAt() - we use VSCode's actual implementations.
  *
- * Key methods:
- * - getText(): Returns the full content or a range
- * - lineAt(): Returns line information for position calculations
- * - offsetAt/positionAt: Converts between line/column and character offset
+ * @param content - The file content
+ * @param extension - File extension (default: 'ts'). Can be 'ts', 'tsx', 'js', 'jsx', etc.
  */
-class MockTextDocument implements TextDocument {
-  uri: Uri;
-  fileName: string;
-  isUntitled = false;
-  languageId = 'typescript';
-  version = 1;
-  isDirty = false;
-  isClosed = false;
-  eol: number;
-  encoding: string = 'utf-8';
-  lineCount: number;
+async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
+  const tempDir = os.tmpdir();
+  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
+  fs.writeFileSync(tempFile, content, 'utf-8');
 
-  constructor(fileName: string, private content: string, eol: number = 1) {
-    this.fileName = fileName;
-    this.uri = Uri.file(fileName);
-    this.eol = eol; // 1 = LF, 2 = CRLF
-    this.lineCount = content.split('\n').length;
-  }
+  const doc = await workspace.openTextDocument(Uri.file(tempFile));
+  return doc;
+}
 
-  save(): Thenable<boolean> {
-    return Promise.resolve(true);
-  }
-
-  getText(range?: Range): string {
-    if (range) {
-      const lines = this.content.split('\n');
-      const result: string[] = [];
-      for (let i = range.start.line; i <= range.end.line; i++) {
-        if (i < lines.length) {
-          let line = lines[i];
-          if (i === range.start.line && i === range.end.line) {
-            line = line.substring(range.start.character, range.end.character);
-          } else if (i === range.start.line) {
-            line = line.substring(range.start.character);
-          } else if (i === range.end.line) {
-            line = line.substring(0, range.end.character);
-          }
-          result.push(line);
-        }
-      }
-      return result.join('\n');
-    }
-    return this.content;
-  }
-
-  lineAt(position: number | Position): any {
-    const lineNumber = typeof position === 'number' ? position : position.line;
-    const lines = this.content.split('\n');
-    const text = lines[lineNumber] || '';
-    return {
-      lineNumber,
-      text,
-      range: new Range(lineNumber, 0, lineNumber, text.length),
-      rangeIncludingLineBreak: new Range(lineNumber, 0, lineNumber + 1, 0),
-      firstNonWhitespaceCharacterIndex: text.search(/\S/),
-      isEmptyOrWhitespace: text.trim().length === 0
-    };
-  }
-
-  offsetAt(position: Position): number {
-    const lines = this.content.split('\n');
-    let offset = 0;
-    for (let i = 0; i < position.line && i < lines.length; i++) {
-      offset += lines[i].length + 1; // +1 for newline
-    }
-    offset += position.character;
-    return offset;
-  }
-
-  positionAt(offset: number): Position {
-    const lines = this.content.split('\n');
-    let currentOffset = 0;
-    for (let line = 0; line < lines.length; line++) {
-      const lineLength = lines[line].length + 1; // +1 for newline
-      if (currentOffset + lineLength > offset) {
-        return new Position(line, offset - currentOffset);
-      }
-      currentOffset += lineLength;
-    }
-    return new Position(lines.length - 1, lines[lines.length - 1].length);
-  }
-
-  getWordRangeAtPosition(_position: Position): Range | undefined {
-    return undefined;
-  }
-
-  validateRange(range: Range): Range {
-    return range;
-  }
-
-  validatePosition(position: Position): Position {
-    return position;
+/**
+ * Clean up temporary file after test completes
+ */
+async function deleteTempDocument(doc: TextDocument): Promise<void> {
+  try {
+    fs.unlinkSync(doc.uri.fsPath);
+  } catch (e) {
+    // Ignore errors (file might not exist)
   }
 }
 
@@ -263,77 +201,25 @@ class MockImportsConfig extends ImportsConfig {
 }
 
 /**
- * Helper function to apply TextEdits to a string
+ * Helper function to apply TextEdits using REAL VSCode workspace.applyEdit()
  *
- * ImportManager returns TextEdit[] (VSCode's standard format for file modifications).
- * This helper simulates applying those edits to a string so we can verify the result.
- *
- * Algorithm:
- * 1. Sort edits in reverse order (bottom to top, right to left)
- * 2. Apply each edit without affecting positions of subsequent edits
- * 3. Return the final modified content
- *
- * This mimics what VSCode does when applying edits to a real document.
+ * ImportManager returns TextEdit[] which we apply to a REAL TextDocument.
+ * No homemade string manipulation - we use VSCode's actual edit application logic.
  */
-function applyEdits(content: string, edits: TextEdit[]): string {
+async function applyEditsToDocument(doc: TextDocument, edits: TextEdit[]): Promise<string> {
   if (edits.length === 0) {
-    return content;
+    return doc.getText();
   }
 
-  // Sort edits by position (reverse order - bottom to top)
-  const sortedEdits = [...edits].sort((a, b) => {
-    const lineDiff = b.range.start.line - a.range.start.line;
-    if (lineDiff !== 0) return lineDiff;
-    return b.range.start.character - a.range.start.character;
-  });
+  const workspaceEdit = new WorkspaceEdit();
+  workspaceEdit.set(doc.uri, edits);
+  const success = await workspace.applyEdit(workspaceEdit);
 
-  let result = content;
-
-  for (const edit of sortedEdits) {
-    const lines = result.split('\n');
-    const startLine = edit.range.start.line;
-    const startChar = edit.range.start.character;
-    const endLine = edit.range.end.line;
-    const endChar = edit.range.end.character;
-
-    if (startLine === endLine) {
-      // Single line edit
-      const line = lines[startLine] || '';
-      lines[startLine] = line.substring(0, startChar) + edit.newText + line.substring(endChar);
-      result = lines.join('\n');
-    } else {
-      // Multi-line edit - rebuild from parts
-      const before = lines.slice(0, startLine);
-      const after = lines.slice(endLine + 1);
-
-      const firstLinePart = (lines[startLine] || '').substring(0, startChar);
-      const lastLinePart = (lines[endLine] || '').substring(endChar);
-
-      let newResult = '';
-
-      // Add lines before the edit
-      if (before.length > 0) {
-        newResult += before.join('\n') + '\n';
-      }
-
-      // Add the edited content
-      if (edit.newText || firstLinePart || lastLinePart) {
-        newResult += firstLinePart + edit.newText + lastLinePart;
-      }
-
-      // Add lines after the edit
-      if (after.length > 0) {
-        if (newResult.length > 0 && !newResult.endsWith('\n')) {
-          newResult += '\n';
-        }
-        newResult += after.join('\n');
-      }
-
-      result = newResult;
-    }
+  if (!success) {
+    throw new Error('Failed to apply edits');
   }
 
-  return result;
+  return doc.getText();
 }
 
 suite('ImportManager Tests', () => {
@@ -343,7 +229,7 @@ suite('ImportManager Tests', () => {
     config = new MockImportsConfig();
   });
 
-  test('1. Remove unused imports', () => {
+  test('1. Remove unused imports', async () => {
     // SCENARIO: Two imports, only one is used in the code
     // EXPECTED: Unused import should be completely removed
     const content = `import { Unused } from 'lib';
@@ -351,16 +237,20 @@ import { Used } from 'other';
 
 const x = Used;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(!result.includes('Unused'), 'Unused import should be removed');
-    assert.ok(result.includes('Used'), 'Used import should be kept');
+      assert.ok(!result.includes('Unused'), 'Unused import should be removed');
+      assert.ok(result.includes('Used'), 'Used import should be kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('2. Remove unused specifiers from partial imports', () => {
+  test('2. Remove unused specifiers from partial imports', async () => {
     // SCENARIO: Import has 4 specifiers (A, B, C, D) but only A and C are used
     // EXPECTED: Keep only A and C, remove B and D (partial import cleanup)
     // BONUS: Remaining specifiers should be alphabetically sorted (A, C)
@@ -369,34 +259,42 @@ const x = Used;
 const x = A;
 const y = C;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('A'), 'Used specifier A should be kept');
-    assert.ok(result.includes('C'), 'Used specifier C should be kept');
-    assert.ok(!result.includes('B'), 'Unused specifier B should be removed');
-    assert.ok(!result.includes('D'), 'Unused specifier D should be removed');
+      assert.ok(result.includes('A'), 'Used specifier A should be kept');
+      assert.ok(result.includes('C'), 'Used specifier C should be kept');
+      assert.ok(!result.includes('B'), 'Unused specifier B should be removed');
+      assert.ok(!result.includes('D'), 'Unused specifier D should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('3. Keep excluded library even if unused', () => {
+  test('3. Keep excluded library even if unused', async () => {
     config.setConfig('ignoredFromRemoval', ['react']);
     const content = `import React from 'react';
 import { Unused } from 'other';
 
 // React is not used but should be kept
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('react'), 'React should be kept even if unused');
-    assert.ok(!result.includes('Unused'), 'Other unused imports should be removed');
+      assert.ok(result.includes('react'), 'React should be kept even if unused');
+      assert.ok(!result.includes('Unused'), 'Other unused imports should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('4. Keep type-only imports', () => {
+  test('4. Keep type-only imports', async () => {
     // SCENARIO: MyType is only used in a type annotation, not in runtime code
     // EXPECTED: Type annotations count as usage, import should be kept
     // WHY: TypeScript needs the type for compile-time checking
@@ -404,15 +302,19 @@ import { Unused } from 'other';
 
 let x: MyType;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('MyType'), 'Type-only import should be kept');
+      assert.ok(result.includes('MyType'), 'Type-only import should be kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('5. Handle local shadowing correctly', () => {
+  test('5. Handle local shadowing correctly', async () => {
     // SCENARIO: Import { Component } but also declare a local class Component
     // EXPECTED: Import should be removed (local declaration shadows the import)
     // WHY: When names conflict, TypeScript uses the local declaration
@@ -427,58 +329,74 @@ class Component {
   // Local class shadows the import
 }
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(!result.includes('@angular/core'), 'Shadowed import should be removed');
+      assert.ok(!result.includes('@angular/core'), 'Shadowed import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('6. Handle aliased imports', () => {
+  test('6. Handle aliased imports', async () => {
     const content = `import { Component as AngularComponent } from '@angular/core';
 
 const x = AngularComponent;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('Component as AngularComponent'), 'Aliased import should be kept');
+      assert.ok(result.includes('Component as AngularComponent'), 'Aliased import should be kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('7. Handle namespace imports', () => {
+  test('7. Handle namespace imports', async () => {
     const content = `import * as React from 'react';
 import * as Unused from 'unused-lib';
 
 const element = React.createElement('div');
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('* as React'), 'Used namespace import should be kept');
-    assert.ok(!result.includes('Unused'), 'Unused namespace import should be removed');
+      assert.ok(result.includes('* as React'), 'Used namespace import should be kept');
+      assert.ok(!result.includes('Unused'), 'Unused namespace import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('8. Handle default imports', () => {
+  test('8. Handle default imports', async () => {
     const content = `import React from 'react';
 import Vue from 'vue';
 
 const x = React;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('React'), 'Used default import should be kept');
-    assert.ok(!result.includes('Vue'), 'Unused default import should be removed');
+      assert.ok(result.includes('React'), 'Used default import should be kept');
+      assert.ok(!result.includes('Vue'), 'Unused default import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('9. Handle mixed default and named imports', () => {
+  test('9. Handle mixed default and named imports', async () => {
     const content = `import React, { useState } from 'react';
 import Vue, { ref } from 'vue';
 
@@ -486,18 +404,22 @@ const x = React;
 const y = useState;
 const z = ref;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('React'), 'Used default should be kept');
-    assert.ok(result.includes('useState'), 'Used named import should be kept');
-    assert.ok(result.includes('ref'), 'Used named import from another library should be kept');
-    assert.ok(!result.includes('Vue'), 'Unused default should be removed');
+      assert.ok(result.includes('React'), 'Used default should be kept');
+      assert.ok(result.includes('useState'), 'Used named import should be kept');
+      assert.ok(result.includes('ref'), 'Used named import from another library should be kept');
+      assert.ok(!result.includes('Vue'), 'Unused default should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('10. Group imports correctly (Plains -> Modules -> Workspace)', () => {
+  test('10. Group imports correctly (Plains -> Modules -> Workspace)', async () => {
     // SCENARIO: Mixed import types in random order
     // EXPECTED: Organized into groups with blank lines between them:
     //   1. Plains: String-only imports (import 'zone.js')
@@ -513,57 +435,69 @@ import 'zone.js';
 const x = Component;
 const y = LocalClass;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const zoneIndex = result.indexOf('zone.js');
-    const angularIndex = result.indexOf('@angular/core');
-    const localIndex = result.indexOf('./local');
+      const zoneIndex = result.indexOf('zone.js');
+      const angularIndex = result.indexOf('@angular/core');
+      const localIndex = result.indexOf('./local');
 
-    assert.ok(zoneIndex < angularIndex, 'Plains (zone.js) should come before Modules');
-    assert.ok(angularIndex < localIndex, 'Modules should come before Workspace');
+      assert.ok(zoneIndex < angularIndex, 'Plains (zone.js) should come before Modules');
+      assert.ok(angularIndex < localIndex, 'Modules should come before Workspace');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('11. Sort imports alphabetically within groups', () => {
+  test('11. Sort imports alphabetically within groups', async () => {
     const content = `import { map } from 'rxjs/operators';
 import { Component } from '@angular/core';
 
 const x = Component;
 const y = map;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const angularIndex = result.indexOf('@angular/core');
-    const rxjsIndex = result.indexOf('rxjs/operators');
+      const angularIndex = result.indexOf('@angular/core');
+      const rxjsIndex = result.indexOf('rxjs/operators');
 
-    assert.ok(angularIndex < rxjsIndex, 'Imports should be sorted alphabetically');
+      assert.ok(angularIndex < rxjsIndex, 'Imports should be sorted alphabetically');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('12. Sort specifiers alphabetically', () => {
+  test('12. Sort specifiers alphabetically', async () => {
     const content = `import { map, filter, tap } from 'rxjs/operators';
 
 const x = filter;
 const y = map;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should have filter before map (alphabetically, and tap removed)
-    const filterIndex = result.indexOf('filter');
-    const mapIndex = result.indexOf('map');
+      // Should have filter before map (alphabetically, and tap removed)
+      const filterIndex = result.indexOf('filter');
+      const mapIndex = result.indexOf('map');
 
-    assert.ok(filterIndex < mapIndex, 'Specifiers should be sorted alphabetically');
-    assert.ok(!result.includes('tap'), 'Unused specifier should be removed');
+      assert.ok(filterIndex < mapIndex, 'Specifiers should be sorted alphabetically');
+      assert.ok(!result.includes('tap'), 'Unused specifier should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', () => {
+  test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', async () => {
     // CRITICAL: This test validates the fix for a major sorting bug.
     // Specifiers must be sorted using localeCompare (case-insensitive), not ASCII sort.
     // ASCII sort: Component, OnInit, inject (capitals first)
@@ -574,68 +508,84 @@ const x = Component;
 const y = inject;
 const z: OnInit = null as any;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const importLine = result.split('\n').find(line => line.includes('@angular/core'));
-    assert.ok(importLine, 'Should have @angular/core import');
+      const importLine = result.split('\n').find(line => line.includes('@angular/core'));
+      assert.ok(importLine, 'Should have @angular/core import');
 
-    // Extract specifiers from the import line
-    const match = importLine!.match(/\{\s*(.+?)\s*\}/);
-    assert.ok(match, 'Should have named imports');
-    const specifiers = match![1].split(',').map(s => s.trim());
+      // Extract specifiers from the import line
+      const match = importLine!.match(/\{\s*(.+?)\s*\}/);
+      assert.ok(match, 'Should have named imports');
+      const specifiers = match![1].split(',').map(s => s.trim());
 
-    // Verify exact order: Component, inject, OnInit (localeCompare order)
-    assert.deepStrictEqual(specifiers, ['Component', 'inject', 'OnInit'],
-      'Specifiers should be sorted case-insensitively using localeCompare (Component, inject, OnInit)');
+      // Verify exact order: Component, inject, OnInit (localeCompare order)
+      assert.deepStrictEqual(specifiers, ['Component', 'inject', 'OnInit'],
+        'Specifiers should be sorted case-insensitively using localeCompare (Component, inject, OnInit)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('13. Format with configured quote style', () => {
+  test('13. Format with configured quote style', async () => {
     config.setConfig('stringQuoteStyle', '"');
     const content = `import { Used } from 'lib';
 
 const x = Used;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('"lib"'), 'Should use double quotes when configured');
+      assert.ok(result.includes('"lib"'), 'Should use double quotes when configured');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('14. Format with configured semicolons', () => {
+  test('14. Format with configured semicolons', async () => {
     config.setConfig('insertSemicolons', false);
     const content = `import { Used } from 'lib';
 
 const x = Used;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const importLine = result.split('\n').find(line => line.includes('import'));
-    assert.ok(importLine && !importLine.endsWith(';'), 'Should not have semicolons when configured');
+      const importLine = result.split('\n').find(line => line.includes('import'));
+      assert.ok(importLine && !importLine.endsWith(';'), 'Should not have semicolons when configured');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('15. Format with configured spaces in braces', () => {
+  test('15. Format with configured spaces in braces', async () => {
     config.setConfig('insertSpaceBeforeAndAfterImportBraces', false);
     const content = `import { Used } from 'lib';
 
 const x = Used;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('{Used}'), 'Should not have spaces in braces when configured');
+      assert.ok(result.includes('{Used}'), 'Should not have spaces in braces when configured');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('16. Respect blank lines between import groups', () => {
+  test('16. Respect blank lines between import groups', async () => {
     const content = `import { Component } from '@angular/core';
 import { LocalClass } from './local';
 import 'zone.js';
@@ -643,53 +593,65 @@ import 'zone.js';
 const x = Component;
 const y = LocalClass;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should have blank lines between groups
-    const lines = result.split('\n');
-    const hasBlankLinesBetweenGroups = lines.some((line, i) =>
-      i > 0 && line.trim() === '' && lines[i-1].includes('import') &&
-      i < lines.length - 1 && lines[i+1].includes('import')
-    );
+      // Should have blank lines between groups
+      const lines = result.split('\n');
+      const hasBlankLinesBetweenGroups = lines.some((line, i) =>
+        i > 0 && line.trim() === '' && lines[i-1].includes('import') &&
+        i < lines.length - 1 && lines[i+1].includes('import')
+      );
 
-    assert.ok(hasBlankLinesBetweenGroups, 'Should have blank lines between import groups');
+      assert.ok(hasBlankLinesBetweenGroups, 'Should have blank lines between import groups');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('17. Remove trailing /index when configured', () => {
+  test('17. Remove trailing /index when configured', async () => {
     config.setConfig('removeTrailingIndex', true);
     const content = `import { Used } from './lib/index';
 
 const x = Used;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('./lib'), 'Should have library path');
-    assert.ok(!result.includes('/index'), 'Should remove trailing /index');
+      assert.ok(result.includes('./lib'), 'Should have library path');
+      assert.ok(!result.includes('/index'), 'Should remove trailing /index');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('18. Keep all imports when removal is disabled', () => {
+  test('18. Keep all imports when removal is disabled', async () => {
     config.setConfig('disableImportRemovalOnOrganize', true);
     const content = `import { Unused } from 'lib';
 import { AlsoUnused } from 'other';
 
 // Nothing is used
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('Unused'), 'Should keep unused imports when removal is disabled');
-    assert.ok(result.includes('AlsoUnused'), 'Should keep all unused imports when removal is disabled');
+      assert.ok(result.includes('Unused'), 'Should keep unused imports when removal is disabled');
+      assert.ok(result.includes('AlsoUnused'), 'Should keep all unused imports when removal is disabled');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('19. Skip sorting when disabled', () => {
+  test('19. Skip sorting when disabled', async () => {
     // SCENARIO: Sorting disabled, imports in non-alphabetical order
     // EXPECTED: Original order preserved (rxjs before @angular/core)
     //
@@ -702,79 +664,99 @@ import { Component } from '@angular/core';
 const x = Component;
 const y = map;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Original order should be preserved (rxjs before angular)
-    const rxjsIndex = result.indexOf('rxjs/operators');
-    const angularIndex = result.indexOf('@angular/core');
+      // Original order should be preserved (rxjs before angular)
+      const rxjsIndex = result.indexOf('rxjs/operators');
+      const angularIndex = result.indexOf('@angular/core');
 
-    assert.ok(rxjsIndex < angularIndex, 'Should preserve original order when sorting is disabled');
+      assert.ok(rxjsIndex < angularIndex, 'Should preserve original order when sorting is disabled');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('20. Handle string-only imports (always kept)', () => {
+  test('20. Handle string-only imports (always kept)', async () => {
     const content = `import 'zone.js';
 import 'reflect-metadata';
 
 // String imports are always kept
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('zone.js'), 'String import should be kept');
-    assert.ok(result.includes('reflect-metadata'), 'String import should be kept');
+      assert.ok(result.includes('zone.js'), 'String import should be kept');
+      assert.ok(result.includes('reflect-metadata'), 'String import should be kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('21. Keep imports used in named re-exports', () => {
+  test('21. Keep imports used in named re-exports', async () => {
     const content = `import { Foo, Bar, Unused } from './lib';
 
 export { Foo, Bar };
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Foo and Bar are re-exported, so should be kept
-    assert.ok(result.includes('Foo'), 'Re-exported Foo should be kept');
-    assert.ok(result.includes('Bar'), 'Re-exported Bar should be kept');
-    // Unused is not re-exported and not used, so should be removed
-    assert.ok(!result.includes('Unused'), 'Unused should be removed');
+      // Foo and Bar are re-exported, so should be kept
+      assert.ok(result.includes('Foo'), 'Re-exported Foo should be kept');
+      assert.ok(result.includes('Bar'), 'Re-exported Bar should be kept');
+      // Unused is not re-exported and not used, so should be removed
+      assert.ok(!result.includes('Unused'), 'Unused should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('22. Keep imports used in default re-export', () => {
+  test('22. Keep imports used in default re-export', async () => {
     const content = `import MyClass from './my-class';
 
 export default MyClass;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('MyClass'), 'Default re-exported import should be kept');
+      assert.ok(result.includes('MyClass'), 'Default re-exported import should be kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('23. Keep namespace imports used in re-exports', () => {
+  test('23. Keep namespace imports used in re-exports', async () => {
     const content = `import * as Utils from './utils';
 import * as Unused from './unused';
 
 export { Utils };
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    assert.ok(result.includes('Utils'), 'Re-exported namespace import should be kept');
-    assert.ok(!result.includes('Unused'), 'Unused namespace import should be removed');
+      assert.ok(result.includes('Utils'), 'Re-exported namespace import should be kept');
+      assert.ok(!result.includes('Unused'), 'Unused namespace import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('24. Handle functions used in JSX/TSX', () => {
+  test('24. Handle functions used in JSX/TSX', async () => {
     const content = `import { helper } from './helpers';
 import { unused } from './unused';
 import * as React from 'react';
@@ -783,38 +765,45 @@ export const MyComponent = () => {
   return <div>{helper()}</div>;
 };
 `;
-    const doc = new MockTextDocument('test.tsx', content);
-    doc.languageId = 'typescriptreact';
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content, 'tsx');
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // helper() is used in JSX expression, should be kept
-    assert.ok(result.includes('helper'), 'Function used in JSX should be kept');
-    // React is used for JSX, should be kept
-    assert.ok(result.includes('React'), 'React import should be kept for JSX');
-    // unused is not used, should be removed
-    assert.ok(!result.includes('unused'), 'Unused import should be removed');
+      // helper() is used in JSX expression, should be kept
+      assert.ok(result.includes('helper'), 'Function used in JSX should be kept');
+      // React is used for JSX, should be kept
+      assert.ok(result.includes('React'), 'React import should be kept for JSX');
+      // unused is not used, should be removed
+      assert.ok(!result.includes('unused'), 'Unused import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('25. Keep default imports re-exported as named exports', () => {
+  test('25. Keep default imports re-exported as named exports', async () => {
     const content = `import MyDefault from './my-default';
 import UnusedDefault from './unused';
 
 export { MyDefault };
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // MyDefault is re-exported as named export, should be kept
-    assert.ok(result.includes('MyDefault'), 'Default import re-exported as named should be kept');
-    // UnusedDefault is not used, should be removed
-    assert.ok(!result.includes('UnusedDefault'), 'Unused default import should be removed');
+      // MyDefault is re-exported as named export, should be kept
+      assert.ok(result.includes('MyDefault'), 'Default import re-exported as named should be kept');
+      // UnusedDefault is not used, should be removed
+      assert.ok(!result.includes('UnusedDefault'), 'Unused default import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('26. Support JavaScript files (.js)', () => {
+  test('26. Support JavaScript files (.js)', async () => {
     const content = `import { used } from './helpers';
 import { unused } from './unused';
 
@@ -822,18 +811,21 @@ function myFunction() {
   return used();
 }
 `;
-    const doc = new MockTextDocument('test.js', content);
-    doc.languageId = 'javascript';
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content, 'js');
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // JavaScript should work like TypeScript
-    assert.ok(result.includes('used'), 'Used import should be kept in .js file');
-    assert.ok(!result.includes('unused'), 'Unused import should be removed from .js file');
+      // JavaScript should work like TypeScript
+      assert.ok(result.includes('used'), 'Used import should be kept in .js file');
+      assert.ok(!result.includes('unused'), 'Unused import should be removed from .js file');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('27. Support JSX files (.jsx)', () => {
+  test('27. Support JSX files (.jsx)', async () => {
     const content = `import React from 'react';
 import { Button } from './components';
 import { unused } from './unused';
@@ -842,19 +834,22 @@ export default function MyComponent() {
   return <Button>Click me</Button>;
 }
 `;
-    const doc = new MockTextDocument('test.jsx', content);
-    doc.languageId = 'javascriptreact';
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content, 'jsx');
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // JSX should detect usage correctly
-    assert.ok(result.includes('React'), 'React import should be kept in JSX');
-    assert.ok(result.includes('Button'), 'Component import should be kept in JSX');
-    assert.ok(!result.includes('unused'), 'Unused import should be removed from JSX');
+      // JSX should detect usage correctly
+      assert.ok(result.includes('React'), 'React import should be kept in JSX');
+      assert.ok(result.includes('Button'), 'Component import should be kept in JSX');
+      assert.ok(!result.includes('unused'), 'Unused import should be removed from JSX');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('28. Support complex JavaScript with destructuring and arrow functions', () => {
+  test('28. Support complex JavaScript with destructuring and arrow functions', async () => {
     const content = `import { map, filter, unused } from 'lodash';
 import { UsedClass } from './classes';
 
@@ -862,20 +857,23 @@ const data = [1, 2, 3];
 const result = map(data, x => filter([x], y => y > 0));
 const instance = new UsedClass();
 `;
-    const doc = new MockTextDocument('test.js', content);
-    doc.languageId = 'javascript';
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content, 'js');
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // All modern JS features should work
-    assert.ok(result.includes('map'), 'map should be kept');
-    assert.ok(result.includes('filter'), 'filter should be kept');
-    assert.ok(result.includes('UsedClass'), 'UsedClass should be kept');
-    assert.ok(!result.includes('unused'), 'unused should be removed');
+      // All modern JS features should work
+      assert.ok(result.includes('map'), 'map should be kept');
+      assert.ok(result.includes('filter'), 'filter should be kept');
+      assert.ok(result.includes('UsedClass'), 'UsedClass should be kept');
+      assert.ok(!result.includes('unused'), 'unused should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('29. Multiline wrapping when threshold exceeded', () => {
+  test('29. Multiline wrapping when threshold exceeded', async () => {
     const content = `import { VeryLongSymbolName, AnotherLongSymbol, YetAnotherSymbol, FourthSymbol, FifthSymbol } from './helpers';
 
 const a = VeryLongSymbolName;
@@ -884,56 +882,68 @@ const c = YetAnotherSymbol;
 const d = FourthSymbol;
 const e = FifthSymbol;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 50); // Very low threshold to force multiline
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 50); // Very low threshold to force multiline
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should be multiline (contains line breaks in import)
-    assert.ok(result.includes('{\n'), 'Import should be multiline');
-    assert.ok(result.includes(',\n'), 'Should have comma + newline between specifiers');
+      // Should be multiline (contains line breaks in import)
+      assert.ok(result.includes('{\n'), 'Import should be multiline');
+      assert.ok(result.includes(',\n'), 'Should have comma + newline between specifiers');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('30. Multiline trailing comma configuration', () => {
+  test('30. Multiline trailing comma configuration', async () => {
     const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
 
 const a = VeryLongSymbolNameOne;
 const b = VeryLongSymbolNameTwo;
 const c = VeryLongSymbolNameThree;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 40); // Force multiline
-    config.setConfig('multiLineTrailingComma', true);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 40); // Force multiline
+      config.setConfig('multiLineTrailingComma', true);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should have trailing comma on last specifier (which will be "Two" after alphabetical sort)
-    const hasTrailingComma = result.includes('VeryLongSymbolNameTwo,');
-    assert.ok(hasTrailingComma, 'Multiline import should have trailing comma when configured');
+      // Should have trailing comma on last specifier (which will be "Two" after alphabetical sort)
+      const hasTrailingComma = result.includes('VeryLongSymbolNameTwo,');
+      assert.ok(hasTrailingComma, 'Multiline import should have trailing comma when configured');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('31. No trailing comma when multiLineTrailingComma is false', () => {
+  test('31. No trailing comma when multiLineTrailingComma is false', async () => {
     const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
 
 const a = VeryLongSymbolNameOne;
 const b = VeryLongSymbolNameTwo;
 const c = VeryLongSymbolNameThree;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 40); // Force multiline
-    config.setConfig('multiLineTrailingComma', false);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 40); // Force multiline
+      config.setConfig('multiLineTrailingComma', false);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should NOT have trailing comma on last specifier (which will be "Two" after alphabetical sort)
-    const hasNoTrailingComma = result.match(/VeryLongSymbolNameTwo\s*\n\s*\}/);
-    assert.ok(hasNoTrailingComma, 'Multiline import should NOT have trailing comma when disabled');
+      // Should NOT have trailing comma on last specifier (which will be "Two" after alphabetical sort)
+      const hasNoTrailingComma = result.match(/VeryLongSymbolNameTwo\s*\n\s*\}/);
+      assert.ok(hasNoTrailingComma, 'Multiline import should NOT have trailing comma when disabled');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('32. organizeSortsByFirstSpecifier sorts by first specifier, not library name', () => {
+  test('32. organizeSortsByFirstSpecifier sorts by first specifier, not library name', async () => {
     // Scenario: Two imports with different first specifiers
     // When sorted by first specifier: bar < foo (alphabetical)
     // When sorted by library name: ./a < ./z (alphabetical)
@@ -942,107 +952,135 @@ import { bar } from './a';
 
 console.log(foo, bar);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('organizeSortsByFirstSpecifier', true);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('organizeSortsByFirstSpecifier', true);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Expected: sorted by first specifier (bar < foo), not by library name
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
-    assert.strictEqual(lines.length, 2, 'Should have 2 import lines');
-    assert.ok(lines[0].includes('bar'), 'First import should be bar (sorted by specifier)');
-    assert.ok(lines[1].includes('foo'), 'Second import should be foo (sorted by specifier)');
+      // Expected: sorted by first specifier (bar < foo), not by library name
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
+      assert.strictEqual(lines.length, 2, 'Should have 2 import lines');
+      assert.ok(lines[0].includes('bar'), 'First import should be bar (sorted by specifier)');
+      assert.ok(lines[1].includes('foo'), 'Second import should be foo (sorted by specifier)');
 
-    // Verify it's NOT sorted by library name (./a would come before ./z)
-    assert.ok(lines[0].includes('./a'), 'bar import should be from ./a');
-    assert.ok(lines[1].includes('./z'), 'foo import should be from ./z');
+      // Verify it's NOT sorted by library name (./a would come before ./z)
+      assert.ok(lines[0].includes('./a'), 'bar import should be from ./a');
+      assert.ok(lines[1].includes('./z'), 'foo import should be from ./z');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('33. Single-line import stays single-line when under threshold', () => {
+  test('33. Single-line import stays single-line when under threshold', async () => {
     const content = `import { short, names } from './helpers';
 
 const a = short;
 const b = names;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 125); // Default high threshold
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 125); // Default high threshold
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should stay single line
-    assert.ok(!result.includes('{\n'), 'Short import should stay single-line');
-    assert.ok(result.includes('{ names, short }'), 'Should be single line with sorted specifiers');
+      // Should stay single line
+      assert.ok(!result.includes('{\n'), 'Short import should stay single-line');
+      assert.ok(result.includes('{ names, short }'), 'Should be single line with sorted specifiers');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('34. Empty file produces no edits', () => {
+  test('34. Empty file produces no edits', async () => {
     const content = '';
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    assert.strictEqual(edits.length, 0, 'Empty file should produce no edits');
+      assert.strictEqual(edits.length, 0, 'Empty file should produce no edits');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('35. File with no imports produces no edits', () => {
+  test('35. File with no imports produces no edits', async () => {
     const content = `const x = 42;
 console.log(x);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    assert.strictEqual(edits.length, 0, 'File with no imports should produce no edits');
+      assert.strictEqual(edits.length, 0, 'File with no imports should produce no edits');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('36. All imports unused - removes everything', () => {
+  test('36. All imports unused - removes everything', async () => {
     const content = `import { Unused1 } from './a';
 import { Unused2 } from './b';
 import { Unused3 } from './c';
 
 const x = 42;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should remove all imports
-    assert.ok(!result.includes('import'), 'All unused imports should be removed');
-    assert.ok(result.includes('const x = 42'), 'Code should remain');
+      // Should remove all imports
+      assert.ok(!result.includes('import'), 'All unused imports should be removed');
+      assert.ok(result.includes('const x = 42'), 'Code should remain');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('37. TypeScript type-only imports are preserved when used', () => {
+  test('37. TypeScript type-only imports are preserved when used', async () => {
     // TypeScript 3.8+ syntax: import type { Foo }
     const content = `import type { MyType } from './types';
 
 const x: MyType = { value: 42 };
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Type import should be preserved (used in type annotation)
-    assert.ok(result.includes('MyType'), 'Type-only import should be preserved when used');
+      // Type import should be preserved (used in type annotation)
+      assert.ok(result.includes('MyType'), 'Type-only import should be preserved when used');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('38. TypeScript type-only imports are removed when unused', () => {
+  test('38. TypeScript type-only imports are removed when unused', async () => {
     const content = `import type { UnusedType } from './types';
 
 const x = 42;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Unused type import should be removed
-    assert.ok(!result.includes('UnusedType'), 'Unused type-only import should be removed');
+      // Unused type import should be removed
+      assert.ok(!result.includes('UnusedType'), 'Unused type-only import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('39. Multiple custom regex groups work together', () => {
+  test('39. Multiple custom regex groups work together', async () => {
     // Scenario: Custom grouping with multiple regex patterns
     const content = `import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -1054,40 +1092,48 @@ const obs: Observable<any> = null as any;
 map(x => x);
 MyHelper;
 `;
-    const doc = new MockTextDocument('test.ts', content);
+    const doc = await createTempDocument(content);
+    try {
 
-    // Custom grouping: Angular first, then RxJS, then Remaining, then Workspace
-    config.setConfig('grouping', [
-      '/angular/',        // Regex group 1: Angular
-      '/^rxjs/',          // Regex group 2: RxJS (starts with rxjs)
-      'Modules',          // Remaining modules
-      'Workspace'         // Local files
-    ]);
+      // Custom grouping: Angular first, then RxJS, then Remaining, then Workspace
+      config.setConfig('grouping', [
+        '/angular/',        // Regex group 1: Angular
+        '/^rxjs/',          // Regex group 2: RxJS (starts with rxjs)
+        'Modules',          // Remaining modules
+        'Workspace'         // Local files
+      ]);
 
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Expected order: Angular -> RxJS -> Workspace
-    assert.strictEqual(lines.length, 4, 'Should have 4 imports');
-    assert.ok(lines[0].includes('@angular/core'), 'First should be Angular (regex group 1)');
-    assert.ok(lines[1].includes('rxjs/operators') || lines[1].includes('from \'rxjs\''), 'Second should be RxJS');
-    assert.ok(lines[2].includes('from \'rxjs\'') || lines[2].includes('rxjs/operators'), 'Third should be RxJS');
-    assert.ok(lines[3].includes('./helper'), 'Last should be workspace');
+      // Expected order: Angular -> RxJS -> Workspace
+      assert.strictEqual(lines.length, 4, 'Should have 4 imports');
+      assert.ok(lines[0].includes('@angular/core'), 'First should be Angular (regex group 1)');
+      assert.ok(lines[1].includes('rxjs/operators') || lines[1].includes('from \'rxjs\''), 'Second should be RxJS');
+      assert.ok(lines[2].includes('from \'rxjs\'') || lines[2].includes('rxjs/operators'), 'Third should be RxJS');
+      assert.ok(lines[3].includes('./helper'), 'Last should be workspace');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('40. File with only whitespace produces no edits', () => {
+  test('40. File with only whitespace produces no edits', async () => {
     const content = '\n\n  \n\t\n';
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
+      assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('41. Imports from same module are merged by default', () => {
+  test('41. Imports from same module are merged by default', async () => {
     // Scenario: Multiple imports from the same library
     // With mergeImportsFromSameModule: true (default for new users)
     const content = `import { A } from './lib';
@@ -1095,21 +1141,25 @@ import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge into single import
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
-    assert.ok(lines[0].includes('A'), 'Merged import should have A');
-    assert.ok(lines[0].includes('B'), 'Merged import should have B');
-    assert.ok(lines[0].includes('{ A, B }'), 'Should be merged as { A, B }');
+      // Should merge into single import
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
+      assert.ok(lines[0].includes('A'), 'Merged import should have A');
+      assert.ok(lines[0].includes('B'), 'Merged import should have B');
+      assert.ok(lines[0].includes('{ A, B }'), 'Should be merged as { A, B }');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('42. Merging can be disabled with mergeImportsFromSameModule: false', () => {
+  test('42. Merging can be disabled with mergeImportsFromSameModule: false', async () => {
     // Scenario: Multiple imports from same library with merging disabled
     // With mergeImportsFromSameModule: false (for migrated users who had disableImportRemovalOnOrganize: true)
     const content = `import { A } from './lib';
@@ -1117,22 +1167,26 @@ import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const customConfig = new MockImportsConfig();
-    customConfig.setConfig('mergeImportsFromSameModule', false);
-    const manager = new ImportManager(doc, customConfig);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const customConfig = new MockImportsConfig();
+      customConfig.setConfig('mergeImportsFromSameModule', false);
+      const manager = new ImportManager(doc, customConfig);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should NOT merge - keep as separate imports
-    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
-    assert.ok(lines[0].includes('A'), 'First import should have A');
-    assert.ok(lines[1].includes('B'), 'Second import should have B');
+      // Should NOT merge - keep as separate imports
+      assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines');
+      assert.ok(lines[0].includes('A'), 'First import should have A');
+      assert.ok(lines[1].includes('B'), 'Second import should have B');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('43. Merging and removal are independent settings', () => {
+  test('43. Merging and removal are independent settings', async () => {
     // Scenario: Merging disabled but removal enabled
     // Show that mergeImportsFromSameModule and disableImportRemovalOnOrganize are independent
     const content = `import { A, Unused } from './lib';
@@ -1140,142 +1194,170 @@ import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const customConfig = new MockImportsConfig();
-    customConfig.setConfig('mergeImportsFromSameModule', false);
-    customConfig.setConfig('disableImportRemovalOnOrganize', false);
-    const manager = new ImportManager(doc, customConfig);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const customConfig = new MockImportsConfig();
+      customConfig.setConfig('mergeImportsFromSameModule', false);
+      customConfig.setConfig('disableImportRemovalOnOrganize', false);
+      const manager = new ImportManager(doc, customConfig);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should NOT merge but SHOULD remove unused specifiers
-    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (not merged)');
-    assert.ok(lines[0].includes('A'), 'First import should have A');
-    assert.ok(lines[1].includes('B'), 'Second import should have B');
-    assert.ok(!result.includes('Unused'), 'Unused specifier should be removed');
+      // Should NOT merge but SHOULD remove unused specifiers
+      assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (not merged)');
+      assert.ok(lines[0].includes('A'), 'First import should have A');
+      assert.ok(lines[1].includes('B'), 'Second import should have B');
+      assert.ok(!result.includes('Unused'), 'Unused specifier should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('44. Merge default and named imports from same module', () => {
+  test('44. Merge default and named imports from same module', async () => {
     // Scenario: Default import + named import from same module
     const content = `import DefaultExport from './lib';
 import { Named } from './lib';
 
 console.log(DefaultExport, Named);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge into: import DefaultExport, { Named } from './lib'
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
-    assert.ok(lines[0].includes('DefaultExport'), 'Should have default');
-    assert.ok(lines[0].includes('Named'), 'Should have named');
-    assert.ok(lines[0].includes('DefaultExport, { Named }'), 'Should be merged as default + named');
+      // Should merge into: import DefaultExport, { Named } from './lib'
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import line');
+      assert.ok(lines[0].includes('DefaultExport'), 'Should have default');
+      assert.ok(lines[0].includes('Named'), 'Should have named');
+      assert.ok(lines[0].includes('DefaultExport, { Named }'), 'Should be merged as default + named');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('45. Namespace imports cannot be merged', () => {
+  test('45. Namespace imports cannot be merged', async () => {
     // Scenario: Namespace import + named import from same module
     const content = `import * as Lib from './lib';
 import { Named } from './lib';
 
 console.log(Lib, Named);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Namespace imports cannot be merged - should keep separate
-    assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (namespace cannot merge)');
-    assert.ok(result.includes('* as Lib'), 'Should have namespace import');
-    assert.ok(result.includes('{ Named }'), 'Should have named import');
+      // Namespace imports cannot be merged - should keep separate
+      assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (namespace cannot merge)');
+      assert.ok(result.includes('* as Lib'), 'Should have namespace import');
+      assert.ok(result.includes('{ Named }'), 'Should have named import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('46. String imports never merge', () => {
+  test('46. String imports never merge', async () => {
     // Scenario: Multiple string imports from same module (side effects)
     const content = `import './lib';
 import './lib';
 
 console.log('side effects');
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // String imports have side effects - keep all separate
-    assert.strictEqual(lines.length, 2, 'Should keep both string imports (side effects)');
+      // String imports have side effects - keep all separate
+      assert.strictEqual(lines.length, 2, 'Should keep both string imports (side effects)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('42. TypeScript default type-only imports work correctly', () => {
+  test('42. TypeScript default type-only imports work correctly', async () => {
     // TS 3.8+: import type Foo from 'lib' (default type import)
     const content = `import type MyClass from './types';
 
 const x: typeof MyClass = null as any;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Default type import should be preserved when used
-    assert.ok(result.includes('MyClass'), 'Default type-only import should be preserved when used');
+      // Default type import should be preserved when used
+      assert.ok(result.includes('MyClass'), 'Default type-only import should be preserved when used');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('47. Duplicate specifiers are removed when merging', () => {
+  test('47. Duplicate specifiers are removed when merging', async () => {
     // Scenario: Same specifier imported twice (shouldn't happen but we handle it)
     const content = `import { A } from './lib';
 import { A, B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should deduplicate: { A, B } (A appears only once)
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
-    assert.ok(lines[0].includes('{ A, B }'), 'Should deduplicate to { A, B }');
+      // Should deduplicate: { A, B } (A appears only once)
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+      assert.ok(lines[0].includes('{ A, B }'), 'Should deduplicate to { A, B }');
 
-    // Count occurrences of 'A' in the import (should be exactly 1)
-    const importLine = lines[0];
-    const matches = importLine.match(/\bA\b/g);
-    assert.strictEqual(matches?.length, 1, 'A should appear only once in import');
+      // Count occurrences of 'A' in the import (should be exactly 1)
+      const importLine = lines[0];
+      const matches = importLine.match(/\bA\b/g);
+      assert.strictEqual(matches?.length, 1, 'A should appear only once in import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('48. Aliased imports merge correctly', () => {
+  test('48. Aliased imports merge correctly', async () => {
     // Scenario: Mix of aliased and non-aliased imports
     const content = `import { A as AliasA } from './lib';
 import { B } from './lib';
 
 console.log(AliasA, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge with alias preserved
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
-    assert.ok(lines[0].includes('A as AliasA'), 'Should preserve alias');
-    assert.ok(lines[0].includes('B'), 'Should include B');
+      // Should merge with alias preserved
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+      assert.ok(lines[0].includes('A as AliasA'), 'Should preserve alias');
+      assert.ok(lines[0].includes('B'), 'Should include B');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('49. Three or more imports from same module merge correctly', () => {
+  test('49. Three or more imports from same module merge correctly', async () => {
     // Scenario: Multiple imports that should all merge
     const content = `import { A } from './lib';
 import { B } from './lib';
@@ -1284,23 +1366,27 @@ import Default from './lib';
 
 console.log(A, B, C, Default);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge all into: import Default, { A, B, C } from './lib'
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
-    assert.ok(lines[0].includes('Default'), 'Should have default');
-    assert.ok(lines[0].includes('A'), 'Should have A');
-    assert.ok(lines[0].includes('B'), 'Should have B');
-    assert.ok(lines[0].includes('C'), 'Should have C');
-    assert.ok(lines[0].includes('Default, { A, B, C }'), 'Should be merged as Default, { A, B, C }');
+      // Should merge all into: import Default, { A, B, C } from './lib'
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+      assert.ok(lines[0].includes('Default'), 'Should have default');
+      assert.ok(lines[0].includes('A'), 'Should have A');
+      assert.ok(lines[0].includes('B'), 'Should have B');
+      assert.ok(lines[0].includes('C'), 'Should have C');
+      assert.ok(lines[0].includes('Default, { A, B, C }'), 'Should be merged as Default, { A, B, C }');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('50. Merging preserves alphabetical order of specifiers', () => {
+  test('50. Merging preserves alphabetical order of specifiers', async () => {
     // Scenario: Imports in random order should be sorted after merge
     const content = `import { Z } from './lib';
 import { A } from './lib';
@@ -1308,40 +1394,48 @@ import { M } from './lib';
 
 console.log(Z, A, M);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge and sort: { A, M, Z }
-    assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
-    assert.ok(lines[0].includes('{ A, M, Z }'), 'Should be alphabetically sorted: { A, M, Z }');
+      // Should merge and sort: { A, M, Z }
+      assert.strictEqual(lines.length, 1, 'Should have 1 merged import');
+      assert.ok(lines[0].includes('{ A, M, Z }'), 'Should be alphabetically sorted: { A, M, Z }');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('51. Merging works with multiline formatting', () => {
+  test('51. Merging works with multiline formatting', async () => {
     // Scenario: Merged import exceeds multiline threshold
     const content = `import { VeryLongNameOne } from './lib';
 import { VeryLongNameTwo } from './lib';
 
 console.log(VeryLongNameOne, VeryLongNameTwo);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 30); // Force multiline
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 30); // Force multiline
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should merge and format as multiline
-    assert.ok(result.includes('VeryLongNameOne'), 'Should include first name');
-    assert.ok(result.includes('VeryLongNameTwo'), 'Should include second name');
-    // Should be multiline (contains newline within braces)
-    const hasMultiline = result.match(/import\s*\{[^}]*\n[^}]*\}/);
-    assert.ok(hasMultiline, 'Should format as multiline import when threshold exceeded');
+      // Should merge and format as multiline
+      assert.ok(result.includes('VeryLongNameOne'), 'Should include first name');
+      assert.ok(result.includes('VeryLongNameTwo'), 'Should include second name');
+      // Should be multiline (contains newline within braces)
+      const hasMultiline = result.match(/import\s*\{[^}]*\n[^}]*\}/);
+      assert.ok(hasMultiline, 'Should format as multiline import when threshold exceeded');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('52. Merging works with custom import grouping', () => {
+  test('52. Merging works with custom import grouping', async () => {
     // Scenario: Ensure merging happens before grouping
     const content = `import { A } from '@angular/core';
 import { B } from '@angular/core';
@@ -1350,64 +1444,76 @@ import { D } from './local';
 
 console.log(A, B, C, D);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('grouping', ['/angular/', 'Workspace']);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('grouping', ['/angular/', 'Workspace']);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should have 2 merged imports (one per group)
-    assert.strictEqual(lines.length, 2, 'Should have 2 imports (one per group)');
-    assert.ok(lines[0].includes('@angular/core'), 'First should be Angular');
-    assert.ok(lines[0].includes('{ A, B }'), 'Angular imports should be merged');
-    assert.ok(lines[1].includes('./local'), 'Second should be local');
-    assert.ok(lines[1].includes('{ C, D }'), 'Local imports should be merged');
+      // Should have 2 merged imports (one per group)
+      assert.strictEqual(lines.length, 2, 'Should have 2 imports (one per group)');
+      assert.ok(lines[0].includes('@angular/core'), 'First should be Angular');
+      assert.ok(lines[0].includes('{ A, B }'), 'Angular imports should be merged');
+      assert.ok(lines[1].includes('./local'), 'Second should be local');
+      assert.ok(lines[1].includes('{ C, D }'), 'Local imports should be merged');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('53. Sorting by first specifier works correctly', () => {
+  test('53. Sorting by first specifier works correctly', async () => {
     // Scenario: Different modules sorted by first specifier
     const content = `import { Z } from './z';
 import { A } from './a';
 
 console.log(Z, A);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('organizeSortsByFirstSpecifier', true);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('organizeSortsByFirstSpecifier', true);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should sort by first specifier (A before Z)
-    assert.strictEqual(lines.length, 2, 'Should have 2 imports');
-    assert.ok(lines[0].includes('A'), 'First should be A (sorted by specifier)');
-    assert.ok(lines[1].includes('Z'), 'Second should be Z');
+      // Should sort by first specifier (A before Z)
+      assert.strictEqual(lines.length, 2, 'Should have 2 imports');
+      assert.ok(lines[0].includes('A'), 'First should be A (sorted by specifier)');
+      assert.ok(lines[1].includes('Z'), 'Second should be Z');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('54. Same specifier with different aliases are both preserved', () => {
+  test('54. Same specifier with different aliases are both preserved', async () => {
     // Scenario: Import same symbol with different aliases (valid TypeScript!)
     const content = `import { Component as Comp1 } from '@angular/core';
 import { Component as Comp2 } from '@angular/core';
 
 console.log(Comp1, Comp2);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge but preserve BOTH aliases (different identifiers in code)
-    assert.strictEqual(lines.length, 1, 'Should merge into one import');
-    assert.ok(lines[0].includes('Component as Comp1'), 'Should preserve first alias');
-    assert.ok(lines[0].includes('Component as Comp2'), 'Should preserve second alias');
+      // Should merge but preserve BOTH aliases (different identifiers in code)
+      assert.strictEqual(lines.length, 1, 'Should merge into one import');
+      assert.ok(lines[0].includes('Component as Comp1'), 'Should preserve first alias');
+      assert.ok(lines[0].includes('Component as Comp2'), 'Should preserve second alias');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('55. Multiple defaults from same module - first one wins', () => {
+  test('55. Multiple defaults from same module - first one wins', async () => {
     // Scenario: Invalid TypeScript but we handle gracefully
     const content = `import Default1 from './lib';
 import Default2 from './lib';
@@ -1416,21 +1522,25 @@ import { Named } from './lib';
 console.log(Default1, Named);
 // Default2 is unused, will be removed
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge, keeping only the USED default (Default1)
-    assert.strictEqual(lines.length, 1, 'Should merge into one import');
-    assert.ok(lines[0].includes('Default1'), 'Should keep first default');
-    assert.ok(lines[0].includes('Named'), 'Should include named import');
-    assert.ok(!lines[0].includes('Default2'), 'Should not include unused default');
+      // Should merge, keeping only the USED default (Default1)
+      assert.strictEqual(lines.length, 1, 'Should merge into one import');
+      assert.ok(lines[0].includes('Default1'), 'Should keep first default');
+      assert.ok(lines[0].includes('Named'), 'Should include named import');
+      assert.ok(!lines[0].includes('Default2'), 'Should not include unused default');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('56. FIXED: Merging + removeTrailingIndex order of operations', () => {
+  test('56. FIXED: Merging + removeTrailingIndex order of operations', async () => {
     // Previously this was a bug: /index removal happened AFTER merging
     // Fixed: /index removal now happens BEFORE merging
     const content = `import { A } from './lib/index';
@@ -1438,22 +1548,26 @@ import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('removeTrailingIndex', true);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('removeTrailingIndex', true);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should merge to single import from './lib'
-    assert.strictEqual(lines.length, 1, 'Should merge into one import');
-    assert.ok(lines[0].includes('{ A, B }'), 'Should merge to { A, B }');
-    assert.ok(lines[0].includes('./lib'), 'Should be from ./lib');
-    assert.ok(!lines[0].includes('/index'), 'Should have /index removed');
+      // Should merge to single import from './lib'
+      assert.strictEqual(lines.length, 1, 'Should merge into one import');
+      assert.ok(lines[0].includes('{ A, B }'), 'Should merge to { A, B }');
+      assert.ok(lines[0].includes('./lib'), 'Should be from ./lib');
+      assert.ok(!lines[0].includes('/index'), 'Should have /index removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('57. Type-only imports merge together', () => {
+  test('57. Type-only imports merge together', async () => {
     // Scenario: TypeScript 3.8+ type-only imports
     const content = `import type { TypeA } from './types';
 import type { TypeB } from './types';
@@ -1461,40 +1575,48 @@ import type { TypeB } from './types';
 const a: TypeA = null as any;
 const b: TypeB = null as any;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Type-only imports should merge
-    assert.strictEqual(lines.length, 1, 'Should merge type-only imports');
-    assert.ok(lines[0].includes('TypeA'), 'Should include TypeA');
-    assert.ok(lines[0].includes('TypeB'), 'Should include TypeB');
+      // Type-only imports should merge
+      assert.strictEqual(lines.length, 1, 'Should merge type-only imports');
+      assert.ok(lines[0].includes('TypeA'), 'Should include TypeA');
+      assert.ok(lines[0].includes('TypeB'), 'Should include TypeB');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('58. String import + Named import from same module kept separate', () => {
+  test('58. String import + Named import from same module kept separate', async () => {
     // Scenario: String import (side effects) cannot merge with named import
     const content = `import './lib';
 import { Named } from './lib';
 
 console.log(Named);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // String and named imports both kept (2 separate lines)
-    assert.strictEqual(lines.length, 2, 'Should keep string and named separate');
-    assert.ok(result.includes("import './lib'"), 'Should have string import');
-    assert.ok(result.includes('{ Named }'), 'Should have named import');
+      // String and named imports both kept (2 separate lines)
+      assert.strictEqual(lines.length, 2, 'Should keep string and named separate');
+      assert.ok(result.includes("import './lib'"), 'Should have string import');
+      assert.ok(result.includes('{ Named }'), 'Should have named import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('59. String + Namespace + Named from same module all kept separate', () => {
+  test('59. String + Namespace + Named from same module all kept separate', async () => {
     // Scenario: Mix of all three types - none can merge with each other
     const content = `import './lib';
 import * as Lib from './lib';
@@ -1502,104 +1624,124 @@ import { Named } from './lib';
 
 console.log(Lib, Named);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // All three kept separate
-    assert.strictEqual(lines.length, 3, 'Should keep all three separate');
-    assert.ok(result.includes("import './lib'"), 'Should have string import');
-    assert.ok(result.includes('* as Lib'), 'Should have namespace import');
-    assert.ok(result.includes('{ Named }'), 'Should have named import');
+      // All three kept separate
+      assert.strictEqual(lines.length, 3, 'Should keep all three separate');
+      assert.ok(result.includes("import './lib'"), 'Should have string import');
+      assert.ok(result.includes('* as Lib'), 'Should have namespace import');
+      assert.ok(result.includes('{ Named }'), 'Should have named import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('60. Case-sensitive module names NOT merged', () => {
+  test('60. Case-sensitive module names NOT merged', async () => {
     // Scenario: Different casing = different modules
     const content = `import { A } from './Lib';
 import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Different case = different modules, not merged
-    assert.strictEqual(lines.length, 2, 'Should keep separate (case-sensitive)');
-    assert.ok(result.includes('./Lib'), 'Should have ./Lib (capital L)');
-    assert.ok(result.includes('./lib'), 'Should have ./lib (lowercase l)');
+      // Different case = different modules, not merged
+      assert.strictEqual(lines.length, 2, 'Should keep separate (case-sensitive)');
+      assert.ok(result.includes('./Lib'), 'Should have ./Lib (capital L)');
+      assert.ok(result.includes('./lib'), 'Should have ./lib (lowercase l)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('61. Multiple namespace imports from same module kept separate', () => {
+  test('61. Multiple namespace imports from same module kept separate', async () => {
     // Scenario: Multiple namespace imports cannot merge
     const content = `import * as Lib1 from './lib';
 import * as Lib2 from './lib';
 
 console.log(Lib1, Lib2);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Both namespace imports kept separate
-    assert.strictEqual(lines.length, 2, 'Should keep both namespace imports separate');
-    assert.ok(result.includes('* as Lib1'), 'Should have Lib1');
-    assert.ok(result.includes('* as Lib2'), 'Should have Lib2');
+      // Both namespace imports kept separate
+      assert.strictEqual(lines.length, 2, 'Should keep both namespace imports separate');
+      assert.ok(result.includes('* as Lib1'), 'Should have Lib1');
+      assert.ok(result.includes('* as Lib2'), 'Should have Lib2');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('62. /index removal disabled - imports NOT merged', () => {
+  test('62. /index removal disabled - imports NOT merged', async () => {
     // Scenario: When /index removal is OFF, './lib/index' and './lib' are different modules
     const content = `import { A } from './lib/index';
 import { B } from './lib';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('removeTrailingIndex', false);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('removeTrailingIndex', false);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should NOT merge (different module names)
-    assert.strictEqual(lines.length, 2, 'Should keep separate when /index not removed');
-    assert.ok(result.includes('./lib/index'), 'Should keep /index');
-    assert.ok(result.includes("'./lib'"), 'Should have ./lib');
+      // Should NOT merge (different module names)
+      assert.strictEqual(lines.length, 2, 'Should keep separate when /index not removed');
+      assert.ok(result.includes('./lib/index'), 'Should keep /index');
+      assert.ok(result.includes("'./lib'"), 'Should have ./lib');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('63. Two defaults from same module both used - first wins', () => {
+  test('63. Two defaults from same module both used - first wins', async () => {
     // Scenario: Invalid TS but both defaults actually used
     const content = `import Default1 from './lib';
 import Default2 from './lib';
 
 console.log(Default1, Default2);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Both used, so should merge but only keep first default
-    // Second default becomes a regular specifier or gets dropped
-    // Let's see what actually happens
-    assert.strictEqual(lines.length, 1, 'Should merge into one import');
-    assert.ok(lines[0].includes('Default1'), 'Should have Default1');
-    // Default2 might be kept as named or dropped - depends on parser
+      // Both used, so should merge but only keep first default
+      // Second default becomes a regular specifier or gets dropped
+      // Let's see what actually happens
+      assert.strictEqual(lines.length, 1, 'Should merge into one import');
+      assert.ok(lines[0].includes('Default1'), 'Should have Default1');
+      // Default2 might be kept as named or dropped - depends on parser
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('64. Property access should not count as import usage', () => {
+  test('64. Property access should not count as import usage', async () => {
     // Scenario: import { reduce } from 'lodash' but only use arr.reduce() (Array method)
     // The identifier "reduce" appears in .reduce() but is NOT using the import
     const content = `import { filter, map, reduce } from 'lodash';
@@ -1609,21 +1751,25 @@ const doubled = map(data, x => x * 2);
 const result = filter(doubled, x => x > 5)
   .reduce((acc, val) => acc + val, 0);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Should keep map and filter (used as functions), remove reduce (only used as method)
-    assert.strictEqual(lines.length, 1, 'Should have one import line');
-    assert.ok(lines[0].includes('filter'), 'Should keep filter');
-    assert.ok(lines[0].includes('map'), 'Should keep map');
-    assert.ok(!lines[0].includes('reduce'), 'Should remove reduce (not used as function)');
+      // Should keep map and filter (used as functions), remove reduce (only used as method)
+      assert.strictEqual(lines.length, 1, 'Should have one import line');
+      assert.ok(lines[0].includes('filter'), 'Should keep filter');
+      assert.ok(lines[0].includes('map'), 'Should keep map');
+      assert.ok(!lines[0].includes('reduce'), 'Should remove reduce (not used as function)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('65. Old TypeScript syntax: import = require (used)', () => {
+  test('65. Old TypeScript syntax: import = require (used)', async () => {
     // Scenario: Old TypeScript syntax that's still used in legacy codebases
     // This is import foo = require('lib') syntax (deprecated but must not break)
     const content = `import foo = require('old-lib');
@@ -1631,40 +1777,48 @@ import { bar } from 'new-lib';
 
 console.log(foo, bar);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.trim().length > 0);
+      const lines = result.split('\n').filter(line => line.trim().length > 0);
 
-    // Both imports should be kept (both used)
-    assert.ok(result.includes('import foo = require'), 'Should keep import equals (used)');
-    assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep modern import');
-    assert.strictEqual(lines.filter(l => l.startsWith('import')).length, 2, 'Should have 2 imports');
+      // Both imports should be kept (both used)
+      assert.ok(result.includes('import foo = require'), 'Should keep import equals (used)');
+      assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep modern import');
+      assert.strictEqual(lines.filter(l => l.startsWith('import')).length, 2, 'Should have 2 imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('66. Old TypeScript syntax: import = require (unused)', () => {
+  test('66. Old TypeScript syntax: import = require (unused)', async () => {
     // Scenario: Unused import equals should be removed like any other unused import
     const content = `import foo = require('old-lib');
 import { bar } from 'new-lib';
 
 console.log(bar);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n').filter(line => line.startsWith('import'));
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-    // Only bar should remain
-    assert.strictEqual(lines.length, 1, 'Should have only 1 import');
-    assert.ok(!result.includes('import foo = require'), 'Should remove unused import equals');
-    assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep used import');
+      // Only bar should remain
+      assert.strictEqual(lines.length, 1, 'Should have only 1 import');
+      assert.ok(!result.includes('import foo = require'), 'Should remove unused import equals');
+      assert.ok(result.includes("import { bar } from 'new-lib'"), 'Should keep used import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('67. Old TypeScript syntax: Mixed with grouping', () => {
+  test('67. Old TypeScript syntax: Mixed with grouping', async () => {
     // Scenario: import equals should be grouped like namespace imports
     const content = `import { Component } from '@angular/core';
 import oldLib = require('old-lib');
@@ -1675,57 +1829,65 @@ const component = Component;
 const lib = oldLib;
 const local = MyClass;
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should be grouped: Plains, Modules (including import equals), Workspace
-    const lines = result.split('\n');
-    const zoneIndex = lines.findIndex(l => l.includes('zone.js'));
-    const angularIndex = lines.findIndex(l => l.includes('@angular/core'));
-    const oldLibIndex = lines.findIndex(l => l.includes('old-lib'));
-    const localIndex = lines.findIndex(l => l.includes('./my-class'));
+      // Should be grouped: Plains, Modules (including import equals), Workspace
+      const lines = result.split('\n');
+      const zoneIndex = lines.findIndex(l => l.includes('zone.js'));
+      const angularIndex = lines.findIndex(l => l.includes('@angular/core'));
+      const oldLibIndex = lines.findIndex(l => l.includes('old-lib'));
+      const localIndex = lines.findIndex(l => l.includes('./my-class'));
 
-    assert.ok(zoneIndex !== -1, 'Should have zone.js');
-    assert.ok(angularIndex !== -1, 'Should have angular');
-    assert.ok(oldLibIndex !== -1, 'Should have old-lib');
-    assert.ok(localIndex !== -1, 'Should have local import');
+      assert.ok(zoneIndex !== -1, 'Should have zone.js');
+      assert.ok(angularIndex !== -1, 'Should have angular');
+      assert.ok(oldLibIndex !== -1, 'Should have old-lib');
+      assert.ok(localIndex !== -1, 'Should have local import');
 
-    // Verify order: Plains < Modules < Workspace
-    assert.ok(zoneIndex < angularIndex, 'Plains before Modules');
-    assert.ok(zoneIndex < oldLibIndex, 'Plains before old-lib');
-    assert.ok(angularIndex < localIndex, 'Modules before Workspace');
-    assert.ok(oldLibIndex < localIndex, 'Old-lib before Workspace');
+      // Verify order: Plains < Modules < Workspace
+      assert.ok(zoneIndex < angularIndex, 'Plains before Modules');
+      assert.ok(zoneIndex < oldLibIndex, 'Plains before old-lib');
+      assert.ok(angularIndex < localIndex, 'Modules before Workspace');
+      assert.ok(oldLibIndex < localIndex, 'Old-lib before Workspace');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('68. Old TypeScript syntax: Formatting matches config', () => {
+  test('68. Old TypeScript syntax: Formatting matches config', async () => {
     // Scenario: import equals should respect quote and semicolon settings
     const content = `import foo = require("old-lib");
 
 console.log(foo);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('stringQuoteStyle', "'");
-    config.setConfig('insertSemicolons', false);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('stringQuoteStyle', "'");
+      config.setConfig('insertSemicolons', false);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should use single quotes and no semicolon
-    assert.ok(result.includes("import foo = require('old-lib')"), 'Should use single quotes');
-    assert.ok(!result.includes("import foo = require('old-lib');"), 'Should not have semicolon');
+      // Should use single quotes and no semicolon
+      assert.ok(result.includes("import foo = require('old-lib')"), 'Should use single quotes');
+      assert.ok(!result.includes("import foo = require('old-lib');"), 'Should not have semicolon');
 
-    // Reset config
-    config.setConfig('stringQuoteStyle', "'");
-    config.setConfig('insertSemicolons', true);
+      // Reset config
+      config.setConfig('stringQuoteStyle', "'");
+      config.setConfig('insertSemicolons', true);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
   // =============================================================================
   // CRITICAL EDGE CASES - File Headers & Special Syntax
   // =============================================================================
 
-  test('69. Shebang: Imports inserted AFTER shebang', () => {
+  test('69. Shebang: Imports inserted AFTER shebang', async () => {
     // CRITICAL: Shebang MUST be first line or script won't execute
     // Scenario: Node.js executable script with shebang
     const content = `#!/usr/bin/env node
@@ -1734,25 +1896,29 @@ import { unused } from './unused';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // CRITICAL: Shebang MUST be on line 0
-    assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang must be first line');
+      // CRITICAL: Shebang MUST be on line 0
+      assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang must be first line');
 
-    // Import should come after shebang
-    assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
-    assert.ok(!result.includes('unused'), 'Should remove unused import');
+      // Import should come after shebang
+      assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
+      assert.ok(!result.includes('unused'), 'Should remove unused import');
 
-    const importLineIndex = lines.findIndex(l => l.includes('import'));
-    assert.ok(importLineIndex > 0, 'Import must come AFTER shebang');
+      const importLineIndex = lines.findIndex(l => l.includes('import'));
+      assert.ok(importLineIndex > 0, 'Import must come AFTER shebang');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('70. Use strict: Imports inserted AFTER use strict', () => {
+  test('70. Use strict: Imports inserted AFTER use strict', async () => {
     // CRITICAL: 'use strict' changes JavaScript behavior, must be first statement
     // Scenario: Strict mode file
     const content = `'use strict';
@@ -1761,46 +1927,54 @@ import { unused } from './unused';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // CRITICAL: 'use strict' MUST be first line
-    assert.strictEqual(lines[0], "'use strict';", "'use strict' must be first line");
+      // CRITICAL: 'use strict' MUST be first line
+      assert.strictEqual(lines[0], "'use strict';", "'use strict' must be first line");
 
-    // Import should come after 'use strict'
-    assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
-    assert.ok(!result.includes('unused'), 'Should remove unused import');
+      // Import should come after 'use strict'
+      assert.ok(result.includes("import { used } from './lib';"), 'Should keep used import');
+      assert.ok(!result.includes('unused'), 'Should remove unused import');
 
-    const importLineIndex = lines.findIndex(l => l.includes('import'));
-    assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+      const importLineIndex = lines.findIndex(l => l.includes('import'));
+      assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('71. Use strict (double quotes): Imports inserted AFTER use strict', () => {
+  test('71. Use strict (double quotes): Imports inserted AFTER use strict', async () => {
     // Scenario: "use strict" with double quotes (also valid)
     const content = `"use strict";
 import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // CRITICAL: "use strict" MUST be preserved
-    assert.strictEqual(lines[0], '"use strict";', '"use strict" must be first line');
+      // CRITICAL: "use strict" MUST be preserved
+      assert.strictEqual(lines[0], '"use strict";', '"use strict" must be first line');
 
-    const importLineIndex = lines.findIndex(l => l.includes('import'));
-    assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+      const importLineIndex = lines.findIndex(l => l.includes('import'));
+      assert.ok(importLineIndex > 0, 'Import must come AFTER use strict');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('72. Triple-slash directives: Imports inserted AFTER directives', () => {
+  test('72. Triple-slash directives: Imports inserted AFTER directives', async () => {
     // CRITICAL: /// <reference /> directives configure TypeScript compiler
     // Scenario: TypeScript file with reference directives
     const content = `/// <reference path="./types.d.ts" />
@@ -1810,25 +1984,29 @@ import { unused } from './unused';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // CRITICAL: Triple-slash directives must be preserved and stay before imports
-    assert.ok(result.includes('/// <reference path="./types.d.ts" />'), 'Should preserve path directive');
-    assert.ok(result.includes('/// <reference types="node" />'), 'Should preserve types directive');
+      // CRITICAL: Triple-slash directives must be preserved and stay before imports
+      assert.ok(result.includes('/// <reference path="./types.d.ts" />'), 'Should preserve path directive');
+      assert.ok(result.includes('/// <reference types="node" />'), 'Should preserve types directive');
 
-    const lines = result.split('\n');
-    const directiveLine1 = lines.findIndex(l => l.includes('reference path'));
-    const directiveLine2 = lines.findIndex(l => l.includes('reference types'));
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const lines = result.split('\n');
+      const directiveLine1 = lines.findIndex(l => l.includes('reference path'));
+      const directiveLine2 = lines.findIndex(l => l.includes('reference types'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
 
-    assert.ok(directiveLine1 < importLine, 'Reference directives must come before imports');
-    assert.ok(directiveLine2 < importLine, 'Reference directives must come before imports');
+      assert.ok(directiveLine1 < importLine, 'Reference directives must come before imports');
+      assert.ok(directiveLine2 < importLine, 'Reference directives must come before imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('73. Leading comments: Preserved before imports', () => {
+  test('73. Leading comments: Preserved before imports', async () => {
     // CRITICAL: License headers, file comments must not be deleted
     // Scenario: File with copyright header
     const content = `/**
@@ -1842,24 +2020,28 @@ import { unused } from './unused';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // CRITICAL: Comments must be preserved
-    assert.ok(result.includes('Copyright (c) 2025 Company'), 'Should preserve copyright');
-    assert.ok(result.includes('Licensed under MIT'), 'Should preserve license');
-    assert.ok(result.includes('// Main module file'), 'Should preserve comment');
+      // CRITICAL: Comments must be preserved
+      assert.ok(result.includes('Copyright (c) 2025 Company'), 'Should preserve copyright');
+      assert.ok(result.includes('Licensed under MIT'), 'Should preserve license');
+      assert.ok(result.includes('// Main module file'), 'Should preserve comment');
 
-    const lines = result.split('\n');
-    const copyrightLine = lines.findIndex(l => l.includes('Copyright'));
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const lines = result.split('\n');
+      const copyrightLine = lines.findIndex(l => l.includes('Copyright'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
 
-    assert.ok(copyrightLine < importLine, 'Comments must come before imports');
+      assert.ok(copyrightLine < importLine, 'Comments must come before imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74. Combined headers: Shebang + comments + use strict', () => {
+  test('74. Combined headers: Shebang + comments + use strict', async () => {
     // CRITICAL: All headers preserved in correct order
     // Scenario: Complete header with all elements
     const content = `#!/usr/bin/env node
@@ -1871,29 +2053,33 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // CRITICAL: Verify order
-    assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang first');
-    assert.ok(lines.some(l => l.includes('CLI tool')), 'Comment preserved');
-    assert.ok(lines.some(l => l === "'use strict';"), 'Use strict preserved');
+      // CRITICAL: Verify order
+      assert.strictEqual(lines[0], '#!/usr/bin/env node', 'Shebang first');
+      assert.ok(lines.some(l => l.includes('CLI tool')), 'Comment preserved');
+      assert.ok(lines.some(l => l === "'use strict';"), 'Use strict preserved');
 
-    const shebangIdx = 0;
-    const commentIdx = lines.findIndex(l => l.includes('CLI tool'));
-    const strictIdx = lines.findIndex(l => l === "'use strict';");
-    const importIdx = lines.findIndex(l => l.includes('import'));
+      const shebangIdx = 0;
+      const commentIdx = lines.findIndex(l => l.includes('CLI tool'));
+      const strictIdx = lines.findIndex(l => l === "'use strict';");
+      const importIdx = lines.findIndex(l => l.includes('import'));
 
-    assert.ok(shebangIdx < commentIdx, 'Shebang before comment');
-    assert.ok(commentIdx < strictIdx, 'Comment before use strict');
-    assert.ok(strictIdx < importIdx, 'Use strict before imports');
+      assert.ok(shebangIdx < commentIdx, 'Shebang before comment');
+      assert.ok(commentIdx < strictIdx, 'Comment before use strict');
+      assert.ok(strictIdx < importIdx, 'Use strict before imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74a. Blank line between comment and imports: Single blank line preserved', () => {
+  test('74a. Blank line between comment and imports: Single blank line preserved', async () => {
     // CRITICAL: Blank lines between comments and imports must be preserved
     // Scenario: File with comment followed by ONE blank line before imports
     const content = `// Demo file for video
@@ -1905,23 +2091,27 @@ import { Component } from '@angular/core';
 const demo = new Component();
 console.log(UserDetail);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // Find the comment and import lines
-    const commentLine2 = lines.findIndex(l => l.includes('Press Ctrl'));
-    const importLine = lines.findIndex(l => l.includes('import'));
+      // Find the comment and import lines
+      const commentLine2 = lines.findIndex(l => l.includes('Press Ctrl'));
+      const importLine = lines.findIndex(l => l.includes('import'));
 
-    // CRITICAL: There should be exactly ONE blank line between last comment and first import
-    assert.strictEqual(importLine - commentLine2, 2, 'Should have exactly one blank line between comment and imports');
-    assert.strictEqual(lines[commentLine2 + 1].trim(), '', 'Line between comment and import should be blank');
+      // CRITICAL: There should be exactly ONE blank line between last comment and first import
+      assert.strictEqual(importLine - commentLine2, 2, 'Should have exactly one blank line between comment and imports');
+      assert.strictEqual(lines[commentLine2 + 1].trim(), '', 'Line between comment and import should be blank');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74b. Blank line between comment and imports: TWO blank lines preserved', () => {
+  test('74b. Blank line between comment and imports: TWO blank lines preserved', async () => {
     // CRITICAL: Multiple blank lines between comments and imports must be preserved
     // Scenario: File with comment followed by TWO blank lines before imports
     const content = `// Copyright notice
@@ -1932,23 +2122,27 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const lastCommentLine = lines.findIndex(l => l.includes('MIT License'));
-    const importLine = lines.findIndex(l => l.includes('import'));
+      const lastCommentLine = lines.findIndex(l => l.includes('MIT License'));
+      const importLine = lines.findIndex(l => l.includes('import'));
 
-    // CRITICAL: Should preserve TWO blank lines
-    assert.strictEqual(importLine - lastCommentLine, 3, 'Should have exactly two blank lines between comment and imports');
-    assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'First blank line');
-    assert.strictEqual(lines[lastCommentLine + 2].trim(), '', 'Second blank line');
+      // CRITICAL: Should preserve TWO blank lines
+      assert.strictEqual(importLine - lastCommentLine, 3, 'Should have exactly two blank lines between comment and imports');
+      assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'First blank line');
+      assert.strictEqual(lines[lastCommentLine + 2].trim(), '', 'Second blank line');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74c. Blank line between comment and imports: Block comment with blank line', () => {
+  test('74c. Blank line between comment and imports: Block comment with blank line', async () => {
     // CRITICAL: Block comments with trailing blank line
     // Scenario: JSDoc/block comment followed by blank line
     const content = `/**
@@ -1960,22 +2154,26 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const blockCommentEnd = lines.findIndex(l => l.trim() === '*/');
-    const importLine = lines.findIndex(l => l.includes('import'));
+      const blockCommentEnd = lines.findIndex(l => l.trim() === '*/');
+      const importLine = lines.findIndex(l => l.includes('import'));
 
-    // CRITICAL: Should preserve one blank line after block comment
-    assert.strictEqual(importLine - blockCommentEnd, 2, 'Should have exactly one blank line after block comment');
-    assert.strictEqual(lines[blockCommentEnd + 1].trim(), '', 'Line after block comment should be blank');
+      // CRITICAL: Should preserve one blank line after block comment
+      assert.strictEqual(importLine - blockCommentEnd, 2, 'Should have exactly one blank line after block comment');
+      assert.strictEqual(lines[blockCommentEnd + 1].trim(), '', 'Line after block comment should be blank');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74d. Blank line between comment and imports: Mixed comment types', () => {
+  test('74d. Blank line between comment and imports: Mixed comment types', async () => {
     // CRITICAL: Mixed comment types (block + line) with blank lines
     // Scenario: Block comment, then line comments, then blank line
     const content = `/**
@@ -1988,22 +2186,26 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const lastCommentLine = lines.findIndex(l => l.includes('More info'));
-    const importLine = lines.findIndex(l => l.includes('import'));
+      const lastCommentLine = lines.findIndex(l => l.includes('More info'));
+      const importLine = lines.findIndex(l => l.includes('import'));
 
-    // CRITICAL: Should preserve one blank line after last comment
-    assert.strictEqual(importLine - lastCommentLine, 2, 'Should have exactly one blank line after last comment');
-    assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'Line after comments should be blank');
+      // CRITICAL: Should preserve one blank line after last comment
+      assert.strictEqual(importLine - lastCommentLine, 2, 'Should have exactly one blank line after last comment');
+      assert.strictEqual(lines[lastCommentLine + 1].trim(), '', 'Line after comments should be blank');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74e. No blank line between comment and imports: Should not add one', () => {
+  test('74e. No blank line between comment and imports: Should not add one', async () => {
     // CRITICAL: If there's NO blank line, don't add one
     // Scenario: Comment immediately followed by imports
     const content = `// Quick comment
@@ -2011,35 +2213,31 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const commentLine = lines.findIndex(l => l.includes('Quick comment'));
-    const importLine = lines.findIndex(l => l.includes('import'));
+      const commentLine = lines.findIndex(l => l.includes('Quick comment'));
+      const importLine = lines.findIndex(l => l.includes('import'));
 
-    // CRITICAL: Should NOT add a blank line if there wasn't one
-    assert.strictEqual(importLine - commentLine, 1, 'Should have no blank line between comment and imports');
+      // CRITICAL: Should NOT add a blank line if there wasn't one
+      assert.strictEqual(importLine - commentLine, 1, 'Should have no blank line between comment and imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('74f. Blank lines before imports: Comprehensive test (0, 1, 2, 3 blank lines)', () => {
+  test('74f. Blank lines before imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
     // Test ZERO blank lines before imports
     const content0 = `// Comment
 import { used } from './lib';
 
 console.log(used);
 `;
-    const doc0 = new MockTextDocument('test.ts', content0);
-    const manager0 = new ImportManager(doc0, config);
-    const result0 = applyEdits(content0, manager0.organizeImports());
-    const lines0 = result0.split('\n');
-    const comment0 = lines0.findIndex(l => l.includes('Comment'));
-    const import0 = lines0.findIndex(l => l.includes('import'));
-    assert.strictEqual(import0 - comment0, 1, 'ZERO blank lines before should be preserved');
-
     // Test ONE blank line before imports
     const content1 = `// Comment
 
@@ -2047,14 +2245,6 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc1 = new MockTextDocument('test.ts', content1);
-    const manager1 = new ImportManager(doc1, config);
-    const result1 = applyEdits(content1, manager1.organizeImports());
-    const lines1 = result1.split('\n');
-    const comment1 = lines1.findIndex(l => l.includes('Comment'));
-    const import1 = lines1.findIndex(l => l.includes('import'));
-    assert.strictEqual(import1 - comment1, 2, 'ONE blank line before should be preserved');
-
     // Test TWO blank lines before imports
     const content2 = `// Comment
 
@@ -2063,14 +2253,6 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc2 = new MockTextDocument('test.ts', content2);
-    const manager2 = new ImportManager(doc2, config);
-    const result2 = applyEdits(content2, manager2.organizeImports());
-    const lines2 = result2.split('\n');
-    const comment2 = lines2.findIndex(l => l.includes('Comment'));
-    const import2 = lines2.findIndex(l => l.includes('import'));
-    assert.strictEqual(import2 - comment2, 3, 'TWO blank lines before should be preserved');
-
     // Test THREE blank lines before imports
     const content3 = `// Comment
 
@@ -2080,20 +2262,56 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc3 = new MockTextDocument('test.ts', content3);
-    const manager3 = new ImportManager(doc3, config);
-    const result3 = applyEdits(content3, manager3.organizeImports());
-    const lines3 = result3.split('\n');
-    const comment3 = lines3.findIndex(l => l.includes('Comment'));
-    const import3 = lines3.findIndex(l => l.includes('import'));
-    assert.strictEqual(import3 - comment3, 4, 'THREE blank lines before should be preserved');
+
+    const doc0 = await createTempDocument(content0);
+    const doc1 = await createTempDocument(content1);
+    const doc2 = await createTempDocument(content2);
+    const doc3 = await createTempDocument(content3);
+    try {
+      const manager0 = new ImportManager(doc0, config);
+      const edits0 = manager0.organizeImports();
+      const result0 = await applyEditsToDocument(doc0, edits0);
+      const lines0 = result0.split('\n');
+      const comment0 = lines0.findIndex(l => l.includes('Comment'));
+      const import0 = lines0.findIndex(l => l.includes('import'));
+      assert.strictEqual(import0 - comment0, 1, 'ZERO blank lines before should be preserved');
+
+      const manager1 = new ImportManager(doc1, config);
+      const edits1 = manager1.organizeImports();
+      const result1 = await applyEditsToDocument(doc1, edits1);
+      const lines1 = result1.split('\n');
+      const comment1 = lines1.findIndex(l => l.includes('Comment'));
+      const import1 = lines1.findIndex(l => l.includes('import'));
+      assert.strictEqual(import1 - comment1, 2, 'ONE blank line before should be preserved');
+
+      const manager2 = new ImportManager(doc2, config);
+      const edits2 = manager2.organizeImports();
+      const result2 = await applyEditsToDocument(doc2, edits2);
+      const lines2 = result2.split('\n');
+      const comment2 = lines2.findIndex(l => l.includes('Comment'));
+      const import2 = lines2.findIndex(l => l.includes('import'));
+      assert.strictEqual(import2 - comment2, 3, 'TWO blank lines before should be preserved');
+
+      const manager3 = new ImportManager(doc3, config);
+      const edits3 = manager3.organizeImports();
+      const result3 = await applyEditsToDocument(doc3, edits3);
+      const lines3 = result3.split('\n');
+      const comment3 = lines3.findIndex(l => l.includes('Comment'));
+      const import3 = lines3.findIndex(l => l.includes('import'));
+      assert.strictEqual(import3 - comment3, 4, 'THREE blank lines before should be preserved');
+    } finally {
+      await deleteTempDocument(doc0);
+      await deleteTempDocument(doc1);
+      await deleteTempDocument(doc2);
+      await deleteTempDocument(doc3);
+    }
   });
 
   // =============================================================================
   // CRITICAL EDGE CASES - Dynamic Imports & Modern Syntax
   // =============================================================================
 
-  test('75. Dynamic imports: Not confused with static imports', () => {
+  test('75. Dynamic imports: Not confused with static imports', async () => {
     // CRITICAL: Dynamic import() calls must NOT be removed or modified
     // Scenario: Code with both static and dynamic imports
     const content = `import { helper } from './helper';
@@ -2106,25 +2324,29 @@ async function loadModule() {
 
 console.log(helper);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // CRITICAL: Dynamic imports must NOT be touched
-    assert.ok(result.includes("import('./dynamic-module')"), 'Dynamic import must be preserved');
-    assert.ok(result.includes("import('./another-dynamic')"), 'Dynamic import must be preserved');
-    assert.ok(result.includes("import { helper } from './helper';"), 'Static import preserved');
+      // CRITICAL: Dynamic imports must NOT be touched
+      assert.ok(result.includes("import('./dynamic-module')"), 'Dynamic import must be preserved');
+      assert.ok(result.includes("import('./another-dynamic')"), 'Dynamic import must be preserved');
+      assert.ok(result.includes("import { helper } from './helper';"), 'Static import preserved');
 
-    // Dynamic imports should still be in function body, not moved to top
-    const lines = result.split('\n');
-    const dynamicLine = lines.findIndex(l => l.includes("import('./dynamic-module')"));
-    const functionLine = lines.findIndex(l => l.includes('async function loadModule'));
+      // Dynamic imports should still be in function body, not moved to top
+      const lines = result.split('\n');
+      const dynamicLine = lines.findIndex(l => l.includes("import('./dynamic-module')"));
+      const functionLine = lines.findIndex(l => l.includes('async function loadModule'));
 
-    assert.ok(dynamicLine > functionLine, 'Dynamic import stays in function body');
+      assert.ok(dynamicLine > functionLine, 'Dynamic import stays in function body');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('76. import.meta: Not confused with imports', () => {
+  test('76. import.meta: Not confused with imports', async () => {
     // CRITICAL: import.meta usage must NOT be removed
     // Scenario: ES module using import.meta
     const content = `import { helper } from './helper';
@@ -2134,73 +2356,89 @@ const dirname = import.meta.dirname;
 
 console.log(helper, currentUrl);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // CRITICAL: import.meta usage must be preserved
-    assert.ok(result.includes('import.meta.url'), 'import.meta.url must be preserved');
-    assert.ok(result.includes('import.meta.dirname'), 'import.meta.dirname must be preserved');
-    assert.ok(result.includes("import { helper } from './helper';"), 'Import preserved');
+      // CRITICAL: import.meta usage must be preserved
+      assert.ok(result.includes('import.meta.url'), 'import.meta.url must be preserved');
+      assert.ok(result.includes('import.meta.dirname'), 'import.meta.dirname must be preserved');
+      assert.ok(result.includes("import { helper } from './helper';"), 'Import preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('77. Empty import specifiers: Should be removed', () => {
+  test('77. Empty import specifiers: Should be removed', async () => {
     // Scenario: Malformed import with no specifiers
     const content = `import {} from './lib';
 import { used } from './used';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Empty import should be cleaned up
-    assert.ok(!result.includes("import {} from './lib'"), 'Empty import should be removed');
-    assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+      // Empty import should be cleaned up
+      assert.ok(!result.includes("import {} from './lib'"), 'Empty import should be removed');
+      assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('78. Whitespace-only import specifiers: Should be removed', () => {
+  test('78. Whitespace-only import specifiers: Should be removed', async () => {
     // Scenario: Malformed import with only whitespace
     const content = `import {   } from './lib';
 import { used } from './used';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Whitespace-only import should be cleaned up
-    assert.ok(!result.includes("import {   } from './lib'"), 'Whitespace import should be removed');
-    assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+      // Whitespace-only import should be cleaned up
+      assert.ok(!result.includes("import {   } from './lib'"), 'Whitespace import should be removed');
+      assert.ok(result.includes("import { used } from './used';"), 'Used import preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
   // =============================================================================
   // CRITICAL EDGE CASES - Malformed Code
   // =============================================================================
 
-  test('79. File with only imports (all unused): All removed safely', () => {
+  test('79. File with only imports (all unused): All removed safely', async () => {
     // CRITICAL: Must handle files that become empty
     // Scenario: File that only had imports, all unused
     const content = `import { A } from './a';
 import { B } from './b';
 import { C } from './c';
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // All imports should be removed, leaving empty file (or just whitespace)
-    assert.ok(!result.includes('import'), 'All unused imports should be removed');
-    assert.ok(result.trim().length === 0, 'File should be empty');
+      // All imports should be removed, leaving empty file (or just whitespace)
+      assert.ok(!result.includes('import'), 'All unused imports should be removed');
+      assert.ok(result.trim().length === 0, 'File should be empty');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('80. Imports after code: Malformed but should not crash', () => {
+  test('80. Imports after code: Malformed but should not crash', async () => {
     // CRITICAL: Extension must handle malformed code gracefully
     // Scenario: Invalid TypeScript with imports after code (shouldn't exist but might)
     const content = `const x = 5;
@@ -2209,25 +2447,29 @@ import { foo } from './lib';
 
 console.log(x, foo);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-
-    // Should not throw error
-    let threw = false;
+    const doc = await createTempDocument(content);
     try {
-      const edits = manager.organizeImports();
-      const result = applyEdits(content, edits);
+      const manager = new ImportManager(doc, config);
 
-      // Import should still be recognized and kept (it's used)
-      assert.ok(result.includes('foo'), 'Should preserve import identifier');
-    } catch (e) {
-      threw = true;
+      // Should not throw error
+      let threw = false;
+      try {
+        const edits = manager.organizeImports();
+        const result = await applyEditsToDocument(doc, edits);
+
+        // Import should still be recognized and kept (it's used)
+        assert.ok(result.includes('foo'), 'Should preserve import identifier');
+      } catch (e) {
+        threw = true;
+      }
+
+      assert.ok(!threw, 'Should not throw error on malformed code');
+    } finally {
+      await deleteTempDocument(doc);
     }
-
-    assert.ok(!threw, 'Should not throw error on malformed code');
   });
 
-  test('81. Comments between imports: Preserved', () => {
+  test('81. Comments between imports: Preserved', async () => {
     // CRITICAL: Don't lose important comments
     // Scenario: Comments explaining imports
     const content = `import { A } from './a';
@@ -2240,45 +2482,53 @@ import { B } from './b';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Note: Comments between imports may not be preserved in their exact position
-    // (this is a known limitation of AST-based refactoring)
-    // But the imports themselves should be organized correctly
-    assert.ok(result.includes("import { A } from './a';"), 'Import A preserved');
-    assert.ok(result.includes("import { B } from './b';"), 'Import B preserved');
-    assert.ok(result.includes("import './polyfill';"), 'Side effect import preserved');
+      // Note: Comments between imports may not be preserved in their exact position
+      // (this is a known limitation of AST-based refactoring)
+      // But the imports themselves should be organized correctly
+      assert.ok(result.includes("import { A } from './a';"), 'Import A preserved');
+      assert.ok(result.includes("import { B } from './b';"), 'Import B preserved');
+      assert.ok(result.includes("import './polyfill';"), 'Side effect import preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('82. Very long import line: Multiline wrapping works', () => {
+  test('82. Very long import line: Multiline wrapping works', async () => {
     // Scenario: Import with many specifiers exceeding threshold
     const content = `import { SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentifierName3, UnusedName } from './lib';
 
 console.log(SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentifierName3);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.setConfig('multiLineWrapThreshold', 40); // Low threshold to force wrapping
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.setConfig('multiLineWrapThreshold', 40); // Low threshold to force wrapping
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Should wrap to multiline (the braces part alone is > 40 chars)
-    assert.ok(result.includes('{\n'), 'Should use multiline format');
-    assert.ok(result.includes('SuperLongIdentifierName1'), 'Should preserve specifier 1');
-    assert.ok(result.includes('SuperLongIdentifierName2'), 'Should preserve specifier 2');
-    assert.ok(result.includes('SuperLongIdentifierName3'), 'Should preserve specifier 3');
+      // Should wrap to multiline (the braces part alone is > 40 chars)
+      assert.ok(result.includes('{\n'), 'Should use multiline format');
+      assert.ok(result.includes('SuperLongIdentifierName1'), 'Should preserve specifier 1');
+      assert.ok(result.includes('SuperLongIdentifierName2'), 'Should preserve specifier 2');
+      assert.ok(result.includes('SuperLongIdentifierName3'), 'Should preserve specifier 3');
 
-    // Unused specifier should be removed
-    assert.ok(!result.includes('UnusedName'), 'Should remove unused specifier');
+      // Unused specifier should be removed
+      assert.ok(!result.includes('UnusedName'), 'Should remove unused specifier');
 
-    // Reset config
-    config.setConfig('multiLineWrapThreshold', 125);
+      // Reset config
+      config.setConfig('multiLineWrapThreshold', 125);
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('83. BOM (Byte Order Mark): Handled gracefully (known limitation)', () => {
+  test('83. BOM (Byte Order Mark): Handled gracefully (known limitation)', async () => {
     // NOTE: ts-morph strips BOM during parsing (this is a known limitation)
     // This test verifies the extension doesn't crash on BOM files
     // Scenario: File starting with BOM
@@ -2288,26 +2538,30 @@ import { unused } from './unused';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-
-    // Should not throw error
-    let threw = false;
+    const doc = await createTempDocument(content);
     try {
-      const edits = manager.organizeImports();
-      const result = applyEdits(content, edits);
+      const manager = new ImportManager(doc, config);
 
-      // File should still be valid (BOM will be stripped by ts-morph, but that's okay)
-      assert.ok(result.includes("import { used } from './lib';"), 'Import preserved');
-      assert.ok(!result.includes('unused'), 'Unused import removed');
-    } catch (e) {
-      threw = true;
+      // Should not throw error
+      let threw = false;
+      try {
+        const edits = manager.organizeImports();
+        const result = await applyEditsToDocument(doc, edits);
+
+        // File should still be valid (BOM will be stripped by ts-morph, but that's okay)
+        assert.ok(result.includes("import { used } from './lib';"), 'Import preserved');
+        assert.ok(!result.includes('unused'), 'Unused import removed');
+      } catch (e) {
+        threw = true;
+      }
+
+      assert.ok(!threw, 'Should handle BOM files without crashing');
+    } finally {
+      await deleteTempDocument(doc);
     }
-
-    assert.ok(!threw, 'Should handle BOM files without crashing');
   });
 
-  test('84. Template strings with import keyword: Not confused', () => {
+  test('84. Template strings with import keyword: Not confused', async () => {
     // CRITICAL: String literals containing "import" must not be confused
     // Scenario: Template string with import keyword
     const content = `import { helper } from './helper';
@@ -2317,24 +2571,28 @@ const code = "import { X } from 'lib';";
 
 console.log(helper, message);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // Import should be preserved
-    assert.ok(result.includes("import { helper } from './helper';"), 'Real import preserved');
+      // Import should be preserved
+      assert.ok(result.includes("import { helper } from './helper';"), 'Real import preserved');
 
-    // String literals must NOT be affected
-    assert.ok(result.includes('You should import the module'), 'Template string preserved');
-    assert.ok(result.includes(`"import { X } from 'lib';"`), 'String literal preserved');
+      // String literals must NOT be affected
+      assert.ok(result.includes('You should import the module'), 'Template string preserved');
+      assert.ok(result.includes(`"import { X } from 'lib';"`), 'String literal preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
   // =============================================================================
   // EDGE CASE - Configuration Error Handling
   // =============================================================================
 
-  test('85. Invalid grouping config: Falls back to defaults gracefully', () => {
+  test('85. Invalid grouping config: Falls back to defaults gracefully', async () => {
     // CRITICAL: Bad config must not crash extension
     // Scenario: User provides invalid grouping configuration
     const content = `import { A } from './a';
@@ -2342,31 +2600,35 @@ import { B } from 'library';
 
 console.log(A, B);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-
-    // Create config with invalid grouping that will throw during parsing
-    const badConfig = new MockImportsConfig();
-    badConfig.setConfig('grouping', ['INVALID_GROUP_IDENTIFIER']); // This will throw in parser
-
-    const manager = new ImportManager(doc, badConfig);
-
-    // Should not throw - must fall back to defaults
-    let threw = false;
+    const doc = await createTempDocument(content);
     try {
-      const edits = manager.organizeImports();
-      const result = applyEdits(content, edits);
 
-      // Should still organize with default grouping
-      assert.ok(result.includes("import { A } from './a';"), 'Import preserved');
-      assert.ok(result.includes("import { B } from 'library';"), 'Import preserved');
-    } catch (e) {
-      threw = true;
+      // Create config with invalid grouping that will throw during parsing
+      const badConfig = new MockImportsConfig();
+      badConfig.setConfig('grouping', ['INVALID_GROUP_IDENTIFIER']); // This will throw in parser
+
+      const manager = new ImportManager(doc, badConfig);
+
+      // Should not throw - must fall back to defaults
+      let threw = false;
+      try {
+        const edits = manager.organizeImports();
+        const result = await applyEditsToDocument(doc, edits);
+
+        // Should still organize with default grouping
+        assert.ok(result.includes("import { A } from './a';"), 'Import preserved');
+        assert.ok(result.includes("import { B } from 'library';"), 'Import preserved');
+      } catch (e) {
+        threw = true;
+      }
+
+      assert.ok(!threw, 'Should not throw on invalid config - must fall back gracefully');
+    } finally {
+      await deleteTempDocument(doc);
     }
-
-    assert.ok(!threw, 'Should not throw on invalid config - must fall back gracefully');
   });
 
-  test('86. Blank lines after imports: ONE blank line preserved', () => {
+  test('86. Blank lines after imports: ONE blank line preserved', async () => {
     // CRITICAL: Should preserve exactly ONE blank line after imports
     // Scenario: Remove some imports, check spacing preserved
     const content = `import { UsedClass } from './used-class';
@@ -2376,30 +2638,34 @@ import { AnotherUnused } from './another-unused';
 const instance = new UsedClass();
 console.log(instance);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    // Should have exactly one blank line between import and code
-    const importLine = lines.findIndex(l => l.includes("import { UsedClass }"));
-    const codeLine = lines.findIndex(l => l.includes('const instance'));
+      // Should have exactly one blank line between import and code
+      const importLine = lines.findIndex(l => l.includes("import { UsedClass }"));
+      const codeLine = lines.findIndex(l => l.includes('const instance'));
 
-    assert.ok(importLine !== -1, 'Should have import');
-    assert.ok(codeLine !== -1, 'Should have code');
+      assert.ok(importLine !== -1, 'Should have import');
+      assert.ok(codeLine !== -1, 'Should have code');
 
-    // There should be exactly ONE blank line between import and code
-    // That means: codeLine = importLine + 2 (importLine, blank line, codeLine)
-    assert.strictEqual(codeLine - importLine, 2, `Should have exactly one blank line after imports (got ${codeLine - importLine - 1} blank lines)`);
+      // There should be exactly ONE blank line between import and code
+      // That means: codeLine = importLine + 2 (importLine, blank line, codeLine)
+      assert.strictEqual(codeLine - importLine, 2, `Should have exactly one blank line after imports (got ${codeLine - importLine - 1} blank lines)`);
 
-    // Verify the line between is actually blank
-    const blankLine = lines[importLine + 1];
-    assert.strictEqual(blankLine.trim(), '', 'Line after import should be blank');
+      // Verify the line between is actually blank
+      const blankLine = lines[importLine + 1];
+      assert.strictEqual(blankLine.trim(), '', 'Line after import should be blank');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('86a. Blank lines after imports: TWO blank lines preserved', () => {
+  test('86a. Blank lines after imports: TWO blank lines preserved', async () => {
     // CRITICAL: Should preserve exactly TWO blank lines after imports
     // Scenario: Two blank lines after imports
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2408,24 +2674,28 @@ console.log(instance);
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.override('blankLinesAfterImports', 'preserve');
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
-    const codeLine = lines.findIndex(l => l.includes('console.log'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const codeLine = lines.findIndex(l => l.includes('console.log'));
 
-    // Should preserve TWO blank lines
-    assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
-    assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
-    assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
+      // Should preserve TWO blank lines
+      assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
+      assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
+      assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('86b. Blank lines after imports: THREE blank lines preserved', () => {
+  test('86b. Blank lines after imports: THREE blank lines preserved', async () => {
     // CRITICAL: Should preserve exactly THREE blank lines after imports
     // Scenario: Three blank lines after imports
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2435,46 +2705,54 @@ console.log(used);
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.override('blankLinesAfterImports', 'preserve');
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
-    const codeLine = lines.findIndex(l => l.includes('console.log'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const codeLine = lines.findIndex(l => l.includes('console.log'));
 
-    // Should preserve THREE blank lines
-    assert.strictEqual(codeLine - importLine, 4, 'Should have exactly three blank lines after imports');
-    assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
-    assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
-    assert.strictEqual(lines[importLine + 3].trim(), '', 'Third blank line');
+      // Should preserve THREE blank lines
+      assert.strictEqual(codeLine - importLine, 4, 'Should have exactly three blank lines after imports');
+      assert.strictEqual(lines[importLine + 1].trim(), '', 'First blank line');
+      assert.strictEqual(lines[importLine + 2].trim(), '', 'Second blank line');
+      assert.strictEqual(lines[importLine + 3].trim(), '', 'Third blank line');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('86c. Blank lines after imports: ZERO blank lines preserved', () => {
+  test('86c. Blank lines after imports: ZERO blank lines preserved', async () => {
     // CRITICAL: Should preserve ZERO blank lines when there aren't any
     // Scenario: Import immediately followed by code
     const content = `import { used } from './lib';
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.override('blankLinesAfterImports', 'preserve');
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
-    const codeLine = lines.findIndex(l => l.includes('console.log'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const codeLine = lines.findIndex(l => l.includes('console.log'));
 
-    // Should have NO blank lines
-    assert.strictEqual(codeLine - importLine, 1, 'Should have zero blank lines after imports');
+      // Should have NO blank lines
+      assert.strictEqual(codeLine - importLine, 1, 'Should have zero blank lines after imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('86e. Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', () => {
+  test('86e. Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
     // NOTE: Requires blankLinesAfterImports="preserve" mode
     config.override('blankLinesAfterImports', 'preserve');
 
@@ -2482,41 +2760,17 @@ console.log(used);
     const content0 = `import { used } from './lib';
 console.log(used);
 `;
-    const doc0 = new MockTextDocument('test.ts', content0);
-    const manager0 = new ImportManager(doc0, config);
-    const result0 = applyEdits(content0, manager0.organizeImports());
-    const lines0 = result0.split('\n');
-    const import0 = lines0.findIndex(l => l.includes('import'));
-    const code0 = lines0.findIndex(l => l.includes('console.log'));
-    assert.strictEqual(code0 - import0, 1, 'ZERO blank lines after should be preserved');
-
     // Test ONE blank line after imports
     const content1 = `import { used } from './lib';
 
 console.log(used);
 `;
-    const doc1 = new MockTextDocument('test.ts', content1);
-    const manager1 = new ImportManager(doc1, config);
-    const result1 = applyEdits(content1, manager1.organizeImports());
-    const lines1 = result1.split('\n');
-    const import1 = lines1.findIndex(l => l.includes('import'));
-    const code1 = lines1.findIndex(l => l.includes('console.log'));
-    assert.strictEqual(code1 - import1, 2, 'ONE blank line after should be preserved');
-
     // Test TWO blank lines after imports
     const content2 = `import { used } from './lib';
 
 
 console.log(used);
 `;
-    const doc2 = new MockTextDocument('test.ts', content2);
-    const manager2 = new ImportManager(doc2, config);
-    const result2 = applyEdits(content2, manager2.organizeImports());
-    const lines2 = result2.split('\n');
-    const import2 = lines2.findIndex(l => l.includes('import'));
-    const code2 = lines2.findIndex(l => l.includes('console.log'));
-    assert.strictEqual(code2 - import2, 3, 'TWO blank lines after should be preserved');
-
     // Test THREE blank lines after imports
     const content3 = `import { used } from './lib';
 
@@ -2524,16 +2778,52 @@ console.log(used);
 
 console.log(used);
 `;
-    const doc3 = new MockTextDocument('test.ts', content3);
-    const manager3 = new ImportManager(doc3, config);
-    const result3 = applyEdits(content3, manager3.organizeImports());
-    const lines3 = result3.split('\n');
-    const import3 = lines3.findIndex(l => l.includes('import'));
-    const code3 = lines3.findIndex(l => l.includes('console.log'));
-    assert.strictEqual(code3 - import3, 4, 'THREE blank lines after should be preserved');
+
+    const doc0 = await createTempDocument(content0);
+    const doc1 = await createTempDocument(content1);
+    const doc2 = await createTempDocument(content2);
+    const doc3 = await createTempDocument(content3);
+    try {
+      const manager0 = new ImportManager(doc0, config);
+      const edits0 = manager0.organizeImports();
+      const result0 = await applyEditsToDocument(doc0, edits0);
+      const lines0 = result0.split('\n');
+      const import0 = lines0.findIndex(l => l.includes('import'));
+      const code0 = lines0.findIndex(l => l.includes('console.log'));
+      assert.strictEqual(code0 - import0, 1, 'ZERO blank lines after should be preserved');
+
+      const manager1 = new ImportManager(doc1, config);
+      const edits1 = manager1.organizeImports();
+      const result1 = await applyEditsToDocument(doc1, edits1);
+      const lines1 = result1.split('\n');
+      const import1 = lines1.findIndex(l => l.includes('import'));
+      const code1 = lines1.findIndex(l => l.includes('console.log'));
+      assert.strictEqual(code1 - import1, 2, 'ONE blank line after should be preserved');
+
+      const manager2 = new ImportManager(doc2, config);
+      const edits2 = manager2.organizeImports();
+      const result2 = await applyEditsToDocument(doc2, edits2);
+      const lines2 = result2.split('\n');
+      const import2 = lines2.findIndex(l => l.includes('import'));
+      const code2 = lines2.findIndex(l => l.includes('console.log'));
+      assert.strictEqual(code2 - import2, 3, 'TWO blank lines after should be preserved');
+
+      const manager3 = new ImportManager(doc3, config);
+      const edits3 = manager3.organizeImports();
+      const result3 = await applyEditsToDocument(doc3, edits3);
+      const lines3 = result3.split('\n');
+      const import3 = lines3.findIndex(l => l.includes('import'));
+      const code3 = lines3.findIndex(l => l.includes('console.log'));
+      assert.strictEqual(code3 - import3, 4, 'THREE blank lines after should be preserved');
+    } finally {
+      await deleteTempDocument(doc0);
+      await deleteTempDocument(doc1);
+      await deleteTempDocument(doc2);
+      await deleteTempDocument(doc3);
+    }
   });
 
-  test('86d. Combined spacing: THREE blank lines before, TWO blank lines after', () => {
+  test('86d. Combined spacing: THREE blank lines before, TWO blank lines after', async () => {
     // CRITICAL: Both before and after blank lines preserved independently
     // Scenario: Multiple blank lines on both sides
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2546,57 +2836,68 @@ import { used } from './lib';
 
 console.log(used);
 `;
-    const doc = new MockTextDocument('test.ts', content);
-    config.override('blankLinesAfterImports', 'preserve');
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      config.override('blankLinesAfterImports', 'preserve');
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    const lines = result.split('\n');
+      const lines = result.split('\n');
 
-    const commentLine = lines.findIndex(l => l.includes('Header comment'));
-    const importLine = lines.findIndex(l => l.includes("import { used }"));
-    const codeLine = lines.findIndex(l => l.includes('console.log'));
+      const commentLine = lines.findIndex(l => l.includes('Header comment'));
+      const importLine = lines.findIndex(l => l.includes("import { used }"));
+      const codeLine = lines.findIndex(l => l.includes('console.log'));
 
-    // Should preserve THREE blank lines before imports
-    assert.strictEqual(importLine - commentLine, 4, 'Should have exactly three blank lines before imports');
+      // Should preserve THREE blank lines before imports
+      assert.strictEqual(importLine - commentLine, 4, 'Should have exactly three blank lines before imports');
 
-    // Should preserve TWO blank lines after imports
-    assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
+      // Should preserve TWO blank lines after imports
+      assert.strictEqual(codeLine - importLine, 3, 'Should have exactly two blank lines after imports');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('88. Windows line endings (CRLF): Respected in generated imports', () => {
+  test('88. Windows line endings (CRLF): Respected in generated imports', async () => {
     // CRITICAL: Windows uses CRLF (\r\n), not LF (\n)
-    // Scenario: Document with CRLF line endings
-    const content = `import { Component } from '@angular/core';\nimport { used } from '@angular/core';\n\nconsole.log(Component, used);\n`;
+    // Scenario: Document with CRLF line endings (actual \r\n in content)
+    const content = `import { Component } from '@angular/core';\r\nimport { used } from '@angular/core';\r\n\r\nconsole.log(Component, used);\r\n`;
 
-    // Create document with CRLF (EndOfLine = 2)
-    const doc = new MockTextDocument('test.ts', content, 2);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
+    // Create document with actual CRLF line endings
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
 
-    // CRITICAL: The edit newText should contain CRLF, not LF
-    // (Note: applyEdits mock uses LF, but real VSCode preserves document EOL)
-    assert.strictEqual(edits.length, 1, 'Should have one edit');
-    const editText = edits[0].newText;
-    assert.ok(editText.includes('\r\n'), 'Generated imports should use CRLF on Windows');
-    assert.ok(editText.includes("import { Component, used } from '@angular/core';"), 'Imports should be merged');
+      // The ImportManager should detect CRLF and use it in generated imports
+      assert.strictEqual(edits.length, 1, 'Should have one edit');
+      const editText = edits[0].newText;
+      assert.ok(editText.includes('\r\n'), 'Generated imports should use CRLF when document uses CRLF');
+      assert.ok(editText.includes("import { Component, used } from '@angular/core';"), 'Imports should be merged');
 
-    // Verify multiline imports also use CRLF
-    config.setConfig('multiLineWrapThreshold', 10); // Force multiline
-    const content2 = `import { VeryLongNameA, VeryLongNameB } from './lib';\n\nconsole.log(VeryLongNameA, VeryLongNameB);\n`;
-    const doc2 = new MockTextDocument('test.ts', content2, 2);
-    const manager2 = new ImportManager(doc2, config);
-    const edits2 = manager2.organizeImports();
+      // Verify multiline imports also use CRLF
+      config.setConfig('multiLineWrapThreshold', 10); // Force multiline
+      const content2 = `import { VeryLongNameA, VeryLongNameB } from './lib';\r\n\r\nconsole.log(VeryLongNameA, VeryLongNameB);\r\n`;
+      const doc2 = await createTempDocument(content2);
+      try {
+        const manager2 = new ImportManager(doc2, config);
+        const edits2 = manager2.organizeImports();
 
-    // Multiline import should have CRLF after opening brace and before closing brace
-    assert.strictEqual(edits2.length, 1, 'Should have one edit');
-    const editText2 = edits2[0].newText;
-    assert.ok(editText2.includes('{\r\n'), 'Multiline imports should use CRLF for line breaks');
-    config.setConfig('multiLineWrapThreshold', 125); // Reset
+        // Multiline import should have CRLF after opening brace and before closing brace
+        assert.strictEqual(edits2.length, 1, 'Should have one edit');
+        const editText2 = edits2[0].newText;
+        assert.ok(editText2.includes('{\r\n'), 'Multiline imports should use CRLF for line breaks');
+      } finally {
+        await deleteTempDocument(doc2);
+      }
+      config.setConfig('multiLineWrapThreshold', 125); // Reset
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 
-  test('89. ignoredFromRemoval: Specifiers must be sorted', () => {
+  test('89. ignoredFromRemoval: Specifiers must be sorted', async () => {
     // BUG FIX (Session 13): ignoredFromRemoval imports were keeping specifiers in original order
     // ROOT CAUSE: Line 270-272 in import-manager.ts pushed ignored imports directly without sorting
     // EXPECTED: Even ignored imports should have alphabetically sorted specifiers for consistency
@@ -2612,20 +2913,24 @@ const r = React;
 `;
 
     config.setConfig('ignoredFromRemoval', ['react']);
-    const doc = new MockTextDocument('test.tsx', content);
-    const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
-    const result = applyEdits(content, edits);
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
 
-    // CRITICAL: Specifiers must be in alphabetical order
-    assert.ok(result.includes("import React, { useCallback, useEffect, useMemo, useState } from 'react';"),
-      'Specifiers in ignoredFromRemoval imports must be sorted alphabetically');
+      // CRITICAL: Specifiers must be in alphabetical order
+      assert.ok(result.includes("import React, { useCallback, useEffect, useMemo, useState } from 'react';"),
+        'Specifiers in ignoredFromRemoval imports must be sorted alphabetically');
 
-    // Verify the order is correct: useCallback < useEffect < useMemo < useState
-    const importMatch = result.match(/import React, \{ ([^}]+) \} from 'react'/);
-    assert.ok(importMatch, 'Should find React import');
-    const specifiers = importMatch![1].split(', ');
-    assert.deepStrictEqual(specifiers, ['useCallback', 'useEffect', 'useMemo', 'useState'],
-      'Specifiers must be in strict alphabetical order');
+      // Verify the order is correct: useCallback < useEffect < useMemo < useState
+      const importMatch = result.match(/import React, \{ ([^}]+) \} from 'react'/);
+      assert.ok(importMatch, 'Should find React import');
+      const specifiers = importMatch![1].split(', ');
+      assert.deepStrictEqual(specifiers, ['useCallback', 'useEffect', 'useMemo', 'useState'],
+        'Specifiers must be in strict alphabetical order');
+    } finally {
+      await deleteTempDocument(doc);
+    }
   });
 });
