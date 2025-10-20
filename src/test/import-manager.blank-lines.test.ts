@@ -1,11 +1,9 @@
 import * as assert from 'assert';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit } from 'vscode';
+import { Uri } from 'vscode';
 
-import { ImportsConfig } from '../../configuration';
-import { ImportManager } from '../../imports/import-manager';
+import { ImportsConfig } from '../configuration';
+import { ImportManager } from '../imports/import-manager';
+import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
 
 /**
  * Comprehensive tests for blank line handling.
@@ -16,36 +14,6 @@ import { ImportManager } from '../../imports/import-manager';
  *
  * Test IDs correspond to the specification in README-how-we-handle-blank-lines.md
  */
-
-// Helper functions for real file testing
-async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
-  const tempDir = os.tmpdir();
-  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
-  fs.writeFileSync(tempFile, content, 'utf-8');
-  const doc = await workspace.openTextDocument(Uri.file(tempFile));
-  return doc;
-}
-
-async function deleteTempDocument(doc: TextDocument): Promise<void> {
-  try {
-    fs.unlinkSync(doc.uri.fsPath);
-  } catch (e) {
-    // Ignore errors
-  }
-}
-
-async function applyEditsToDocument(doc: TextDocument, edits: TextEdit[]): Promise<string> {
-  if (edits.length === 0) {
-    return doc.getText();
-  }
-  const workspaceEdit = new WorkspaceEdit();
-  workspaceEdit.set(doc.uri, edits);
-  const success = await workspace.applyEdit(workspaceEdit);
-  if (!success) {
-    throw new Error('Failed to apply edits');
-  }
-  return doc.getText();
-}
 
 // Mock config for testing
 class MockImportsConfig extends ImportsConfig {

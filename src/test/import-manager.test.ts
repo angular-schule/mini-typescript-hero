@@ -56,42 +56,11 @@
  */
 
 import * as assert from 'assert';
-import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit } from 'vscode';
-import { ImportManager } from '../../imports/import-manager';
-import { ImportsConfig } from '../../configuration';
-import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../imports/import-grouping';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-
-/**
- * Create a REAL temporary file and open it as a TextDocument
- *
- * This uses the actual VSCode workspace.openTextDocument() API to get a REAL TextDocument.
- * No mocking of lineAt(), offsetAt(), positionAt() - we use VSCode's actual implementations.
- *
- * @param content - The file content
- * @param extension - File extension (default: 'ts'). Can be 'ts', 'tsx', 'js', 'jsx', etc.
- */
-async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
-  const tempDir = os.tmpdir();
-  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
-  fs.writeFileSync(tempFile, content, 'utf-8');
-
-  const doc = await workspace.openTextDocument(Uri.file(tempFile));
-  return doc;
-}
-
-/**
- * Clean up temporary file after test completes
- */
-async function deleteTempDocument(doc: TextDocument): Promise<void> {
-  try {
-    fs.unlinkSync(doc.uri.fsPath);
-  } catch (e) {
-    // Ignore errors (file might not exist)
-  }
-}
+import { Uri } from 'vscode';
+import { ImportManager } from '../imports/import-manager';
+import { ImportsConfig } from '../configuration';
+import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../imports/import-grouping';
+import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
 
 /**
  * Mock OutputChannel for testing
@@ -198,28 +167,6 @@ class MockImportsConfig extends ImportsConfig {
 
     return importGroups;
   }
-}
-
-/**
- * Helper function to apply TextEdits using REAL VSCode workspace.applyEdit()
- *
- * ImportManager returns TextEdit[] which we apply to a REAL TextDocument.
- * No homemade string manipulation - we use VSCode's actual edit application logic.
- */
-async function applyEditsToDocument(doc: TextDocument, edits: TextEdit[]): Promise<string> {
-  if (edits.length === 0) {
-    return doc.getText();
-  }
-
-  const workspaceEdit = new WorkspaceEdit();
-  workspaceEdit.set(doc.uri, edits);
-  const success = await workspace.applyEdit(workspaceEdit);
-
-  if (!success) {
-    throw new Error('Failed to apply edits');
-  }
-
-  return doc.getText();
 }
 
 suite('ImportManager Tests', () => {

@@ -18,31 +18,10 @@
  */
 
 import * as assert from 'assert';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { OutputChannel, TextDocument, Uri, workspace } from 'vscode';
-import { ImportOrganizer } from '../../imports/import-organizer';
-import { ImportsConfig } from '../../configuration';
-
-/**
- * Helper functions for temp file management
- */
-async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
-  const tempDir = os.tmpdir();
-  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
-  fs.writeFileSync(tempFile, content, 'utf-8');
-  const doc = await workspace.openTextDocument(Uri.file(tempFile));
-  return doc;
-}
-
-async function deleteTempDocument(doc: TextDocument): Promise<void> {
-  try {
-    fs.unlinkSync(doc.uri.fsPath);
-  } catch (e) {
-    // Ignore errors
-  }
-}
+import { OutputChannel, Uri } from 'vscode';
+import { ImportOrganizer } from '../imports/import-organizer';
+import { ImportsConfig } from '../configuration';
+import { createTempDocument, deleteTempDocument } from './test-helpers';
 
 /**
  * Mock OutputChannel for testing

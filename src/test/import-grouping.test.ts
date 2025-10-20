@@ -20,8 +20,8 @@ import {
   ImportGroupSettingParser,
   ImportGroupOrder,
   ImportGroupIdentifierInvalidError
-} from '../../imports/import-grouping';
-import { StringImport, NamedImport } from '../../imports/import-types';
+} from '../imports/import-grouping';
+import { StringImport, NamedImport } from '../imports/import-types';
 
 suite('Import Grouping Tests', () => {
   suite('KeywordImportGroup', () => {

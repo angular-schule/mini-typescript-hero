@@ -10,9 +10,9 @@ import {
   ImportGroupKeyword,
   KeywordImportGroup,
   RegexImportGroup
-} from '../../imports/import-grouping';
-import { importGroupSortForPrecedence, importSortByFirstSpecifier } from '../../imports/import-utilities';
-import { NamedImport, NamespaceImport, StringImport } from '../../imports/import-types';
+} from '../imports/import-grouping';
+import { importGroupSortForPrecedence, importSortByFirstSpecifier } from '../imports/import-utilities';
+import { NamedImport, NamespaceImport, StringImport } from '../imports/import-types';
 
 suite('Import Utilities Tests', () => {
   suite('importGroupSortForPrecedence', () => {
