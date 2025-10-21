@@ -111,6 +111,21 @@ const d = VeryLongSpecifierName4;
 const e = VeryLongSpecifierName5;
 `;
 
+    const expected = `import {
+  VeryLongSpecifierName1,
+  VeryLongSpecifierName2,
+  VeryLongSpecifierName3,
+  VeryLongSpecifierName4,
+  VeryLongSpecifierName5,
+} from './lib';
+
+const a = VeryLongSpecifierName1;
+const b = VeryLongSpecifierName2;
+const c = VeryLongSpecifierName3;
+const d = VeryLongSpecifierName4;
+const e = VeryLongSpecifierName5;
+`;
+
     const oldResult = await organizeImportsOld(input, {
       multiLineWrapThreshold: 40
     });
@@ -118,11 +133,8 @@ const e = VeryLongSpecifierName5;
       multiLineWrapThreshold: 40
     });
 
-    // Let's see what both extensions actually produce
-    console.log('OLD extension output:\n', oldResult);
-    console.log('\nNEW extension output:\n', newResult);
-
-    assert.equal(newResult, oldResult, 'Long import lines should be handled correctly');
+    assert.equal(oldResult, expected, 'Old extension must produce correct multiline wrapped output');
+    assert.equal(newResult, expected, 'New extension must produce correct multiline wrapped output');
   });
 
   test('077. Path aliases', async () => {
