@@ -514,6 +514,17 @@ export class ImportManager {
     let importSectionStartLine = firstImport.getStartLineNumber() - 1; // Convert to 0-indexed
     let importSectionEndLine = lastImport.getEndLineNumber() - 1;
 
+    // Extract comments between imports (old TypeScript Hero moves them after imports)
+    const commentsBetweenImports: string[] = [];
+    for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
+      const lineText = this.document.lineAt(i).text.trim();
+      // Check if line is a comment (and not an import statement)
+      if ((lineText.startsWith('//') || lineText.startsWith('/*') || lineText.startsWith('*')) &&
+          !lineText.includes('import ')) {
+        commentsBetweenImports.push(lineText);
+      }
+    }
+
     // Include blank lines before first import (but not header)
     if (blankLinesBefore > 0) {
       importSectionStartLine = Math.max(0, importSectionStartLine - blankLinesBefore);
@@ -587,9 +598,9 @@ export class ImportManager {
       // Build the final import text with proper blank line handling
       let importText = '';
 
-      // If we removed leading blanks before header, DON'T add them back
-      // If we have a header, preserve the exact number of blank lines that were after it
-      if (hasHeader && blankLinesBefore > 0) {
+      // Legacy mode: Remove blank lines between header and imports (old TypeScript Hero behavior)
+      // Modern modes: Preserve blank lines between header and imports
+      if (!this.config.legacyMode(this.document.uri) && hasHeader && blankLinesBefore > 0) {
         importText += this.eol.repeat(blankLinesBefore);
       }
 
@@ -602,6 +613,12 @@ export class ImportManager {
       // Add blank lines after imports according to the configured mode
       if (finalBlankLinesAfter > 0) {
         importText += this.eol.repeat(finalBlankLinesAfter);
+      }
+
+      // Add comments that were between imports (move them after imports)
+      if (commentsBetweenImports.length > 0) {
+        importText += commentsBetweenImports.join(this.eol);
+        importText += this.eol;
       }
 
       // Create the replace edit

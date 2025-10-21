@@ -2785,3 +2785,84 @@ Test Results:
 
 **Session Outcome**: 🎉 **100% SUCCESS** - Test suite is now clean, maintainable, and uses real VSCode APIs exclusively with zero duplication!
 
+
+---
+
+## 🚨 CRITICAL: MANDATORY TEST METHODOLOGY - ALL TESTS MUST BE AUDITED
+
+### ❌ WHAT I DID WRONG
+
+Found test 076 using the BAD pattern: `assert.equal(newResult, oldResult)`
+
+This is the EXACT pattern we already identified as WORTHLESS in previous sessions.
+
+### ✅ MANDATORY RULE FOR ALL TESTS
+
+**EVERY test MUST follow this pattern:**
+
+```typescript
+// 1. Input
+const input = `...source code...`;
+
+// 2. Expected output (GET THIS FROM REAL EXTENSION, NOT GUESSED!)
+const expected = `...actual correct output...`;
+
+// 3. Get results
+const result = await organizeImports(input, config);
+
+// 4. Compare result with expected
+assert.equal(result, expected, 'Must produce correct output');
+```
+
+**For comparison tests (test-harness):**
+
+```typescript
+// 1. Input
+const input = `...source code...`;
+
+// 2. Expected output (GET THIS FROM REAL OLD EXTENSION!)
+const expected = `...actual correct output...`;
+
+// 3. Get results from BOTH extensions
+const oldResult = await organizeImportsOld(input, config);
+const newResult = await organizeImportsNew(input, config);
+
+// 4. Compare BOTH against expected
+assert.equal(oldResult, expected, 'Old extension must produce correct output');
+assert.equal(newResult, expected, 'New extension must produce correct output');
+```
+
+### 🔴 WHAT MUST HAPPEN NOW
+
+**ALL TESTS MUST BE AUDITED**:
+- Main extension tests (src/test/**/*.test.ts)
+- Comparison test harness (comparison-test-harness/test-cases/**/*.test.ts)
+- EVERY SINGLE TEST must be checked
+- NO ASSUMPTIONS about which tests are correct
+- NO CLAIMING "X tests are fine" without verification
+
+**The Problem**:
+- If we use `assert.equal(newResult, oldResult)`, both could return empty string and test passes
+- If we use `assert.equal(newResult, oldResult)`, both could have the same BUG and test passes
+- This is WORTHLESS and catches NOTHING
+
+**The Solution**:
+- ALWAYS have explicit `expected` output
+- Get expected from REAL extension behavior, NOT guessed
+- Compare actual results against known-good expected output
+- This catches bugs in EITHER extension
+
+### 🔍 ACTION REQUIRED
+
+1. Audit EVERY test file
+2. Find all tests using `assert.equal(result1, result2)` pattern
+3. Fix to use `expected` output pattern
+4. Verify expected output is from REAL extension, not guessed
+5. NO SHORTCUTS - this is critical for test validity
+
+---
+
+**Documented**: 2025-10-21
+**Issue**: Test methodology violation found, ALL tests must be audited
+**Priority**: CRITICAL - cannot trust ANY test results until verified
+

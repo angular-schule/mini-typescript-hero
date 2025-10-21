@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Test harness comparing old vs new TypeScript Hero",
   "private": true,
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "compile-tests": "tsc -p . --outDir out --noEmitOnError false || true",
     "watch-tests": "tsc -p . -w --outDir out",

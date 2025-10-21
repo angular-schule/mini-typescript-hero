@@ -101,7 +101,7 @@ const y = Lib2;
     assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
-  test.skip('076. Long import line (multiline wrapping) - SKIPPED: ts-morph has different multiline behavior than typescript-parser', async () => {
+  test('076. Long import line (multiline wrapping)', async () => {
     const input = `import { VeryLongSpecifierName1, VeryLongSpecifierName2, VeryLongSpecifierName3, VeryLongSpecifierName4, VeryLongSpecifierName5 } from './lib';
 
 const a = VeryLongSpecifierName1;
@@ -111,8 +111,16 @@ const d = VeryLongSpecifierName4;
 const e = VeryLongSpecifierName5;
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input);
+    const oldResult = await organizeImportsOld(input, {
+      multiLineWrapThreshold: 40
+    });
+    const newResult = await organizeImportsNew(input, {
+      multiLineWrapThreshold: 40
+    });
+
+    // Let's see what both extensions actually produce
+    console.log('OLD extension output:\n', oldResult);
+    console.log('\nNEW extension output:\n', newResult);
 
     assert.equal(newResult, oldResult, 'Long import lines should be handled correctly');
   });

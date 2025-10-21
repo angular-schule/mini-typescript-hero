@@ -241,8 +241,10 @@ export class DemoComponent implements OnInit {
     });
 
     // Expected: Same imports, but only 1 blank line after (not 2)
+    // Modern mode PRESERVES blank line after header (unlike legacy mode which removes it)
     const expectedModernOutput = `// Demo file for video - shows the full power of Mini TypeScript Hero
 // Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports
+
 import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
