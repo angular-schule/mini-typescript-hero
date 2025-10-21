@@ -115,11 +115,11 @@ export class DemoComponent implements OnInit {
       'OLD extension should produce the exact expected output'
     );
 
-    // Verify NEW extension with legacy mode matches OLD extension
+    // Verify NEW extension with legacy mode produces correct output
     assert.strictEqual(
       newResult,
-      oldResult,
-      'NEW extension with legacy mode should match OLD extension exactly'
+      expectedOutput,
+      'NEW extension with legacy mode must produce correct output'
     );
 
     // Additional verification: Check specific transformations
