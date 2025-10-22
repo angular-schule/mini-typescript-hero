@@ -2880,4 +2880,34 @@ const r = React;
       await deleteTempDocument(doc);
     }
   });
+
+  test('90. Comments between imports: Indentation preserved', async () => {
+    // CRITICAL: Comments between imports should preserve their indentation
+    // Scenario: Comments with 2-space indentation between imports
+    // Expected: Comments moved after imports WITH their original indentation
+
+    const content = `import { B } from './b';
+  // This is an indented comment
+import { A } from './a';
+
+console.log(A, B);
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Verify imports are organized
+      assert.ok(result.includes("import { A } from './a';"), 'Should have import A');
+      assert.ok(result.includes("import { B } from './b';"), 'Should have import B');
+
+      // CRITICAL: Verify comments preserve their indentation
+      assert.ok(result.includes('  // This is an indented comment'),
+        'Two-space indented comment should preserve indentation');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
 });

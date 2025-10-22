@@ -17,13 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Checkout old-typescript-hero submodule at pinned commit
-        run: |
-          git submodule update --init --depth 1
-          cd comparison-test-harness/old-typescript-hero
-          git fetch --depth 1 origin 2cc666ec1d7d443aba1466a94e6e4c50a1424b83
-          git checkout 2cc666ec1d7d443aba1466a94e6e4c50a1424b83
+        with:
+          submodules: true  # Checkout submodule at pinned commit from repo
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

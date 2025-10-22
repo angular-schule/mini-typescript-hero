@@ -280,7 +280,7 @@ assert.equal(newResult, expected, 'New extension must produce correct output');
 
 ---
 
-## 📝 Configuration (13 Options)
+## 📝 Configuration (15 Options)
 
 All settings are under `miniTypescriptHero.imports.*`:
 
@@ -304,6 +304,10 @@ All settings are under `miniTypescriptHero.imports.*`:
 
 ### Blank Lines
 13. `blankLinesAfterImports` (one/two/preserve/legacy) - How many blank lines after imports
+
+### Behavior & Compatibility
+14. `organizeOnSave` (boolean) - Automatically organize imports when saving files
+15. `legacyMode` (boolean) - **INTERNAL!** Replicate old TypeScript Hero bugs exactly (auto-set by migration)
 
 ---
 

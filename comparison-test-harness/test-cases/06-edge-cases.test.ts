@@ -491,4 +491,35 @@ const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
     assert.equal(oldResult, expected, 'Old extension must produce correct output');
     assert.equal(newResult, expected, 'New extension must produce correct output');
   });
+
+  test('123. Comments between imports: Indentation preserved', async () => {
+    // PROOF: Both extensions preserve comment indentation when moving comments after imports
+    // OLD EXTENSION: Puts blank line AFTER imports, BEFORE comments, BEFORE code
+    // NEW EXTENSION: Matches old extension exactly (indentation preserved)
+    const input = `import { B } from './b';
+  // This is an indented comment
+import { A } from './a';
+    // This is a more indented comment
+import { C } from './c';
+
+console.log(A, B, C);
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    // Expected: Imports sorted, comments moved after with indentation preserved
+    // VERIFIED from REAL old extension output (ran test to capture actual behavior)
+    const expected = `import { A } from './a';
+import { B } from './b';
+import { C } from './c';
+
+  // This is an indented comment
+    // This is a more indented comment
+console.log(A, B, C);
+`;
+
+    assert.equal(oldResult, expected, 'Old extension must produce correct output');
+    assert.equal(newResult, expected, 'New extension must produce correct output');
+  });
 });

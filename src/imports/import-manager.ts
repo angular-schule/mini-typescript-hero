@@ -254,6 +254,31 @@ export class ImportManager {
   }
 
   /**
+   * Helper method to remove trailing /index from import library names.
+   * Creates new Import objects instead of mutating readonly properties.
+   */
+  private removeTrailingIndexFromImports(imports: Import[]): Import[] {
+    return imports.map(imp => {
+      if (!imp.libraryName.endsWith('/index')) {
+        return imp;
+      }
+      const newLibraryName = imp.libraryName.replace(/\/index$/, '');
+
+      // Create new import object instead of mutating readonly property
+      if (imp instanceof NamedImport) {
+        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias);
+      } else if (imp instanceof NamespaceImport) {
+        return new NamespaceImport(newLibraryName, imp.alias);
+      } else if (imp instanceof ExternalModuleImport) {
+        return new ExternalModuleImport(newLibraryName, imp.alias);
+      } else if (imp instanceof StringImport) {
+        return new StringImport(newLibraryName);
+      }
+      return imp;
+    });
+  }
+
+  /**
    * Organize imports: remove unused, sort, and group.
    * Returns TextEdits to apply the changes.
    */
@@ -351,9 +376,7 @@ export class ImportManager {
     // In modern mode, /index removal happens first so imports like './lib/index' and './lib' can merge
     // In legacy mode, we do it after merging to replicate the old extension's bug
     if (this.config.removeTrailingIndex(this.document.uri) && !this.config.legacyMode(this.document.uri)) {
-      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
-        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
-      }
+      keep = this.removeTrailingIndexFromImports(keep);
     }
 
     //  Merge imports from same module (configurable)
@@ -448,9 +471,7 @@ export class ImportManager {
     // In legacy mode, we replicate the old extension's bug where /index removal happens after merging
     // This means './lib/index' and './lib' won't merge because they're different at merge time
     if (this.config.removeTrailingIndex(this.document.uri) && this.config.legacyMode(this.document.uri)) {
-      for (const imp of keep.filter(lib => lib.libraryName.endsWith('/index'))) {
-        imp.libraryName = imp.libraryName.replace(/\/index$/, '');
-      }
+      keep = this.removeTrailingIndexFromImports(keep);
     }
 
     // Group imports
@@ -517,10 +538,12 @@ export class ImportManager {
     // Extract comments between imports (old TypeScript Hero moves them after imports)
     const commentsBetweenImports: string[] = [];
     for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
-      const lineText = this.document.lineAt(i).text.trim();
+      const lineText = this.document.lineAt(i).text;
+      const trimmedText = lineText.trim();
       // Check if line is a comment (and not an import statement)
-      if ((lineText.startsWith('//') || lineText.startsWith('/*') || lineText.startsWith('*')) &&
-          !lineText.includes('import ')) {
+      // Check the trimmed version but preserve the original with indentation
+      if ((trimmedText.startsWith('//') || trimmedText.startsWith('/*') || trimmedText.startsWith('*')) &&
+          !trimmedText.includes('import ')) {
         commentsBetweenImports.push(lineText);
       }
     }
