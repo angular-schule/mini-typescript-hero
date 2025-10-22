@@ -28,7 +28,8 @@
       "Bash(done)",
       "Bash(git stash:*)",
       "SlashCommand(/git-quick)",
-      "Read(///**)"
+      "Read(///**)",
+      "Bash(gh run view 18709470348 --log)"
     ],
     "deny": [],
     "ask": []

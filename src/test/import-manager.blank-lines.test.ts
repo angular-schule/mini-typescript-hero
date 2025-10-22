@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { Uri } from 'vscode';
+import { EndOfLine, Uri } from 'vscode';
 
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
@@ -645,10 +645,14 @@ suite('Blank Lines - Edge Cases', () => {
 
   test('TC-400: File with only imports (no code after)', async () => {
     const input = `import { A } from './a';`;
-    const expected = `import { A } from './a';\n`;
 
     const doc = await createTempDocument(input);
     try {
+      // Build expected based on document's actual EOL setting
+      // VSCode detects EOL from file content or uses files.eol preference
+      const eol = doc.eol === EndOfLine.CRLF ? '\r\n' : '\n';
+      const expected = `import { A } from './a';${eol}`;
+
       const manager = new ImportManager(doc, config);
       const edits = manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
