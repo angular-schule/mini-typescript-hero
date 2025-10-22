@@ -1,0 +1,56 @@
+name: Test Mini TypeScript Hero
+
+on:
+  push:
+    branches: [main, master, mini-typescript-hero-v4]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Checkout old-typescript-hero submodule at pinned commit
+        run: |
+          git submodule update --init --depth 1
+          cd comparison-test-harness/old-typescript-hero
+          git fetch --depth 1 origin 2cc666ec1d7d443aba1466a94e6e4c50a1424b83
+          git checkout 2cc666ec1d7d443aba1466a94e6e4c50a1424b83
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install main dependencies
+        run: npm install
+
+      - name: Run main extension tests (Linux with xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
+
+      - name: Run main extension tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+
+      - name: Install comparison test harness dependencies
+        run: npm install
+        working-directory: ./comparison-test-harness
+
+      - name: Run comparison tests (Linux with xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
+        working-directory: ./comparison-test-harness
+
+      - name: Run comparison tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+        working-directory: ./comparison-test-harness
