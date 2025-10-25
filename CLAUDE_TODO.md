@@ -3255,3 +3255,215 @@ This session proves the importance of:
 
 **Credit**: User was RIGHT to question the initial audit. The grep-based approach was insufficient. Manual reading was required and revealed the hidden issue.
 
+
+---
+
+## Session: 2025-10-25 - Dead Code Audit, Bug Fixes, and CI/CD Restoration
+
+### 1. Current Work Status
+
+#### ✅ Completed Tasks
+
+1. **Dead Code Removal**
+   - Deleted 3 orphaned debug files: `get-actual-output.ts`, `debug-test.js`, `debug-parser.ts`
+   - All were manual debugging tools with no automated usage
+
+2. **Code Quality Audit** (via digest.txt)
+   - **Critical Bug Fixed**: Readonly property mutation in `removeTrailingIndex` logic
+   - **Medium Bug Fixed**: Comment indentation lost during reorganization (was using `.trim()`)
+   - **Documentation Fixed**: Updated CLAUDE.md from "13 config options" to "15 config options"
+
+3. **Readonly Property Mutation Fix**
+   - Created helper method `removeTrailingIndexFromImports()` in ImportManager
+   - Replaced two duplicate code blocks that mutated readonly `imp.libraryName`
+   - Now creates new Import objects instead of mutating
+   - Extracted helper to eliminate redundancy
+
+4. **Comment Indentation Fix**
+   - Changed from `text.trim()` to preserve original `text` with indentation
+   - Only trim for checking, but store original with indentation preserved
+   - **Test Coverage Added**:
+     - Test 90 in main extension tests (`import-manager.test.ts`)
+     - Test 123 in comparison test harness (`06-edge-cases.test.ts`)
+   - Both tests verify indentation preservation in both old and new extensions
+
+5. **GitHub Actions CI/CD Restoration**
+   - Recovered workflow from git history (commit 40f0a4b^)
+   - Updated `.github/workflows/test.yml` for current structure
+   - Tests on all 3 platforms: macOS, Ubuntu, Windows
+   - Runs both main tests (398) and comparison tests (133)
+   - Uses pinned submodule commit (2cc666ec)
+
+6. **Cross-Platform EOL Fix**
+   - Fixed TC-400 test failing on Windows (hardcoded LF vs CRLF)
+   - Now reads `doc.eol === EndOfLine.CRLF` to respect VSCode's files.eol setting
+   - ImportManager already respected document.eol (verified)
+   - Added `EndOfLine` import to `import-manager.blank-lines.test.ts`
+
+7. **TypeScript Compilation Output Fix**
+   - Fixed JS files being created next to source files (adapter.js, etc.)
+   - Added `"rootDir": ".."` to `comparison-test-harness/tsconfig.json`
+   - **Verified**: All compiled files now go to `out/comparison-test-harness/` directory
+   - **Verified**: No JS files next to source files in new-extension/, old-extension/, test-cases/
+
+#### ⏸️ In-Progress Tasks
+None - all tasks completed successfully.
+
+#### 🚫 Blocked Items
+None.
+
+---
+
+### 2. Technical Context
+
+#### Files Modified
+
+1. **`src/imports/import-manager.ts`**
+   - Added helper method `removeTrailingIndexFromImports()` (lines 256-279)
+   - Replaced readonly mutation with new object creation (lines 378-379, 473-474)
+   - Fixed comment indentation preservation (lines 549-557)
+   - No longer uses `.trim()` which removed indentation
+
+2. **`CLAUDE.md`**
+   - Updated from "13 Configuration Options" to "15 Configuration Options"
+   - Added: `organizeOnSave` (boolean) and `legacyMode` (boolean - internal)
+
+3. **`src/test/import-manager.test.ts`**
+   - Added Test 90: "Comments between imports: Indentation preserved" (lines 2884-2912)
+   - Verifies comments preserve 2-space indentation after reorganization
+
+4. **`comparison-test-harness/test-cases/06-edge-cases.test.ts`**
+   - Added Test 123: "Comments between imports: Indentation preserved" (lines 495-530)
+   - Proves both old and new extensions preserve comment indentation exactly
+
+5. **`.github/workflows/test.yml`**
+   - Restored from git history, updated for current structure
+   - Tests both main extension (398 tests) and comparison harness (133 tests)
+   - All 3 platforms: macOS-latest, ubuntu-latest, windows-latest
+   - Uses `submodules: true` to checkout pinned old-typescript-hero commit
+
+6. **`src/test/import-manager.blank-lines.test.ts`**
+   - Fixed TC-400 test to respect document EOL (lines 646-663)
+   - Added `EndOfLine` import from vscode (line 2)
+   - Builds expected output based on `doc.eol === EndOfLine.CRLF`
+
+7. **`comparison-test-harness/tsconfig.json`**
+   - Added `"rootDir": ".."` (line 12)
+   - Fixes TypeScript directory structure mapping to centralize output in `out/`
+
+#### Files Created
+None (only deletions and modifications).
+
+#### Files Deleted
+- `comparison-test-harness/get-actual-output.ts` (orphaned debug tool)
+- `comparison-test-harness/debug-test.js` (orphaned debug tool)
+- `comparison-test-harness/debug-parser.ts` (orphaned debug tool)
+
+---
+
+### 3. Important Decisions
+
+#### Architecture Choices
+
+1. **Immutability Pattern**: Enforced immutability for Import objects
+   - Never mutate readonly properties
+   - Always create new objects when modification needed
+   - Extracted helper method to eliminate code duplication
+
+2. **Comment Preservation**: Preserve ALL original formatting
+   - Store original text with indentation intact
+   - Only use trimmed version for checking, not storage
+   - Matches old TypeScript Hero behavior exactly
+
+3. **Cross-Platform Testing**: Respect VSCode's EOL settings
+   - Read `document.eol` property instead of hardcoding `\n`
+   - Works correctly on Windows (CRLF), macOS/Linux (LF)
+   - Matches user's `files.eol` preference
+
+4. **TypeScript Output Centralization**: Consistent build artifact location
+   - All compiled JS files in `out/` directory structure
+   - Mirrors source directory structure: `out/comparison-test-harness/...`
+   - No JS files next to source files
+
+#### Open Questions
+None.
+
+---
+
+### 4. Next Steps
+
+#### ✅ Immediate TODO
+All tasks completed! The following items are verified working:
+
+- ✅ All 398 main extension tests passing
+- ✅ All 133 comparison tests passing (531 total)
+- ✅ GitHub Actions workflow restored and running
+- ✅ Cross-platform EOL handling working
+- ✅ TypeScript compilation output centralized
+- ✅ No dead code or orphaned files
+- ✅ No readonly property mutations
+- ✅ Comment indentation preserved
+
+#### 🧪 Testing Needed
+All testing complete:
+- Main extension: 398/398 passing
+- Comparison harness: 133/133 passing
+- GitHub Actions: Running on all 3 platforms
+
+#### 📚 Documentation Updates
+All documentation updated:
+- CLAUDE.md: Configuration count corrected (15 options)
+- This session summary added to CLAUDE_TODO.md
+
+---
+
+### 5. Key Insights
+
+**Session Discovery: The Power of Digest Files for Code Audits**
+Using a compact digest.txt file made it possible to audit the entire codebase efficiently, discovering:
+- Critical readonly mutation bug (would have been caught by TypeScript strict mode)
+- Subtle comment indentation loss (only visible in comparison tests)
+- Documentation inaccuracies
+
+**Session Discovery: GitHub Actions Submodule Pinning**
+The `submodules: true` option automatically checks out the pinned commit from the repository's `.gitmodules` file. No need for manual commit hash specification in workflow - it's already tracked by git!
+
+**Session Discovery: VSCode EOL Detection**
+VSCode's `document.eol` property respects user preferences and file content:
+- Detects existing line endings in file
+- Falls back to `files.eol` setting ("auto", "\n", "\r\n")
+- Our code already respected this via `document.eol` - only tests needed fixing
+
+**Session Discovery: TypeScript rootDir Determines Output Structure**
+Without `rootDir`, TypeScript can't determine the common ancestor of included files from multiple directories (`**/*.ts`, `../src/**/*.ts`). Adding `rootDir` tells TypeScript where the root is, allowing it to mirror the source directory structure in `outDir`.
+
+---
+
+### 6. Test Status
+
+**Main Extension Tests**: ✅ 398/398 passing (100%)
+**Comparison Tests**: ✅ 133/133 passing (100%)
+**Total Tests**: ✅ 531/531 passing (100%)
+
+**GitHub Actions**: Running on 3 platforms (macOS, Ubuntu, Windows)
+
+---
+
+### 7. Files Modified Summary
+
+| File | Lines Changed | Purpose |
+|------|---------------|---------|
+| `src/imports/import-manager.ts` | ~40 | Fixed readonly mutation, comment indentation, extracted helper |
+| `CLAUDE.md` | ~5 | Updated config count to 15 |
+| `src/test/import-manager.test.ts` | +29 | Added Test 90 for indentation |
+| `comparison-test-harness/test-cases/06-edge-cases.test.ts` | +36 | Added Test 123 for indentation |
+| `.github/workflows/test.yml` | +52 (new) | Restored CI/CD workflow |
+| `src/test/import-manager.blank-lines.test.ts` | ~10 | Fixed TC-400 EOL handling |
+| `comparison-test-harness/tsconfig.json` | +1 | Added rootDir |
+
+**Files Deleted**: 3 orphaned debug files
+
+---
+
+**Session Status**: ✅ **All tasks completed successfully!**
+
