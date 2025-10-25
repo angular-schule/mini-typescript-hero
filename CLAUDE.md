@@ -269,11 +269,11 @@ All settings are under `miniTypescriptHero.imports.*`:
 12. `mergeImportsFromSameModule` (boolean) - **NEW!** Merge duplicate imports
 
 ### Blank Lines
-13. `blankLinesAfterImports` (one/two/preserve/legacy) - How many blank lines after imports
+13. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Ignored when legacyMode is enabled)
 
 ### Behavior & Compatibility
 14. `organizeOnSave` (boolean) - Automatically organize imports when saving files
-15. `legacyMode` (boolean) - **INTERNAL!** Replicate old TypeScript Hero bugs exactly (auto-set by migration)
+15. `legacyMode` (boolean) - Replicate old TypeScript Hero behavior exactly (auto-set to `true` for migrated users)
 
 ---
 
@@ -323,11 +323,11 @@ All settings are under `miniTypescriptHero.imports.*`:
 **How**: `src/configuration/settings-migration.ts` runs on activation
 **Preserves**: 100% backward compatibility - users don't notice the change
 
-### 4. Legacy Mode for Blank Lines
-**Why**: Old extension has buggy blank line behavior, but users depend on it
-**How**: `blankLinesAfterImports: 'legacy'` replicates exact old bugs
-**For**: Migrated users get legacy mode automatically
-**New Users**: Get modern 'one' blank line (ESLint/Google standard)
+### 4. Legacy Mode for Complete Backward Compatibility
+**Why**: Old extension has specific behaviors (blank lines, within-group sorting, no merging) that users depend on
+**How**: `legacyMode: true` replicates ALL old behaviors exactly
+**For**: Migrated users get `legacyMode: true` automatically
+**New Users**: Get `legacyMode: false` by default for modern best practices (1 blank line, correct sorting, import merging)
 
 ---
 

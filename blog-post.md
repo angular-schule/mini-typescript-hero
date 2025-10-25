@@ -82,7 +82,7 @@ If you're already using TypeScript Hero, switching is painless:
 3. Your settings automatically migrate (one-time, on first startup)
 4. Done.
 
-All your custom configurations transfer automatically — quote style, semicolons, import grouping rules, blank line handling, everything. The extension preserves your exact behavior by intelligently migrating settings to match the old TypeScript Hero (like `blankLinesAfterImports: "legacy"` and `mergeImportsFromSameModule` based on your removal settings). You can switch to the new defaults anytime you want cleaner, more consistent spacing. You can even keep both extensions installed if you want, but I highly recommend deactivating the old hero because both will fight for the same shortcut. Speaking of which: the keyboard shortcut works exactly the same, `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
+All your custom configurations transfer automatically — quote style, semicolons, import grouping rules, blank line handling, everything. The extension preserves your exact behavior by automatically enabling `legacyMode: true` for migrated users, which replicates 100% of the old TypeScript Hero behavior. You can switch to the new defaults anytime you want cleaner, more consistent spacing. You can even keep both extensions installed if you want, but I highly recommend deactivating the old hero because both will fight for the same shortcut. Speaking of which: the keyboard shortcut works exactly the same, `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
 
 ## A Quick Thank You
 

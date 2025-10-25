@@ -39,16 +39,6 @@ export class ImportOrganizer implements Disposable {
       ),
     );
 
-    // Register alias for backward compatibility
-    this.disposables.push(
-      commands.registerTextEditorCommand(
-        'typescriptHero.imports.organize',
-        async () => {
-          await this.organizeImportsCommand();
-        },
-      ),
-    );
-
     // Register organize-on-save handler
     this.disposables.push(
       workspace.onWillSaveTextDocument((event: TextDocumentWillSaveEvent) => {

@@ -111,12 +111,9 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Blank Line Behavior:** For migrated users, `blankLinesAfterImports` is automatically set to `"legacy"` to preserve the original TypeScript Hero behavior. New users get `"one"` by default (ESLint standard: 1 blank line after imports). You can change this setting anytime in your configuration.
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to preserve 100% of the original TypeScript Hero behavior (including blank line handling, within-group sorting, and no import merging). New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
 
-**Import Merging Behavior:** The migration intelligently configures `mergeImportsFromSameModule` based on your old settings:
-- If you had `disableImportRemovalOnOrganize: true`, merging is disabled (`false`) to preserve the exact old behavior
-- If you had `disableImportRemovalOnOrganize: false` (or default), merging is enabled (`true`) as before
-- This preserves 100% backward compatibility with your existing workflow
+**Import Merging:** By default, `mergeImportsFromSameModule: true` combines duplicate imports from the same module (modern best practice). If you prefer to keep imports separate, set this to `false` in your configuration
 
 ### No Old Settings?
 

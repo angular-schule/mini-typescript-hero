@@ -3467,3 +3467,122 @@ Without `rootDir`, TypeScript can't determine the common ancestor of included fi
 
 **Session Status**: ✅ **All tasks completed successfully!**
 
+
+---
+
+## Session: 2025-10-25 - Audit Findings Review and Cleanup
+
+### 1. Current Work Status
+
+#### ✅ Completed Tasks
+1. **Reviewed audit findings** from external code review
+2. **Verified syntax bug was false alarm** - Code already had correct `[...imp.specifiers]` spread syntax
+3. **Removed impolite command registration** - No longer hijacking `typescriptHero.imports.organize` command
+4. **Decided on merging policy** - Keep `mergeImportsFromSameModule` setting as valuable feature
+5. **Fixed all documentation drift**:
+   - README.md: Removed false claims about `blankLinesAfterImports: "legacy"` migration
+   - blog-post.md: Updated to reflect actual `legacyMode: true` migration behavior
+   - CLAUDE.md: Corrected configuration documentation
+6. **Verified all 202 tests passing** with no regressions
+
+#### 🚫 No In-Progress or Blocked Items
+All audit findings have been addressed successfully.
+
+### 2. Technical Context
+
+#### Files Modified
+1. **src/imports/import-organizer.ts** (lines 42-50)
+   - Removed backward-compatibility alias command `typescriptHero.imports.organize`
+   - Now only registers our own `miniTypescriptHero.imports.organize` command
+   - Reason: Being polite - don't hijack old extension's commands
+
+2. **README.md** (lines 114-119)
+   - Replaced incorrect migration documentation
+   - Removed false claims about `blankLinesAfterImports: "legacy"` value
+   - Removed false claims about intelligent `mergeImportsFromSameModule` migration
+   - Updated to reflect actual behavior: `legacyMode: true` for migrated users
+
+3. **blog-post.md** (line 85)
+   - Updated migration description to mention `legacyMode: true`
+   - Removed incorrect technical details about settings migration
+
+4. **CLAUDE.md** (lines 249-276, 326-330)
+   - Configuration section: Removed "legacy" as enum value for `blankLinesAfterImports`
+   - Updated to show only valid values: "one", "two", "preserve"
+   - Added note that setting is ignored when `legacyMode` is enabled
+   - Updated Technical Decision #4 to reflect complete `legacyMode` behavior
+
+#### Files Created
+None - only modifications to existing files.
+
+#### Temporary/Debug Files
+None created during this session.
+
+### 3. Important Decisions
+
+#### Architecture Choices
+1. **Keep `mergeImportsFromSameModule` setting**
+   - Rationale: Valuable feature that decouples merging from removal
+   - Improvement over old extension's coupled behavior
+   - Already fully implemented with comprehensive tests (tests 41-63)
+   - Default: `true` for all users (new and migrated)
+
+2. **Remove command alias registration**
+   - Principle: Be polite to other extensions
+   - Only read old settings during migration (one-time)
+   - Never write to old namespace
+   - Never register old commands
+
+#### Open Questions
+None - all audit findings resolved.
+
+### 4. Next Steps
+
+#### Immediate TODO
+1. Consider releasing as RC1 after this cleanup
+2. All 202 tests passing, documentation aligned with code
+
+#### Testing Needed
+✅ Already completed - all tests passing:
+- 202 tests passing
+- No regressions from command registration removal
+- All functionality verified
+
+#### Documentation Updates
+✅ All completed:
+- README.md aligned with actual migration behavior
+- blog-post.md updated with correct technical details
+- CLAUDE.md configuration section corrected
+
+### 5. Audit Findings Resolution Summary
+
+**Original Audit Report Findings:**
+
+1. ❌ **Syntax bug `[.imp.specifiers]`** → FALSE ALARM (code was already correct)
+2. ✅ **Impolite command registration** → FIXED (removed alias)
+3. ✅ **Merging policy consistency** → RESOLVED (keep setting, clarify docs)
+4. ✅ **Documentation drift** → FIXED (all docs updated)
+5. ✅ **Manifest issues** → ALREADY CORRECT (no changes needed)
+
+**Test Results:** 202/202 passing ✅
+
+**Code Quality:** Clean, consistent, ready for release ✅
+
+### 6. Key Technical Insights
+
+1. **Migration Strategy is Correct**
+   - Reads old settings once (polite)
+   - Copies to new namespace
+   - Sets `legacyMode: true` for 100% backward compatibility
+   - Never touches old settings again
+
+2. **Documentation Must Match Implementation**
+   - Previous docs claimed migration set `blankLinesAfterImports: "legacy"` (wrong)
+   - Previous docs claimed intelligent `mergeImportsFromSameModule` migration (wrong)
+   - Reality: Migration only sets `legacyMode: true` (simple, clean)
+
+3. **Command Registration Best Practices**
+   - Only register your own commands
+   - Don't create aliases to other extensions' commands
+   - Let users migrate their custom keybindings manually if needed
+
