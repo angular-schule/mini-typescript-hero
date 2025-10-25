@@ -444,3 +444,24 @@ vsce package
 **Current Branch**: `mini-typescript-hero-v4`
 **Version**: 4.0.0-rc.0
 **Status**: ✅ **529/529 tests passing (100%)** - All tests audited and verified following mandatory assertion pattern!
+
+
+## How to create an audit file
+
+Of our own code
+and of the old typescript hero
+
+```
+gitingest -e "*node_modules*,*vscode-test*,*.js,*logo*,*old-typescript*,*package*,CLAUDE*,*logo*,.claude,*.DS_Store*,digest.txt,*out*" ./
+cd comparison-test-harness/old-typescript-hero && gitingest -e "*node_modules*,*vscode-test*,*.DS_Store*,digest.txt" ./ && cd ../..
+{
+  echo "*** MINI TYPESCRIPT HERO FOLDER CONTENT ***"
+  echo ""
+  cat digest.txt
+  echo ""
+  echo ""
+  echo "*** OLD TYPESCRIPT HERO FOLDER CONTENT ***"
+  echo ""
+  cat comparison-test-harness/old-typescript-hero/digest.txt
+} > digest-combined.txt && mv digest-combined.txt digest.txt
+```
