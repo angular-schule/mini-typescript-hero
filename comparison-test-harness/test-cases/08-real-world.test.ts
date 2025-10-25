@@ -84,7 +84,7 @@ export function UserProfile({ userId }: { userId: string }) {
 `;
 
     // ACTUAL: Old extension does NOT support `import type` - strips type keyword and merges
-    const expected = `import React, { useEffect, useMemo, useState } from 'react';
+    const expectedOld = `import React, { useEffect, useMemo, useState } from 'react';
 
 import { fetchData } from '../api/fetch';
 import { User } from '../types/user';
@@ -105,11 +105,34 @@ export function UserProfile({ userId }: { userId: string }) {
 }
 `;
 
-    const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input);
+    // NEW: Modern extension preserves `import type` declarations (TS 3.8+)
+    // Type-only imports are kept separate from value imports
+    const expectedNew = `import React, { useEffect, useMemo, useState } from 'react';
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+import { fetchData } from '../api/fetch';
+import type { User } from '../types/user';
+import { formatDate } from '../utils/date';
+
+export function UserProfile({ userId }: { userId: string }) {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetchData(userId).then(setUser);
+  }, [userId]);
+
+  const formattedDate = useMemo(() => {
+    return user ? formatDate(user.createdAt) : '';
+  }, [user]);
+
+  return <div>{formattedDate}</div>;
+}
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
+
+    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
+    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves import type)');
   });
 
   test('103. NestJS controller', async () => {

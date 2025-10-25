@@ -345,17 +345,26 @@ let y: MyType;
 `;
 
     // ACTUAL: Old extension does NOT support TypeScript 3.8+ `import type` syntax - strips the type keyword
-    const expected = `import { MyType, MyValue } from './lib';
+    const expectedOld = `import { MyType, MyValue } from './lib';
+
+const x = MyValue;
+let y: MyType;
+`;
+
+    // NEW: Modern extension preserves `import type` declarations (TS 3.8+)
+    // Type-only and value imports are kept separate (cannot be merged)
+    const expectedNew = `import type { MyType } from './lib';
+import { MyValue } from './lib';
 
 const x = MyValue;
 let y: MyType;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
+    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves import type)');
   });
 
   // NEW TESTS: Critical edge cases from unit suite

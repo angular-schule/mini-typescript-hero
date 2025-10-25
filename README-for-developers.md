@@ -4,7 +4,7 @@ This guide is for developers working on the Mini TypeScript Hero extension.
 
 ## Running Unit Tests
 
-### Run All Tests
+### Run Tests
 ```bash
 npm test
 ```
@@ -15,17 +15,10 @@ This will:
 3. Run linter (`npm run lint`)
 4. Execute all tests in VSCode test environment
 
-### Test Results
-- **76 tests total** across all test suites
-- Tests run on: Ubuntu, macOS, Windows (via GitHub Actions)
-- Test files location: `src/test/`
 
-### Test Coverage
-- **ImportManager** (28 tests) - Core import organization logic
-- **Import Grouping** (29 tests) - Group classification and sorting
-- **Import Utilities** (12 tests) - Sorting and precedence functions
-- **Settings Migration** (6 tests) - Migration from old TypeScript Hero
-- **Extension** (1 test) - Sample extension test
+- Tests run on: Ubuntu, macOS, Windows (via GitHub Actions)
+- Main extension tests location: `src/test/`
+- Comparison tests location: `comparison-test-harness/test-cases/`
 
 ## Manual Testing
 

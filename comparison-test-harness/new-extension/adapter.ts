@@ -87,79 +87,79 @@ class MockImportsConfig extends ImportsConfig {
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
     // Config MUST be provided by tests (no defaults in adapter)
     const value = this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces');
-    if (value === undefined) throw new Error('insertSpaceBeforeAndAfterImportBraces must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('insertSpaceBeforeAndAfterImportBraces must be explicitly configured in tests');}
     return value;
   }
 
   insertSemicolons(_resource: Uri): boolean {
     const value = this.mockConfig.get('insertSemicolons');
-    if (value === undefined) throw new Error('insertSemicolons must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('insertSemicolons must be explicitly configured in tests');}
     return value;
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
     const value = this.mockConfig.get('removeTrailingIndex');
-    if (value === undefined) throw new Error('removeTrailingIndex must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('removeTrailingIndex must be explicitly configured in tests');}
     return value;
   }
 
   stringQuoteStyle(_resource: Uri): '"' | '\'' {
     const value = this.mockConfig.get('stringQuoteStyle');
-    if (value === undefined) throw new Error('stringQuoteStyle must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('stringQuoteStyle must be explicitly configured in tests');}
     return value;
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
     const value = this.mockConfig.get('multiLineWrapThreshold');
-    if (value === undefined) throw new Error('multiLineWrapThreshold must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('multiLineWrapThreshold must be explicitly configured in tests');}
     return value;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
     const value = this.mockConfig.get('multiLineTrailingComma');
-    if (value === undefined) throw new Error('multiLineTrailingComma must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('multiLineTrailingComma must be explicitly configured in tests');}
     return value;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
     const value = this.mockConfig.get('disableImportRemovalOnOrganize');
-    if (value === undefined) throw new Error('disableImportRemovalOnOrganize must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('disableImportRemovalOnOrganize must be explicitly configured in tests');}
     return value;
   }
 
   mergeImportsFromSameModule(_resource: Uri): boolean {
     const value = this.mockConfig.get('mergeImportsFromSameModule');
-    if (value === undefined) throw new Error('mergeImportsFromSameModule must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('mergeImportsFromSameModule must be explicitly configured in tests');}
     return value;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
     const value = this.mockConfig.get('disableImportsSorting');
-    if (value === undefined) throw new Error('disableImportsSorting must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('disableImportsSorting must be explicitly configured in tests');}
     return value;
   }
 
   organizeOnSave(_resource: Uri): boolean {
     const value = this.mockConfig.get('organizeOnSave');
-    if (value === undefined) throw new Error('organizeOnSave must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('organizeOnSave must be explicitly configured in tests');}
     return value;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
     const value = this.mockConfig.get('organizeSortsByFirstSpecifier');
-    if (value === undefined) throw new Error('organizeSortsByFirstSpecifier must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('organizeSortsByFirstSpecifier must be explicitly configured in tests');}
     return value;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
     const value = this.mockConfig.get('ignoredFromRemoval');
-    if (value === undefined) throw new Error('ignoredFromRemoval must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('ignoredFromRemoval must be explicitly configured in tests');}
     return value;
   }
 
   legacyMode(_resource: Uri): boolean {
     const value = this.mockConfig.get('legacyMode');
-    if (value === undefined) throw new Error('legacyMode must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('legacyMode must be explicitly configured in tests');}
     return value;
   }
 
@@ -170,7 +170,7 @@ class MockImportsConfig extends ImportsConfig {
     }
 
     const value = this.mockConfig.get('blankLinesAfterImports');
-    if (value === undefined) throw new Error('blankLinesAfterImports must be explicitly configured in tests');
+    if (value === undefined) {throw new Error('blankLinesAfterImports must be explicitly configured in tests');}
     return value;
   }
 
@@ -252,7 +252,7 @@ export async function organizeImportsNew(
       config.setConfig(key, finalConfig[key]);
     });
 
-    const manager = new ImportManager(doc, config, logger);
+    const manager = new ImportManager(doc, config);
     const edits = manager.organizeImports();
 
     // If no edits (empty file or no imports), return original content

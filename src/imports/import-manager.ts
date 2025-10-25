@@ -84,19 +84,22 @@ export class ImportManager {
         continue;
       }
 
-      // Named import (e.g., import { foo, bar } from 'lib')
+      // Named import (e.g., import { foo, bar} from 'lib')
       const defaultImport = importDecl.getDefaultImport();
       const namedImports = importDecl.getNamedImports();
+      const isTypeOnly = importDecl.isTypeOnly();
 
       const specifiers: SymbolSpecifier[] = namedImports.map(named => ({
         specifier: named.getName(),
         alias: named.getAliasNode()?.getText(),
+        isTypeOnly: named.isTypeOnly(),
       }));
 
       this.imports.push(new NamedImport(
         moduleSpecifier,
         specifiers,
         defaultImport?.getText(),
+        isTypeOnly,
       ));
     }
 
@@ -266,7 +269,7 @@ export class ImportManager {
 
       // Create new import object instead of mutating readonly property
       if (imp instanceof NamedImport) {
-        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias);
+        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias, imp.isTypeOnly);
       } else if (imp instanceof NamespaceImport) {
         return new NamespaceImport(newLibraryName, imp.alias);
       } else if (imp instanceof ExternalModuleImport) {
@@ -294,7 +297,7 @@ export class ImportManager {
         keep = this.imports.map(imp => {
           if (imp instanceof NamedImport && imp.specifiers.length > 0) {
             const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias);
+            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly);
           }
           return imp;
         });
@@ -309,7 +312,7 @@ export class ImportManager {
           // Still need to sort specifiers for NamedImport to maintain consistent formatting
           if (imp instanceof NamedImport && imp.specifiers.length > 0) {
             const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias));
+            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly));
           } else {
             keep.push(imp);
           }
@@ -352,6 +355,7 @@ export class ImportManager {
               imp.libraryName,
               usedSpecifiers,
               keepDefault ? imp.defaultAlias : undefined,
+              imp.isTypeOnly,
             ));
           }
           // else: Remove the import entirely (no used specifiers or default)
@@ -390,26 +394,41 @@ export class ImportManager {
     // - NEW extension (legacy mode): merge FIRST to match old extension bug
     if (this.config.mergeImportsFromSameModule(this.document.uri)) {
       const merged: Import[] = [];
+      const isLegacy = this.config.legacyMode(this.document.uri);
+
+      // Group imports by library name (and isTypeOnly in modern mode)
+      // In modern mode, type-only and value imports from the same library should NOT be merged
       const byLibrary = new Map<string, Import[]>();
 
-      // Group imports by library name
       for (const imp of keep) {
-        const lib = imp.libraryName;
-        if (!byLibrary.has(lib)) {
-          byLibrary.set(lib, []);
+        // In modern mode, include isTypeOnly in the grouping key
+        // This prevents merging type-only imports with value imports
+        const typePrefix = (!isLegacy && imp instanceof NamedImport && imp.isTypeOnly) ? 'type:' : '';
+        const groupKey = typePrefix + imp.libraryName;
+
+        if (!byLibrary.has(groupKey)) {
+          byLibrary.set(groupKey, []);
         }
-        byLibrary.get(lib)!.push(imp);
+        byLibrary.get(groupKey)!.push(imp);
       }
 
       // Merge each group
       for (const [, imports] of byLibrary) {
         if (imports.length === 1) {
           // Single import, keep as-is
-          merged.push(imports[0]);
+          // BUT: In legacy mode, strip type-only flag from NamedImports
+          const imp = imports[0];
+          if (isLegacy && imp instanceof NamedImport && imp.isTypeOnly) {
+            // Strip isTypeOnly flag and individual specifier flags
+            const specs = imp.specifiers.map(s => ({ ...s, isTypeOnly: false }));
+            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false));
+          } else {
+            merged.push(imp);
+          }
           continue;
         }
 
-        // Multiple imports from same module
+        // Multiple imports from same module (already grouped by isTypeOnly in modern mode)
         const namedImports = imports.filter(i => i instanceof NamedImport) as NamedImport[];
 
         // Merge ONLY named imports - keep others in original order
@@ -419,7 +438,11 @@ export class ImportManager {
           let mergedDefault: string | undefined;
 
           for (const namedImp of namedImports) {
-            allSpecifiers.push(...namedImp.specifiers);
+            // In legacy mode, strip isTypeOnly from individual specifiers
+            const specs = isLegacy
+              ? namedImp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
+              : namedImp.specifiers;
+            allSpecifiers.push(...specs);
             if (namedImp.defaultAlias && !mergedDefault) {
               mergedDefault = namedImp.defaultAlias;
             }
@@ -428,7 +451,7 @@ export class ImportManager {
           // Remove duplicate specifiers (same name and alias)
           // BUT: In legacy mode, keep duplicates (old extension behavior)
           let finalSpecifiers = allSpecifiers;
-          if (!this.config.legacyMode(this.document.uri)) {
+          if (!isLegacy) {
             finalSpecifiers = allSpecifiers.filter((spec, index, self) =>
               index === self.findIndex(s =>
                 s.specifier === spec.specifier && s.alias === spec.alias
@@ -439,10 +462,13 @@ export class ImportManager {
           // Sort specifiers
           finalSpecifiers.sort(specifierSort);
 
+          // Preserve the isTypeOnly flag from the first import in the group
+          // BUT: In legacy mode, always strip the flag (old extension behavior)
           mergedNamed = new NamedImport(
             namedImports[0].libraryName,
             finalSpecifiers,
             mergedDefault,
+            isLegacy ? false : namedImports[0].isTypeOnly, // Legacy: strip type-only
           );
         }
 
@@ -692,9 +718,11 @@ export class ImportManager {
 
       // Named imports
       if (imp.specifiers.length > 0) {
-        const specifierStrings = imp.specifiers.map(spec =>
-          spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier
-        );
+        const specifierStrings = imp.specifiers.map(spec => {
+          const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
+          // Add 'type' keyword for individual type-only specifiers
+          return spec.isTypeOnly ? `type ${baseSpec}` : baseSpec;
+        });
 
         const specifiersText = specifierStrings.join(', ');
         const braceOpen = spaceInBraces ? '{ ' : '{';
@@ -714,7 +742,9 @@ export class ImportManager {
         }
       }
 
-      return `import ${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${semi}`;
+      // Add 'type' keyword for type-only imports (TS 3.8+)
+      const typeKeyword = imp.isTypeOnly ? 'type ' : '';
+      return `import ${typeKeyword}${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${semi}`;
     }
 
     return '';

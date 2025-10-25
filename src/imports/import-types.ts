@@ -26,6 +26,7 @@ export class NamedImport implements Import {
     public readonly libraryName: string,
     public readonly specifiers: SymbolSpecifier[] = [],
     public readonly defaultAlias?: string,
+    public readonly isTypeOnly: boolean = false,
   ) {}
 }
 
@@ -55,4 +56,5 @@ export class ExternalModuleImport implements Import {
 export interface SymbolSpecifier {
   specifier: string;
   alias?: string;
+  isTypeOnly?: boolean;
 }

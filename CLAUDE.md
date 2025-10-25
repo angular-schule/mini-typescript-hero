@@ -214,17 +214,16 @@ try {
 }
 ```
 
-**Status**: ✅ **397/397 tests passing (100%)** - All tests use REAL VSCode APIs with explicit expected outputs
+All tests use REAL VSCode APIs with explicit expected outputs.
 
 ---
 
 ### 2. Test Harness Tests (`comparison-test-harness/`)
 
-**Purpose**: Prove we understand the old extension's EXACT behavior in every detail
+**Purpose**: Validate backward compatibility between old and new extension
 
 **What They Test**:
 - Direct comparison: old extension output vs new extension output
-- Validates backward compatibility
 - Tests that new extension can replicate old behavior with correct settings
 - ⚠️ **Note**: Both extensions process same input, configs may differ slightly (new extension has `legacyMode` flag)
 
@@ -243,40 +242,7 @@ assert.equal(oldResult, expected, 'Old extension must produce correct output');
 assert.equal(newResult, expected, 'New extension must produce correct output');
 ```
 
-**Status**: ✅ **132/132 tests passing (100%)** - All tests use REAL VSCode APIs with verified expected outputs
-
----
-
-## ✅ Testing Evolution - From Mocks to 100% Real VSCode APIs
-
-**Major Milestones Achieved**:
-
-**Session 18-20** - Real Files Implementation:
-- ✅ Removed ALL MockTextDocument classes from both test harness adapters
-- ✅ Removed ALL homegrown `applyEdits()` functions (line-based text manipulation)
-- ✅ Implemented real temp file approach using `os.tmpdir()` + `workspace.openTextDocument()`
-- ✅ Now using VSCode's real `workspace.applyEdit()` API
-- ✅ Comparison test harness: 132/132 passing (100%)
-
-**Session 19-20** - Main Extension Tests Refactored:
-- ✅ Removed ~374 lines of MockTextDocument code from main extension tests
-- ✅ Refactored ALL 397 tests to use real VSCode APIs
-- ✅ Centralized test helpers in `src/test/test-helpers.ts`
-- ✅ Main extension tests: 397/397 passing (100%)
-
-**Session 24-26** - Mandatory Test Assertion Pattern:
-- ✅ Added explicit `expected` output to ALL 132 comparison tests
-- ✅ Fixed 26 tests that had incorrect guessed expected values
-- ✅ All expected outputs verified from REAL old extension behavior
-- ✅ Removed all `assert.equal(result1, result2)` patterns
-
-**Session 27 (Oct 2025)** - Final Test Methodology Audit:
-- ✅ Audited ALL 529 tests (132 comparison + 397 main extension)
-- ✅ Found and fixed 1 remaining test using bad assertion pattern (Test 076)
-- ✅ 100% compliance with mandatory test assertion pattern
-- ✅ ALL tests now validate against explicit expected outputs
-
-**Current Status**: ✅ **529/529 tests passing (100%)** - All tests use REAL VSCode APIs with verified expected outputs
+All tests use REAL VSCode APIs with verified expected outputs.
 
 ---
 
@@ -311,29 +277,34 @@ All settings are under `miniTypescriptHero.imports.*`:
 
 ---
 
-## 🐛 Bug Status (Session 18 Update)
+## 🔧 Technical Implementation Notes
 
-### 1. ignoredFromRemoval Skips Specifier Sorting
-**Status**: ✅ ALREADY FIXED (lines 270-278)
-- Code already sorts specifiers for imports in `ignoredFromRemoval` list
-- React imports DO get alphabetized correctly
-- Bug was fixed in earlier session
+### Type-Only Imports Support (TS 3.8+)
 
-### 2. Legacy Mode Blank Line Formula
-**Status**: ⚠️ **FORMULA WAS COMPLETELY WRONG!**
-**Location**: `src/imports/import-manager.ts` lines 737-762
+**Location**: `src/imports/import-types.ts`, `src/imports/import-manager.ts`
 
-**What We Thought**:
-- Single group: 3 blank lines
-- Multiple groups: `imports + separators + 3` blank lines
+**Implementation**:
+- Extended model with `isTypeOnly` flag for `NamedImport` and `SymbolSpecifier`
+- Parses both import-level (`import type`) and specifier-level (`type A`) modifiers using ts-morph
+- Preserves type-only syntax in output generation
+- All places where `NamedImport` instances are created preserve the flag
 
-**Reality (Session 18 Discovery)**:
-- Old extension's behavior is **inconsistent** and varies by scenario
-- Old extension actually **preserves existing blank lines** from source
-- The 'legacy' formula doesn't match old extension at all
-- Test results: 'legacy' mode = 4/125 passing (3%), 'preserve' mode = 93/125 passing (74%)
+**Behavior**:
+- **Modern mode** (`legacyMode: false`): Preserves `import type` syntax, keeps type/value imports separate (semantic requirement)
+- **Legacy mode** (`legacyMode: true`): Strips `import type` keywords (matches old extension behavior)
 
-**Recommendation**: Consider removing or replacing 'legacy' mode implementation
+### Import Merging Behavior
+
+**How Both Extensions Merge**:
+- **Old extension**: Merges imports from same module when `disableImportRemovalOnOrganize: false` (default)
+- **New extension**: Has separate `mergeImportsFromSameModule` setting for explicit control
+
+**Merge Timing Difference**:
+- **Old extension**: Merges BEFORE `removeTrailingIndex`
+  - `./lib/index` and `./lib` are treated as DIFFERENT modules (don't merge)
+- **New extension (legacy mode)**: Merges BEFORE `removeTrailingIndex` (matches old behavior)
+- **New extension (modern mode)**: Applies `removeTrailingIndex` FIRST, then merges
+  - Both `./lib/index` and `./lib` become `./lib`, so they DO merge
 
 ---
 
@@ -343,9 +314,9 @@ All settings are under `miniTypescriptHero.imports.*`:
 **Why**: typescript-parser is deprecated (7 years old, no updates). ts-morph is actively maintained, modern, and has better TypeScript support.
 
 ### 2. Decouple Merging from Removal
-**Old Behavior**: `disableImportRemovalOnOrganize: false` did BOTH removal AND merging
-**New Behavior**: Separate `mergeImportsFromSameModule` setting
-**Benefit**: More control, modern best practice (always merge imports)
+**Old Behavior**: `disableImportRemovalOnOrganize: false` did BOTH removal AND merging (coupled together)
+**New Behavior**: Separate `mergeImportsFromSameModule` setting for explicit control
+**Benefit**: Can merge imports without removing unused ones, or vice versa. More flexible than old coupled behavior.
 
 ### 3. Smart Settings Migration
 **What**: Automatically migrates old TypeScript Hero settings to new extension
@@ -360,44 +331,19 @@ All settings are under `miniTypescriptHero.imports.*`:
 
 ---
 
-## 🚀 Phase Status
+## 💡 Important Development Lessons
 
-- ✅ **Phase 1-10**: Main extension complete (scaffold, port, test, migrate repo)
-- ✅ **Phase 10.5**: Comparison test harness created (132 tests)
-- ✅ **Phase 11**: Testing & Validation
-  - ✅ Fixed test harness - all tests use REAL VSCode APIs
-  - ✅ Fixed ignoredFromRemoval bug (already fixed in earlier session)
-  - ✅ Updated all tests to use real files (no mocks)
-  - ✅ All 529 tests passing (100%)
-  - ✅ Mandatory test assertion pattern enforced
-  - ✅ Test methodology audit complete
-- 🎯 **Phase 12**: Ready for Publishing
-  - ✅ Extension fully functional
-  - ✅ All tests passing
-  - ✅ Documentation complete
-  - ⏭️ Next: Final verification and publish to VSCode Marketplace
+### Use Real VSCode APIs, Not Mocks
+Tests run in REAL VSCode environment. Using mocked TextDocument and homegrown `applyEdits()` created phantom bugs that wasted debugging time. Always use `workspace.openTextDocument()` and `workspace.applyEdit()`.
 
----
+### Test Assertion Pattern Must Be Mandatory
+Comparing two results without validating against expected output is worthless - both could be wrong and test still passes. Every test must validate against explicit expected output from REAL extension behavior.
 
-## 💡 Key Insights from Development
+### Validate Assumptions Against Real Code
+Testing artifacts can mislead. Code inspection revealed old extension DOES merge imports (via `libraryAlreadyImported` check), contrary to what test results initially suggested. Always verify behavioral assumptions by reading actual implementation.
 
-### Session 18 Discovery: Old Extension's Blank Lines Are Inconsistent!
-Through systematic testing, discovered the old extension's blank line behavior is **inconsistent** and varies by scenario. It actually **preserves existing blank lines** from source files, not following any predictable formula. The 'legacy' mode we implemented was completely wrong. 'preserve' mode gives 74% test pass rate.
-
-### Session 17 Discovery: Stop Mocking VSCode!
-Multiple sessions were wasted debugging phantom bugs in mock code. The lesson: **Use real VSCode APIs whenever possible!**
-
-### Session 14 Discovery: Merging Was Coupled
-Old extension's `disableImportRemovalOnOrganize` controlled BOTH removal and merging. New extension decouples these for better control.
-
-### Session 12 Discovery: Comparison Tests Are Essential
-Created 125 tests comparing old vs new. Found critical insights before release. Worth the time investment!
-
-### Session 15 Discovery: Configuration Coverage Gaps
-Only 77% of config options properly tested. Some options (`removeTrailingIndex`) had NO tests. Created action plan to add 16+ tests.
-
-### October 2025 Discovery: Test Assertion Pattern Must Be Mandatory!
-Comprehensive audit of all 529 tests revealed critical pattern: Comparing two results without validating against expected output is **WORTHLESS**. Found 1 test still using `assert.equal(result1, result2)` which can pass even if both are wrong (empty string, same bug, etc.). Established mandatory pattern: **EVERY test must validate against explicit expected output from REAL extension behavior**. No exceptions. This is now documented and enforced across entire codebase.
+### Type-Only Imports Are Semantic, Not Cosmetic
+TypeScript 3.8+ `import type` syntax affects runtime semantics and bundling. Converting `import type { T }` to `import { T }` can break type-only import isolation, affect tree-shaking, and change module loading. New extension preserves `import type` in modern mode for correct TypeScript 3.8+ semantics.
 
 ---
 
@@ -438,12 +384,6 @@ vsce package
 - New discoveries or lessons learned
 - Technical decisions
 
----
-
-**Last Updated**: 2025-10-21 (Test Methodology Audit Complete)
-**Current Branch**: `mini-typescript-hero-v4`
-**Version**: 4.0.0-rc.0
-**Status**: ✅ **529/529 tests passing (100%)** - All tests audited and verified following mandatory assertion pattern!
 
 
 ## How to create an audit file

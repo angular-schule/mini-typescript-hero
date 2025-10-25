@@ -342,17 +342,24 @@ const y = B;
 `;
 
     // ACTUAL: Old extension does NOT preserve `type` keyword - strips it
-    const expected = `import { A, B } from './lib';
+    const expectedOld = `import { A, B } from './lib';
+
+const x: A = {} as any;
+const y = B;
+`;
+
+    // NEW: Modern extension preserves `type` keyword for individual specifiers (TS 4.5+)
+    const expectedNew = `import { type A, B } from './lib';
 
 const x: A = {} as any;
 const y = B;
 `;
 
     const oldResult = await organizeImportsOld(input);
-    const newResult = await organizeImportsNew(input);
+    const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
+    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves type)');
   });
 
   test('030. Merging with multiple aliases', async () => {
