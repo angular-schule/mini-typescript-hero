@@ -127,25 +127,22 @@ export class ImportManager {
       const namedImports = importDecl.getNamedImports();
       const isTypeOnly = importDecl.isTypeOnly();
 
-      const specifiers: SymbolSpecifier[] = namedImports.map(named => {
-        // Extract leading comments (block or line comments before the specifier)
-        const leadingComments = named.getLeadingCommentRanges();
-        const leadingComment = leadingComments.length > 0
-          ? leadingComments.map(c => c.getText()).join(' ')
-          : undefined;
+      // Extract comments from the full import declaration text
+      // ts-morph's getLeadingCommentRanges/getTrailingCommentRanges don't work reliably
+      // for import specifiers, so we parse the full text manually
+      const fullText = importDecl.getText();
+      const specifierComments = this.extractSpecifierComments(fullText, namedImports.map(n => n.getName()));
 
-        // Extract trailing comments (line comments after the specifier)
-        const trailingComments = named.getTrailingCommentRanges();
-        const trailingComment = trailingComments.length > 0
-          ? trailingComments.map(c => c.getText()).join(' ')
-          : undefined;
+      const specifiers: SymbolSpecifier[] = namedImports.map(named => {
+        const name = named.getName();
+        const comments = specifierComments.get(name);
 
         return {
-          specifier: named.getName(),
+          specifier: name,
           alias: named.getAliasNode()?.getText(),
           isTypeOnly: named.isTypeOnly(),
-          leadingComment,
-          trailingComment,
+          leadingComment: comments?.leading,
+          trailingComment: comments?.trailing,
         };
       });
 
@@ -324,6 +321,86 @@ export class ImportManager {
       // This is a genuine usage of an imported symbol
       this.usedIdentifiers.add(identifierText);
     }
+  }
+
+  /**
+   * Extract comments associated with each import specifier from the full import text.
+   *
+   * This is necessary because ts-morph's getLeadingCommentRanges/getTrailingCommentRanges
+   * don't work reliably for import specifiers embedded in import lists.
+   *
+   * @param fullImportText The full text of the import declaration
+   * @param specifierNames Array of specifier names to look for
+   * @returns Map of specifier name to { leading, trailing } comments
+   */
+  private extractSpecifierComments(
+    fullImportText: string,
+    specifierNames: string[]
+  ): Map<string, { leading?: string; trailing?: string }> {
+    const result = new Map<string, { leading?: string; trailing?: string }>();
+
+    // Extract the part between { and }
+    const match = fullImportText.match(/\{([^}]+)\}/s);
+    if (!match) {
+      return result;
+    }
+
+    const importList = match[1];
+
+    // Split by commas, but we need to be careful about commas in comments
+    // Simple approach: split by lines first, then process each line
+    const lines = importList.split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === ',') {
+        continue;
+      }
+
+      // Check for leading block comment: /* comment */ specifier
+      const leadingBlockMatch = trimmed.match(/^(\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)\s*(.+)/);
+      if (leadingBlockMatch) {
+        const comment = leadingBlockMatch[1];
+        const rest = leadingBlockMatch[2];
+
+        // Extract specifier name from rest (might be "A," or "A as B," etc.)
+        const specMatch = rest.match(/^(?:type\s+)?(\w+)/);
+        if (specMatch) {
+          const specName = specMatch[1];
+          if (specifierNames.includes(specName)) {
+            const existing = result.get(specName) || {};
+            existing.leading = comment;
+            result.set(specName, existing);
+          }
+        }
+        continue;
+      }
+
+      // Check for trailing line comment: specifier // comment
+      const trailingLineMatch = trimmed.match(/^(?:type\s+)?(\w+)(?:\s+as\s+\w+)?\s*,?\s*(\/\/.*?)$/);
+      if (trailingLineMatch) {
+        const specName = trailingLineMatch[1];
+        const comment = trailingLineMatch[2];
+
+        if (specifierNames.includes(specName)) {
+          const existing = result.get(specName) || {};
+          existing.trailing = comment;
+          result.set(specName, existing);
+        }
+        continue;
+      }
+
+      // Regular specifier without comments
+      const regularMatch = trimmed.match(/^(?:type\s+)?(\w+)/);
+      if (regularMatch) {
+        const specName = regularMatch[1];
+        if (specifierNames.includes(specName) && !result.has(specName)) {
+          result.set(specName, {});
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -859,7 +936,43 @@ export class ImportManager {
         if (hasComments || (singleLine.length > threshold && imp.specifiers.length > 1)) {
           // Multiline
           const trailingComma = this.config.multiLineTrailingComma(this.document.uri) ? ',' : '';
-          const namedPart = `{${this.eol}  ${specifierStrings.join(`,${this.eol}  `)}${trailingComma}${this.eol}}`;
+
+          // When we have trailing comments, we need to place the comma BEFORE the comment
+          // e.g., "B, // end" not "B // end,"
+          const formattedSpecifiers = imp.specifiers.map((spec, index) => {
+            const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
+            const typePrefix = spec.isTypeOnly ? 'type ' : '';
+            let result = `${typePrefix}${baseSpec}`;
+
+            // In modern mode, handle comments with proper comma placement
+            if (!isLegacy) {
+              // Add leading comment before everything
+              if (spec.leadingComment) {
+                result = `${spec.leadingComment} ${result}`;
+              }
+
+              // Add comma before trailing comment (if not the last item or if trailingComma is enabled)
+              const needsComma = index < imp.specifiers.length - 1 || trailingComma;
+              if (needsComma) {
+                result = `${result},`;
+              }
+
+              // Add trailing comment after the comma
+              if (spec.trailingComment) {
+                result = `${result} ${spec.trailingComment}`;
+              }
+            } else {
+              // Legacy mode: no comments, just add comma
+              const needsComma = index < imp.specifiers.length - 1 || trailingComma;
+              if (needsComma) {
+                result = `${result},`;
+              }
+            }
+
+            return result;
+          });
+
+          const namedPart = `{${this.eol}  ${formattedSpecifiers.join(this.eol + '  ')}${this.eol}}`;
           parts.push(namedPart);
         } else {
           parts.push(singleLine);

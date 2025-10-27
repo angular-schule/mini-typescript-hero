@@ -29,7 +29,8 @@
       "Bash(git stash:*)",
       "SlashCommand(/git-quick)",
       "Read(///**)",
-      "Bash(gh run view 18709470348 --log)"
+      "Bash(gh run view 18709470348 --log)",
+      "WebFetch(domain:ts-morph.com)"
     ],
     "deny": [],
     "ask": []

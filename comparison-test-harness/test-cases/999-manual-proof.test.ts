@@ -10,6 +10,52 @@ import { strict as assert } from 'assert';
 import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 🚨🚨🚨 DEEP AUDIT REQUIRED - OLD TYPESCRIPT HERO COMMENT DELETION BUG 🚨🚨🚨
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * CRITICAL FINDINGS:
+ * The original TypeScript Hero extension (by Christoph Bühler) DELETES inline
+ * comments from import statements when organizing imports.
+ *
+ * REPOSITORY: https://github.com/buehler/typescript-hero
+ * TECHNOLOGY: Uses typescript-parser library (deprecated, 7 years old)
+ * TEST METHODOLOGY: Direct integration tests using REAL extension code
+ *
+ * PROOF TESTS BELOW (PROOF 1, PROOF 2, PROOF 3):
+ * These tests use the ACTUAL old extension code from the git submodule at:
+ * ../old-typescript-hero/
+ *
+ * The tests create REAL temporary files with VSCode's workspace.openTextDocument()
+ * and apply REAL edits with workspace.applyEdit() - NO MOCKS, NO SIMULATIONS.
+ *
+ * Each test:
+ * 1. Creates a real .ts file in the filesystem
+ * 2. Calls the old extension's REAL ImportManager class
+ * 3. Applies the REAL TextEdits it returns
+ * 4. Reads back the ACTUAL result from the file
+ *
+ * MAINTAINER SKEPTICISM:
+ * The extension maintainer does not believe TypeScript Hero has this bug.
+ * These tests exist to provide IRREFUTABLE PROOF of the behavior.
+ *
+ * AUDIT REQUEST:
+ * Please verify:
+ * ✓ Are we calling the old extension correctly?
+ * ✓ Is our test methodology sound?
+ * ✓ Are the results reproducible?
+ * ✓ Is there any configuration that would preserve comments?
+ *
+ * If these tests are wrong, the entire premise of our new extension is flawed.
+ * If these tests are correct, we have proven a critical limitation in the old extension.
+ *
+ * EXPECTED OUTCOME OF AUDIT:
+ * Either confirm this is a real bug in TypeScript Hero, OR show us where our
+ * test methodology is wrong.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
 suite('User Ground Truth Test', () => {
   test('User-discovered bug: Mixed-case specifier sorting (Component, inject, OnInit)', async () => {
     // This is the ACTUAL input that the user tested manually

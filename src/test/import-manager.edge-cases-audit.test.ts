@@ -185,10 +185,11 @@ const x = A + B + Z;
 
     // MODERN MODE: Preserve comments (golden rule: don't delete what the user wrote!)
     // The comments move with their specifiers when sorted
+    // Note: Default multiLineTrailingComma is true, so trailing comma is added
     const expected = `import {
   A,
   B, // end
-  Z // keep this
+  Z, // keep this
 } from 'lib';
 
 const x = A + B + Z;

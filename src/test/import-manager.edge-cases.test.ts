@@ -214,7 +214,7 @@ const y = A;
   // B5: Specifier comments preservation
   // ============================================================================
 
-  test('B5: Multi-line import comments partially preserved (quirk)', async () => {
+  test('B5: Multi-line import comments fully preserved (FIXED!)', async () => {
     const content = `import {
   C, // end
   A, // keep
@@ -224,11 +224,14 @@ const y = A;
 const x = A + B + C;
 `;
 
-    // ACTUAL: Trailing comments are stripped, but block comments leak outside
-    // This is a quirk - the /* mid */ B comment ends up outside the import
-    const expected = `import { A, B, C } from 'lib';
+    // FIXED: Comments are now fully preserved in modern mode!
+    // Leading and trailing comments move with their specifiers when sorted
+    const expected = `import {
+  A, // keep
+  /* mid */ B,
+  C, // end
+} from 'lib';
 
-  /* mid */ B
 const x = A + B + C;
 `;
 
@@ -240,7 +243,7 @@ const x = A + B + C;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Block comments leak outside import (known quirk)');
+      assert.strictEqual(result, expected, 'Comments are fully preserved (GOLDEN RULE!)');
     } finally {
       await deleteTempDocument(doc);
     }
