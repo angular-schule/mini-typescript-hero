@@ -16,6 +16,17 @@ import { ImportGroup } from './import-grouping';
 /**
  * Management class for the imports of a document.
  * Can organize imports (sort, group, remove unused) and generate TextEdits.
+ *
+ * 🌟 GOLDEN RULE 🌟
+ * Our job is to ORGANIZE imports, not to DELETE what the user wrote!
+ * - DO preserve comments in modern mode (user's intent matters)
+ * - DO preserve import attributes/assertions (TypeScript syntax)
+ * - DO preserve type-only modifiers (semantic meaning)
+ * - ONLY strip these in legacy mode to match old TypeScript Hero behavior
+ *
+ * The extension should NEVER delete user-written content unless:
+ * 1. It's an unused import AND removal is enabled
+ * 2. It's legacy mode trying to match old extension behavior
  */
 export class ImportManager {
   private sourceFile!: SourceFile;
@@ -116,11 +127,27 @@ export class ImportManager {
       const namedImports = importDecl.getNamedImports();
       const isTypeOnly = importDecl.isTypeOnly();
 
-      const specifiers: SymbolSpecifier[] = namedImports.map(named => ({
-        specifier: named.getName(),
-        alias: named.getAliasNode()?.getText(),
-        isTypeOnly: named.isTypeOnly(),
-      }));
+      const specifiers: SymbolSpecifier[] = namedImports.map(named => {
+        // Extract leading comments (block or line comments before the specifier)
+        const leadingComments = named.getLeadingCommentRanges();
+        const leadingComment = leadingComments.length > 0
+          ? leadingComments.map(c => c.getText()).join(' ')
+          : undefined;
+
+        // Extract trailing comments (line comments after the specifier)
+        const trailingComments = named.getTrailingCommentRanges();
+        const trailingComment = trailingComments.length > 0
+          ? trailingComments.map(c => c.getText()).join(' ')
+          : undefined;
+
+        return {
+          specifier: named.getName(),
+          alias: named.getAliasNode()?.getText(),
+          isTypeOnly: named.isTypeOnly(),
+          leadingComment,
+          trailingComment,
+        };
+      });
 
       this.imports.push(new NamedImport(
         moduleSpecifier,
@@ -463,9 +490,22 @@ export class ImportManager {
           // BUT: In legacy mode, strip type-only flag from NamedImports
           const imp = imports[0];
           if (isLegacy && imp instanceof NamedImport && imp.isTypeOnly) {
-            // Strip isTypeOnly flag and individual specifier flags
-            const specs = imp.specifiers.map(s => ({ ...s, isTypeOnly: false }));
+            // Strip isTypeOnly flag, individual specifier flags, and comments (legacy mode)
+            const specs = imp.specifiers.map(s => ({
+              ...s,
+              isTypeOnly: false,
+              leadingComment: undefined,
+              trailingComment: undefined,
+            }));
             merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false, imp.attributes));
+          } else if (isLegacy && imp instanceof NamedImport) {
+            // In legacy mode, strip comments from all named imports
+            const specs = imp.specifiers.map(s => ({
+              ...s,
+              leadingComment: undefined,
+              trailingComment: undefined,
+            }));
+            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, imp.isTypeOnly, imp.attributes));
           } else {
             merged.push(imp);
           }
@@ -482,9 +522,14 @@ export class ImportManager {
           let mergedDefault: string | undefined;
 
           for (const namedImp of namedImports) {
-            // In legacy mode, strip isTypeOnly from individual specifiers
+            // In legacy mode, strip isTypeOnly and comments from individual specifiers
             const specs = isLegacy
-              ? namedImp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
+              ? namedImp.specifiers.map(s => ({
+                  ...s,
+                  isTypeOnly: false,
+                  leadingComment: undefined,
+                  trailingComment: undefined,
+                }))
               : namedImp.specifiers;
             allSpecifiers.push(...specs);
             if (namedImp.defaultAlias && !mergedDefault) {
@@ -778,10 +823,28 @@ export class ImportManager {
 
       // Named imports
       if (imp.specifiers.length > 0) {
+        const isLegacy = this.config.legacyMode(this.document.uri);
+
+        // Check if any specifiers have comments (forces multiline in modern mode)
+        const hasComments = !isLegacy && imp.specifiers.some(s => s.leadingComment || s.trailingComment);
+
         const specifierStrings = imp.specifiers.map(spec => {
           const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
-          // Add 'type' keyword for individual type-only specifiers
-          return spec.isTypeOnly ? `type ${baseSpec}` : baseSpec;
+          const typePrefix = spec.isTypeOnly ? 'type ' : '';
+          let result = `${typePrefix}${baseSpec}`;
+
+          // In modern mode, preserve comments
+          if (!isLegacy) {
+            if (spec.leadingComment) {
+              result = `${spec.leadingComment} ${result}`;
+            }
+            if (spec.trailingComment) {
+              result = `${result} ${spec.trailingComment}`;
+            }
+          }
+          // In legacy mode, comments are stripped (old extension behavior)
+
+          return result;
         });
 
         const specifiersText = specifierStrings.join(', ');
@@ -792,7 +855,8 @@ export class ImportManager {
         const threshold = this.config.multiLineWrapThreshold(this.document.uri);
         const singleLine = `${braceOpen}${specifiersText}${braceClose}`;
 
-        if (singleLine.length > threshold && imp.specifiers.length > 1) {
+        // Force multiline if there are comments
+        if (hasComments || (singleLine.length > threshold && imp.specifiers.length > 1)) {
           // Multiline
           const trailingComma = this.config.multiLineTrailingComma(this.document.uri) ? ',' : '';
           const namedPart = `{${this.eol}  ${specifierStrings.join(`,${this.eol}  `)}${trailingComma}${this.eol}}`;

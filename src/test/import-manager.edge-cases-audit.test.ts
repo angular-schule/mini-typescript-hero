@@ -173,7 +173,7 @@ const y = Component;
   // B4: Specifier comments preservation
   // ============================================================================
 
-  test('B4: Multi-line import with inline comments (comments are stripped)', async () => {
+  test('B4: Multi-line import with inline comments preserved (modern mode)', async () => {
     const content = `import {
   Z, // keep this
   A,
@@ -183,11 +183,13 @@ const y = Component;
 const x = A + B + Z;
 `;
 
-    // ACTUAL BEHAVIOR: Both old and new extensions strip inline comments
-    // The old TypeScript Hero extension doesn't preserve inline comments in imports
-    // (Proven in comparison-test-harness/test-cases/999-manual-proof.test.ts)
-    // Note: Block comments before specifiers (/* mid */ A) cause bugs in old extension
-    const expected = `import { A, B, Z } from 'lib';
+    // MODERN MODE: Preserve comments (golden rule: don't delete what the user wrote!)
+    // The comments move with their specifiers when sorted
+    const expected = `import {
+  A,
+  B, // end
+  Z // keep this
+} from 'lib';
 
 const x = A + B + Z;
 `;
@@ -200,7 +202,39 @@ const x = A + B + Z;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Inline comments are stripped (matching old extension behavior)');
+      assert.strictEqual(result, expected, 'Comments must be preserved in modern mode');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('B4b: Inline comments stripped in legacy mode', async () => {
+    const content = `import {
+  Z, // keep this
+  A,
+  B // end
+} from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // LEGACY MODE: Strip comments to match old TypeScript Hero extension
+    // (Proven in comparison-test-harness/test-cases/999-manual-proof.test.ts)
+    const expected = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new MockImportsConfig();
+      config.setConfig('legacyMode', true);
+      const manager = new ImportManager(doc, config);
+      const edits = manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Comments must be stripped in legacy mode');
     } finally {
       await deleteTempDocument(doc);
     }

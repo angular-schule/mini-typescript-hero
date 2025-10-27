@@ -65,4 +65,6 @@ export interface SymbolSpecifier {
   specifier: string;
   alias?: string;
   isTypeOnly?: boolean;
+  leadingComment?: string;  // Block or line comment before the specifier
+  trailingComment?: string; // Line comment after the specifier
 }

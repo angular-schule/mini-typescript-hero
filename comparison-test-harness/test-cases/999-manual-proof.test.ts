@@ -37,31 +37,72 @@ const z: OnInit = null as any;
     assert.strictEqual(newResult, expected, 'New extension must produce correct output (USER GROUND TRUTH)');
   });
 
-  test('PROOF: Old extension does NOT preserve inline comments in imports', async () => {
+  test('PROOF 1: Old extension sorts imports (no comments)', async () => {
+    const input = `import { Z, A, B } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // Input has NO comments - just testing basic sorting
+    // Disable removal so we can focus on sorting behavior
+    const expected = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
+    console.log('PROOF 1 - Old extension (no comments):', JSON.stringify(oldResult));
+
+    assert.strictEqual(oldResult, expected, 'Old extension sorts imports without comments');
+  });
+
+  test('PROOF 2: Old extension strips trailing line comments', async () => {
     const input = `import {
-  Z, // keep this
-  /* mid */ A,
-  B // end
+  Z, // comment after Z
+  A,
+  B // comment after B
 } from 'lib';
 
 const x = A + B + Z;
 `;
 
-    // Testing what old extension ACTUALLY does with inline comments
-    const oldResult = await organizeImportsOld(input);
+    // Testing what old extension ACTUALLY does with trailing line comments
+    // Disable removal to focus on comment handling
+    const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
+    console.log('PROOF 2 - Old extension (trailing comments):', JSON.stringify(oldResult));
 
-    // Log the actual result so we can see what the old extension does
-    console.log('Old extension result:', JSON.stringify(oldResult));
-
-    // The old extension STRIPS inline comments, so we expect them to be gone
-    // This test exists to PROVE that the old extension doesn't preserve comments
-    const expectedWithoutComments = `import { A, B, Z } from 'lib';
+    // The old extension STRIPS trailing line comments
+    const expected = `import { A, B, Z } from 'lib';
 
 const x = A + B + Z;
 `;
 
-    // This assertion proves the old extension doesn't preserve comments
-    assert.strictEqual(oldResult, expectedWithoutComments,
-      'Old extension STRIPS inline comments (PROOF that feature is not supported)');
+    assert.strictEqual(oldResult, expected,
+      'PROOF: Old extension strips trailing line comments');
+  });
+
+  test('PROOF 3: Old extension strips leading block comments', async () => {
+    const input = `import {
+  Z,
+  /* block comment */ A,
+  B
+} from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // Testing what old extension ACTUALLY does with leading block comments
+    // Disable removal to focus on comment handling
+    const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
+    console.log('PROOF 3 - Old extension (leading block comment):', JSON.stringify(oldResult));
+
+    // The old extension STRIPS leading block comments
+    const expected = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    assert.strictEqual(oldResult, expected,
+      'PROOF: Old extension strips leading block comments');
   });
 });
