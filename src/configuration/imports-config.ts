@@ -83,10 +83,14 @@ export class ImportsConfig {
    * When true, enables ALL legacy behaviors:
    * - Within-group sorting: Always sorts by library name (ignores disableImportsSorting/organizeSortsByFirstSpecifier)
    * - Blank lines: Uses 'preserve' mode (keeps existing blank lines from source)
+   * - Merge timing: When mergeImportsFromSameModule is true, merges BEFORE removeTrailingIndex (matches old bug where './lib/index' and './lib' stay separate)
+   * - Type-only merging: Strips 'import type' keywords and allows merging type-only with value imports (old behavior)
    *
    * When false (default), uses modern best practices:
    * - Sorting: Respects all sorting configs correctly
    * - Blank lines: Exactly 1 blank line (Google/ESLint/Prettier standard)
+   * - Merge timing: Removes '/index' FIRST, then merges (so './lib/index' and './lib' DO merge)
+   * - Type-only separation: Keeps 'import type' keywords and prevents merging type-only with value imports (TS 3.8+ semantics)
    *
    * Default: false (new users get modern behavior)
    * Migrated users: Automatically set to true for 100% backward compatibility

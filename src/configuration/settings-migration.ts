@@ -110,9 +110,10 @@ async function performMigration(): Promise<number> {
   // For migrated users: Enable legacyMode for 100% backward compatibility
   if (migratedCount > 0) {
     // Simply enable legacyMode: true to replicate ALL old behaviors:
-    // - Within-group sorting bug (always sorts by library name)
-    // - Blank line preservation (keeps existing blank lines)
-    // - removeTrailingIndex applied after merging (old bug)
+    // - Within-group sorting bug (always sorts by library name, ignores disableImportsSorting/organizeSortsByFirstSpecifier)
+    // - Blank line preservation (uses 'preserve' mode, keeps existing blank lines from source)
+    // - Merge timing: When mergeImportsFromSameModule is true, merges BEFORE removeTrailingIndex (matches old bug)
+    // - Type-only merging: Strips 'import type' keywords and allows merging type-only with value imports (old behavior)
     const legacyModeInspect = newConfig.inspect('legacyMode');
     if (legacyModeInspect?.globalValue === undefined &&
         legacyModeInspect?.workspaceValue === undefined &&

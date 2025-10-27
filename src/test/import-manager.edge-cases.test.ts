@@ -163,7 +163,7 @@ const y = data;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Import with attributes stripped by ts-morph (known limitation)');
+      assert.strictEqual(result, expected, 'Import attributes must be preserved');
     } finally {
       await deleteTempDocument(doc);
     }

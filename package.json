@@ -149,7 +149,7 @@
         "miniTypescriptHero.imports.legacyMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable full legacy mode for 100% compatibility with old TypeScript Hero extension. When true: replicates ALL old behaviors (within-group sorting bug, preserve blank lines, no merging). When false: modern best practices (correct sorting, 1 blank line, always merge). Migrated users get 'true' automatically.",
+          "description": "Enable full legacy mode for 100% compatibility with old TypeScript Hero extension. When true: replicates ALL old behaviors (within-group sorting bug, preserve blank lines, merge-before-removeTrailingIndex timing, type-only merge). When false: modern best practices (correct sorting, 1 blank line, correct merge timing, type-only separation). Migrated users get 'true' automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.blankLinesAfterImports": {
