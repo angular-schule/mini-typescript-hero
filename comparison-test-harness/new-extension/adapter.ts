@@ -10,42 +10,11 @@
  * - Reference real code via relative paths (no copying!)
  */
 
-import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit, commands } from 'vscode';
+import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit } from 'vscode';
 import { ImportManager } from '../../src/imports/import-manager';
 import { ImportsConfig } from '../../src/configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../src/imports/import-grouping';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-
-/**
- * Create a REAL temporary file and open it as a TextDocument
- * This allows us to use workspace.applyEdit() which requires real files
- */
-async function createTempDocument(content: string): Promise<TextDocument> {
-  const tempDir = os.tmpdir();
-  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.ts`);
-  fs.writeFileSync(tempFile, content, 'utf-8');
-
-  const doc = await workspace.openTextDocument(Uri.file(tempFile));
-  return doc;
-}
-
-/**
- * Clean up temporary file after test completes
- * Closes the document in VSCode AND deletes the file to prevent listener leaks
- */
-async function deleteTempDocument(doc: TextDocument): Promise<void> {
-  try {
-    // Close the document in VSCode to release listeners
-    await commands.executeCommand('workbench.action.closeAllEditors');
-
-    // Delete the physical file
-    fs.unlinkSync(doc.uri.fsPath);
-  } catch (e) {
-    // Ignore errors - best effort cleanup
-  }
-}
+import { createTempDocument, deleteTempDocument } from '../../src/test/test-helpers';
 
 /**
  * Mock OutputChannel (same as in existing tests)
