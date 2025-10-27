@@ -182,8 +182,6 @@ export class DemoComponent implements OnInit {
       2,
       'Should have exactly 2 blank lines after imports in legacy mode'
     );
-
-    console.log('✅ Demo file test PASSED - both extensions produce identical, expected output');
   });
 
   test('129. Demo file - NEW extension with modern defaults (not legacy)', async () => {
@@ -309,8 +307,6 @@ export class DemoComponent implements OnInit {
       1,
       'Should have exactly 1 blank line after imports with modern defaults'
     );
-
-    console.log('✅ Demo file with modern defaults PASSED - 1 blank line as expected');
   });
 
 });

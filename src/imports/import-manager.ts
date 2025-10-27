@@ -733,15 +733,29 @@ export class ImportManager {
     let importSectionEndLine = lastImport.getEndLineNumber() - 1;
 
     // Extract comments between imports (old TypeScript Hero moves them after imports)
+    // Only extract standalone comment lines that are BETWEEN import declarations,
+    // not lines that are WITHIN a multi-line import declaration
     const commentsBetweenImports: string[] = [];
     for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
-      const lineText = this.document.lineAt(i).text;
-      const trimmedText = lineText.trim();
-      // Check if line is a comment (and not an import statement)
-      // Check the trimmed version but preserve the original with indentation
-      if ((trimmedText.startsWith('//') || trimmedText.startsWith('/*') || trimmedText.startsWith('*')) &&
-          !trimmedText.includes('import ')) {
-        commentsBetweenImports.push(lineText);
+      const lineNumber = i + 1; // Convert to 1-indexed for comparison with ts-morph
+
+      // Check if this line is within any import declaration
+      const isWithinImport = allImports.some(imp => {
+        const start = imp.getStartLineNumber();
+        const end = imp.getEndLineNumber();
+        return lineNumber >= start && lineNumber <= end;
+      });
+
+      // Only check for standalone comments if the line is NOT within an import
+      if (!isWithinImport) {
+        const lineText = this.document.lineAt(i).text;
+        const trimmedText = lineText.trim();
+        const isStandaloneComment = (trimmedText.startsWith('//') || trimmedText.startsWith('/*') || trimmedText.startsWith('*')) &&
+                                     !trimmedText.includes('import ');
+
+        if (isStandaloneComment) {
+          commentsBetweenImports.push(lineText);
+        }
       }
     }
 

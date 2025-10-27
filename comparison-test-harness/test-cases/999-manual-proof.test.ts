@@ -97,7 +97,6 @@ const x = A + B + Z;
 `;
 
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
-    console.log('PROOF 1 - Old extension (no comments):', JSON.stringify(oldResult));
 
     assert.strictEqual(oldResult, expected, 'Old extension sorts imports without comments');
   });
@@ -115,7 +114,6 @@ const x = A + B + Z;
     // Testing what old extension ACTUALLY does with trailing line comments
     // Disable removal to focus on comment handling
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
-    console.log('PROOF 2 - Old extension (trailing comments):', JSON.stringify(oldResult));
 
     // The old extension STRIPS trailing line comments
     const expected = `import { A, B, Z } from 'lib';
@@ -140,7 +138,6 @@ const x = A + B + Z;
     // Testing what old extension ACTUALLY does with leading block comments
     // Disable removal to focus on comment handling
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
-    console.log('PROOF 3 - Old extension (leading block comment):', JSON.stringify(oldResult));
 
     // The old extension STRIPS leading block comments
     const expected = `import { A, B, Z } from 'lib';
