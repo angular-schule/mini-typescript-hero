@@ -111,9 +111,7 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to preserve 100% of the original TypeScript Hero behavior (including blank line handling, within-group sorting, and no import merging). New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
-
-**Import Merging:** By default, `mergeImportsFromSameModule: true` combines duplicate imports from the same module (modern best practice). If you prefer to keep imports separate, set this to `false` in your configuration
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to preserve 100% of the original TypeScript Hero behavior (blank line preservation, within-group sorting bug, and removeTrailingIndex timing). New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
 
 ### No Old Settings?
 
@@ -128,7 +126,7 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
   // Automatically organize imports when saving a file
   "miniTypescriptHero.imports.organizeOnSave": false,
 
-  // Blank lines after imports: "one" (default), "two", "preserve", or "legacy"
+  // Blank lines after imports: "one" (default), "two", or "preserve"
   "miniTypescriptHero.imports.blankLinesAfterImports": "one",
 
   // Use single quotes (') or double quotes (")
@@ -152,7 +150,8 @@ Control spacing after imports with `blankLinesAfterImports`:
 - **`"one"`** (default) — Always exactly 1 blank line (ESLint standard) **RECOMMENDED**
 - **`"two"`** — Always exactly 2 blank lines (for teams preferring more visual separation)
 - **`"preserve"`** — Keep existing blank lines (0, 1, 2, 3+) as they are
-- **`"legacy"`** — Match original TypeScript Hero behavior (for migration only)
+
+**Note:** This setting is ignored when `legacyMode: true` (which is automatically set for migrated users). Legacy mode preserves blank lines to match original TypeScript Hero behavior.
 
 📖 **Detailed documentation:** [README-how-we-handle-blank-lines.md](README-how-we-handle-blank-lines.md)
 

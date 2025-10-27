@@ -237,8 +237,35 @@ suite('ImportOrganizer Tests', () => {
     });
   });
 
-  // Activation tests removed - VSCode only allows commands to be registered once per test session
-  // The organizer is already created in the suite setup() above and works for all other tests
+  suite('Command Registration', () => {
+    test('should only register miniTypescriptHero command (no alias)', () => {
+      // Contract test: Verify we DON'T hijack the old typescriptHero command
+      const testLogger = new MockOutputChannel();
+      const testConfig = new MockImportsConfig();
+      const testOrganizer = new ImportOrganizer(testConfig, testLogger);
+
+      // The actual check: Read the activation code to verify it only registers mini command
+      const activateCode = testOrganizer.activate.toString();
+
+      // Should contain miniTypescriptHero command
+      assert.ok(
+        activateCode.includes('miniTypescriptHero.imports.organize'),
+        'Should register miniTypescriptHero.imports.organize command'
+      );
+
+      // Should NOT contain typescriptHero command (no alias!)
+      assert.ok(
+        !activateCode.includes('typescriptHero.imports.organize'),
+        'Should NOT register typescriptHero.imports.organize alias (be polite!)'
+      );
+
+      testOrganizer.dispose();
+    });
+  });
+
+  // Note: Full activation tests cannot be run because VSCode only allows commands
+  // to be registered once per test session. The organizer is already created in
+  // the suite setup() above and works for all other tests.
 
   suite('Document Organization', () => {
     test('should return empty edits for unsupported language', async () => {

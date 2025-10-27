@@ -112,7 +112,7 @@ async function performMigration(): Promise<number> {
     // Simply enable legacyMode: true to replicate ALL old behaviors:
     // - Within-group sorting bug (always sorts by library name)
     // - Blank line preservation (keeps existing blank lines)
-    // - No import merging (coupled with removal in old extension)
+    // - removeTrailingIndex applied after merging (old bug)
     const legacyModeInspect = newConfig.inspect('legacyMode');
     if (legacyModeInspect?.globalValue === undefined &&
         legacyModeInspect?.workspaceValue === undefined &&
