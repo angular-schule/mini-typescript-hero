@@ -10,7 +10,7 @@
  * - Reference real code via relative paths (no copying!)
  */
 
-import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit } from 'vscode';
+import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit, commands } from 'vscode';
 import { ImportManager } from '../../src/imports/import-manager';
 import { ImportsConfig } from '../../src/configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../src/imports/import-grouping';
@@ -33,12 +33,17 @@ async function createTempDocument(content: string): Promise<TextDocument> {
 
 /**
  * Clean up temporary file after test completes
+ * Closes the document in VSCode AND deletes the file to prevent listener leaks
  */
 async function deleteTempDocument(doc: TextDocument): Promise<void> {
   try {
+    // Close the document in VSCode to release listeners
+    await commands.executeCommand('workbench.action.closeAllEditors');
+
+    // Delete the physical file
     fs.unlinkSync(doc.uri.fsPath);
   } catch (e) {
-    // Ignore errors (file might not exist)
+    // Ignore errors - best effort cleanup
   }
 }
 

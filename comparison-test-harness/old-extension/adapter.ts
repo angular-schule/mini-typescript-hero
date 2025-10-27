@@ -12,7 +12,7 @@
 
 import 'reflect-metadata';
 import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions, MultiLineImportRule } from 'typescript-parser';
-import { Uri, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit } from 'vscode';
+import { Uri, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit, commands } from 'vscode';
 import { ImportManager } from '../old-typescript-hero/src/imports/import-manager';
 import { Configuration } from '../old-typescript-hero/src/configuration';
 import { ImportsConfig } from '../old-typescript-hero/src/configuration/imports-config';
@@ -39,12 +39,17 @@ async function createTempDocument(content: string): Promise<TextDocument> {
 
 /**
  * Clean up temporary file after test completes
+ * Closes the document in VSCode AND deletes the file to prevent listener leaks
  */
 async function deleteTempDocument(doc: TextDocument): Promise<void> {
   try {
+    // Close the document in VSCode to release listeners
+    await commands.executeCommand('workbench.action.closeAllEditors');
+
+    // Delete the physical file
     fs.unlinkSync(doc.uri.fsPath);
   } catch (e) {
-    // Ignore errors (file might not exist)
+    // Ignore errors - best effort cleanup
   }
 }
 

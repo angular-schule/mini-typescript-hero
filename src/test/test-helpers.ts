@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit } from 'vscode';
+import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit, commands } from 'vscode';
 
 /**
  * Create a REAL temporary file and open it as a TextDocument
@@ -33,14 +33,22 @@ export async function createTempDocument(content: string, extension: string = 't
  * Clean up temporary file after test completes
  *
  * Always call this in a finally block to ensure cleanup even if test fails.
+ * This properly closes the document in VSCode AND deletes the file to prevent listener leaks.
  *
  * @param doc - The TextDocument created by createTempDocument()
  */
 export async function deleteTempDocument(doc: TextDocument): Promise<void> {
   try {
+    // Close the document in VSCode to release listeners
+    // Use workbench.action.closeAllEditors to close all open editors/documents
+    // This is more reliable than trying to close individual documents
+    await commands.executeCommand('workbench.action.closeAllEditors');
+
+    // Delete the physical file
     fs.unlinkSync(doc.uri.fsPath);
   } catch (e) {
-    // Ignore errors (file might not exist)
+    // Ignore errors - best effort cleanup
+    // Document might already be closed or file might not exist
   }
 }
 
