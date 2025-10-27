@@ -17,23 +17,31 @@ suite('Additional Parity Tests (Second Audit)', () => {
   // A1: Side-effect + named from same module
   // ============================================================================
 
-  test.skip('A1: Side-effect + named from same module - OLD EXTENSION CRASHES', async () => {
+  test('A1: Side-effect + named from same module - OLD EXTENSION CRASHES, NEW HANDLES IT', async () => {
     const input = `import 'zone.js';
 import { a } from 'zone.js';
 
 const x = a;
 `;
 
-    // PROOF: Old extension CRASHES with:
+    // OLD extension CRASHES with:
     // TypeError: libraryAlreadyImported.specifiers is not iterable
     // at ImportManager.organizeImports (old-typescript-hero/src/imports/import-manager.js:134:59)
     //
     // This happens when it tries to merge a side-effect import with a named import
-    // from the same module.
-    //
-    // NEW extension handles this correctly - keeps them as separate imports with
-    // blank line separator (Plains group vs Workspace group).
+    // from the same module - it's a BUG in the old extension.
 
+    // Test old extension - it SHOULD crash
+    let oldCrashed = false;
+    try {
+      await organizeImportsOld(input, { legacyMode: true });
+    } catch (error: any) {
+      oldCrashed = true;
+      assert.ok(error.message.includes('is not iterable'), 'Old extension crashes with expected error');
+    }
+    assert.ok(oldCrashed, 'Old extension MUST crash on this input (known bug)');
+
+    // NEW extension handles this correctly - keeps them as separate imports
     const expectedNew = `import 'zone.js';
 
 import { a } from 'zone.js';
@@ -41,7 +49,6 @@ import { a } from 'zone.js';
 const x = a;
 `;
 
-    // Only test new extension (old crashes - VERIFIED by running test without .skip)
     const newResult = await organizeImportsNew(input, { legacyMode: true });
     assert.strictEqual(newResult, expectedNew, 'New extension handles side-effect + named imports correctly');
   });
@@ -285,7 +292,7 @@ const z = M;
   // A7: Re-exports parity
   // ============================================================================
 
-  test.skip('A7a: Re-exports with export { X } from - NEW EXTENSION LIMITATION', async () => {
+  test('A7a: Re-exports with export { X } from', async () => {
     const input = `import { A } from './a';
 export { X } from './m';
 import { B } from './b';
@@ -294,8 +301,8 @@ const foo = A;
 const bar = B;
 `;
 
-    // OLD extension: Moves re-exports AFTER all imports
-    const expectedOld = `import { A } from './a';
+    // Expected: Re-exports are moved AFTER all imports
+    const expected = `import { A } from './a';
 import { B } from './b';
 
 export { X } from './m';
@@ -303,24 +310,14 @@ const foo = A;
 const bar = B;
 `;
 
-    // NEW extension: Currently REMOVES re-exports (BUG - needs fixing)
-    // This is a limitation of ts-morph-based approach
-    // TODO: Fix this in future version
-    const expectedNew = `import { A } from './a';
-import { B } from './b';
-
-const foo = A;
-const bar = B;
-`;
-
     const oldResult = await organizeImportsOld(input, { legacyMode: true });
     const newResult = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult, expectedOld, 'Old extension moves re-exports after imports');
-    assert.strictEqual(newResult, expectedNew, 'New extension removes re-exports (LIMITATION)');
+    assert.strictEqual(oldResult, expected, 'Old extension preserves re-exports after imports');
+    assert.strictEqual(newResult, expected, 'New extension preserves re-exports after imports');
   });
 
-  test.skip('A7b: Re-exports with export * as ns from - NEW EXTENSION LIMITATION', async () => {
+  test('A7b: Re-exports with export * as ns from', async () => {
     const input = `import { A } from './a';
 export * as utils from './utils';
 import { B } from './b';
@@ -329,8 +326,8 @@ const foo = A;
 const bar = B;
 `;
 
-    // OLD extension: Moves re-exports AFTER all imports
-    const expectedOld = `import { A } from './a';
+    // Expected: Namespace re-exports are moved AFTER all imports
+    const expected = `import { A } from './a';
 import { B } from './b';
 
 export * as utils from './utils';
@@ -338,20 +335,11 @@ const foo = A;
 const bar = B;
 `;
 
-    // NEW extension: Currently REMOVES namespace re-exports (BUG - needs fixing)
-    // TODO: Fix this in future version
-    const expectedNew = `import { A } from './a';
-import { B } from './b';
-
-const foo = A;
-const bar = B;
-`;
-
     const oldResult = await organizeImportsOld(input, { legacyMode: true });
     const newResult = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult, expectedOld, 'Old extension moves namespace re-exports after imports');
-    assert.strictEqual(newResult, expectedNew, 'New extension removes namespace re-exports (LIMITATION)');
+    assert.strictEqual(oldResult, expected, 'Old extension moves namespace re-exports after imports');
+    assert.strictEqual(newResult, expected, 'New extension moves namespace re-exports after imports');
   });
 
   // ============================================================================
@@ -402,10 +390,10 @@ const x: A = B;
   // A9: CRLF end-of-line parity
   // ============================================================================
 
-  test('A9: CRLF line endings preserved by both extensions', async () => {
+  test('A9: CRLF line endings preserved', async () => {
     const input = `import { Z } from './z';\r\nimport { A } from './a';\r\n\r\nconst x = A;\r\nconst y = Z;\r\n`;
 
-    // Expected: Both extensions preserve CRLF
+    // Expected: CRLF line endings are preserved
     const expected = `import { A } from './a';\r\nimport { Z } from './z';\r\n\r\nconst x = A;\r\nconst y = Z;\r\n`;
 
     const oldResult = await organizeImportsOld(input, { legacyMode: true });

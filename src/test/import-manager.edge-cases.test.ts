@@ -756,9 +756,10 @@ import { Y } from './m';
 const foo = Y;
 `;
 
-    const expected = `export { X } from './m';
-import { Y } from './m';
+    // Expected: Re-exports are moved AFTER imports (matching old TypeScript Hero behavior)
+    const expected = `import { Y } from './m';
 
+export { X } from './m';
 const foo = Y;
 `;
 
@@ -770,7 +771,7 @@ const foo = Y;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Re-exports and imports from same module must not merge');
+      assert.strictEqual(result, expected, 'Re-exports moved after imports, not merged with imports');
     } finally {
       await deleteTempDocument(doc);
     }

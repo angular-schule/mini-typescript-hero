@@ -4124,3 +4124,101 @@ Total:                    370 tests, 367 passing, 0 warnings
 
 **Thanks to user for insisting on finding the root cause instead of hiding the problem!**
 
+
+---
+
+## Session: 2025-10-27 - Re-export Preservation Implementation & Test Cleanup
+
+### Completed Tasks ✅
+
+1. **Implemented Re-export Preservation (A7a & A7b)**
+   - Added `reExports: string[]` field to ImportManager class to track re-export statements
+   - Modified `extractImports()` to capture both regular re-exports (`export { X } from './m'`) and namespace re-exports (`export * as utils from './utils'`)
+   - Updated `generateTextEdits()` range calculation to include export declarations in replacement range
+   - Appended re-exports after imports in output generation (matching old TypeScript Hero behavior)
+   - Both A7a and A7b comparison tests now passing
+
+2. **Fixed A1 Test - Old Extension Crash Handling**
+   - Changed from `.skip` to active test that catches the old extension's crash
+   - Old extension crashes with `TypeError: libraryAlreadyImported.specifiers is not iterable` when mixing side-effect and named imports from same module
+   - Test now validates the crash occurs AND that new extension handles it correctly
+   - New extension keeps side-effect and named imports as separate statements
+
+3. **Fixed B19 Test - Incorrect Expected Output**
+   - Test had wrong expectations (expected re-exports to stay in place)
+   - Updated to match actual old TypeScript Hero behavior: re-exports moved AFTER imports
+   - Now consistent with comparison tests A7a/A7b
+
+4. **Cleaned Up Test Wording**
+   - Removed redundant "both extensions" phrasing from test names and comments
+   - Updated A7a, A7b, A9 tests for cleaner descriptions
+   - Comparison tests inherently prove both extensions work - no need to state explicitly
+
+### Files Modified
+
+1. **`src/imports/import-manager.ts`**
+   - Added `private reExports: string[] = []` field (line 23)
+   - Added re-export extraction in `extractImports()` (lines 127-138)
+   - Updated `generateTextEdits()` to include export declarations in range (lines 550-554)
+   - Appended re-exports after imports in output generation (lines 687-691)
+
+2. **`comparison-test-harness/test-cases/10-additional-parity.test.ts`**
+   - Fixed A1 test: Changed from `.skip` to active test with try/catch for crash validation
+   - Updated A7a test: Removed "both extensions preserve them" wording, updated to expect re-exports after imports
+   - Updated A7b test: Removed "both extensions preserve them" wording, updated to expect namespace re-exports after imports
+   - Updated A9 test: Removed "both extensions" from title
+
+3. **`src/test/import-manager.edge-cases.test.ts`**
+   - Fixed B19 test expected output: Re-exports now correctly expected AFTER imports (not before)
+   - Updated assertion message to clarify behavior
+
+### Test Results
+
+- **Main extension tests**: 226 passing ✅
+- **Comparison harness tests**: 147 passing ✅
+- **Total**: 373 tests passing
+- **Skipped tests**: 0 (all fixed!)
+- **Known limitations**: 0 (all resolved!)
+
+### Technical Decisions
+
+1. **Re-export Placement**: Re-exports are moved AFTER all imports (matching old TypeScript Hero behavior)
+   - This applies to both `export { X } from './m'` and `export * as ns from './m'`
+   - Re-exports from the same module as imports are NOT merged with imports
+
+2. **Range Calculation**: Export declarations with module specifiers are included in the import section range
+   - Ensures re-exports mixed with imports are properly removed from original position
+   - Re-exports are then re-added after the organized imports
+
+3. **Test Pattern Consistency**: All comparison tests follow the mandatory pattern of validating against explicit expected output (never just comparing two results without validation)
+
+### Key Learnings
+
+1. **User Feedback Pattern**: User consistently rejects shortcuts/workarounds and demands proper fixes:
+   - "never hide errors like this!" (rejecting warning suppression)
+   - "know limitations? we have no known limitations!"
+   - "we fix everything and make the extension perfect!"
+
+2. **Re-export Behavior**: Old TypeScript Hero moves re-exports AFTER imports, not in-place
+   - Initially unclear from test artifact naming
+   - Confirmed by running actual old extension in comparison tests
+
+3. **Test Wording**: Saying "both extensions" in comparison tests is redundant
+   - ALL comparison tests prove both extensions work correctly
+   - More concise wording is better
+
+### Next Steps
+
+✅ All planned work completed for this session!
+
+**Future Considerations**:
+- Monitor for any edge cases with re-exports in real-world usage
+- Consider whether re-exports should be sorted among themselves (currently preserved in order found)
+
+### Session Notes
+
+- Started from previous session about listener leak warnings (already fixed)
+- User requested fixing all skipped tests and "known limitations"
+- Successfully implemented re-export preservation matching old extension behavior
+- Zero test failures, zero skipped tests, zero known limitations remaining
+

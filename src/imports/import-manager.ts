@@ -20,6 +20,7 @@ import { ImportGroup } from './import-grouping';
 export class ImportManager {
   private sourceFile!: SourceFile;
   private imports: Import[] = [];
+  private reExports: string[] = []; // Store re-export statements to preserve them
   private usedIdentifiers: Set<string> = new Set();
   private readonly eol: string;
 
@@ -120,6 +121,19 @@ export class ImportManager {
             ));
           }
         }
+      }
+    }
+
+    // Extract re-export statements (export { X } from './m' or export * as ns from './m')
+    // These should be preserved and placed AFTER imports
+    const exportDeclarations = this.sourceFile.getExportDeclarations();
+    for (const exportDecl of exportDeclarations) {
+      // Only capture re-exports (those with moduleSpecifier)
+      // export { X } without 'from' is a local export, not a re-export
+      const moduleSpecifier = exportDecl.getModuleSpecifier();
+      if (moduleSpecifier) {
+        // Preserve the full re-export statement
+        this.reExports.push(exportDecl.getText());
       }
     }
   }
@@ -533,7 +547,11 @@ export class ImportManager {
     const importEquals = this.sourceFile.getStatements()
       .filter(stmt => Node.isImportEqualsDeclaration(stmt));
 
-    const allImports = [...importDeclarations, ...importEquals as any[]];
+    // Also include re-export declarations in the range (they'll be moved after imports)
+    const exportDeclarations = this.sourceFile.getExportDeclarations()
+      .filter(exportDecl => exportDecl.getModuleSpecifier() !== undefined);
+
+    const allImports = [...importDeclarations, ...importEquals as any[], ...exportDeclarations as any[]];
 
     if (allImports.length === 0) {
       return edits;
@@ -667,6 +685,12 @@ export class ImportManager {
       // Add comments that were between imports (move them after imports)
       if (commentsBetweenImports.length > 0) {
         importText += commentsBetweenImports.join(this.eol);
+        importText += this.eol;
+      }
+
+      // Add re-export statements after imports (preserves export { X } from './m')
+      if (this.reExports.length > 0) {
+        importText += this.reExports.join(this.eol);
         importText += this.eol;
       }
 
