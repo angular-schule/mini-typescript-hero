@@ -361,18 +361,18 @@ import { A } from './a';
 export class Test {}
 ```
 
-**Mode `"legacy"`:**
-See test matrix for exact behavior (complex formula based on blanks before and after).
+**Legacy Mode (`legacyMode: true`):**
+Uses `'preserve'` behavior automatically. See test matrix for exact behavior (complex formula based on blanks before and after).
 
 ### Migration Strategy
 
 **For migrated users** (detected by settings migration):
-- Auto-set `blankLinesAfterImports` to `"legacy"`
-- Maintains exact old behavior
-- Can manually change to `"one"` anytime
+- Auto-set `legacyMode: true`
+- Maintains exact old behavior (uses `'preserve'` mode for blank lines)
+- Can manually change to `legacyMode: false` and `blankLinesAfterImports: "one"` anytime
 
 **For new users:**
-- Default `"one"` (industry standard)
+- Default `legacyMode: false` with `blankLinesAfterImports: "one"` (industry standard)
 - Clean, consistent, predictable
 
 ---
