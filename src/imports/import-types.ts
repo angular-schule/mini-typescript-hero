@@ -9,13 +9,17 @@
  */
 export interface Import {
   libraryName: string;
+  attributes?: string; // Import attributes/assertions (e.g., "assert { type: 'json' }")
 }
 
 /**
  * String-only import (e.g., import 'reflect-metadata')
  */
 export class StringImport implements Import {
-  constructor(public readonly libraryName: string) {}
+  constructor(
+    public readonly libraryName: string,
+    public readonly attributes?: string,
+  ) {}
 }
 
 /**
@@ -27,6 +31,7 @@ export class NamedImport implements Import {
     public readonly specifiers: SymbolSpecifier[] = [],
     public readonly defaultAlias?: string,
     public readonly isTypeOnly: boolean = false,
+    public readonly attributes?: string,
   ) {}
 }
 
@@ -37,6 +42,8 @@ export class NamespaceImport implements Import {
   constructor(
     public readonly libraryName: string,
     public readonly alias: string,
+    public readonly isTypeOnly: boolean = false,
+    public readonly attributes?: string,
   ) {}
 }
 
@@ -47,6 +54,7 @@ export class ExternalModuleImport implements Import {
   constructor(
     public readonly libraryName: string,
     public readonly alias: string,
+    public readonly attributes?: string,
   ) {}
 }
 

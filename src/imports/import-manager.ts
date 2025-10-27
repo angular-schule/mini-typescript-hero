@@ -58,6 +58,26 @@ export class ImportManager {
   }
 
   /**
+   * Extract import attributes/assertions from an import declaration.
+   * Returns the raw text of the attributes (e.g., "assert { type: 'json' }")
+   */
+  private extractImportAttributes(importDecl: any): string | undefined {
+    try {
+      // Get the full text of the import declaration
+      const fullText = importDecl.getText();
+
+      // Extract attributes/assertions using regex
+      // Match either "assert { ... }" or "with { ... }"
+      const attributesMatch = fullText.match(/(assert|with)\s*\{[^}]+\}/);
+
+      return attributesMatch ? attributesMatch[0] : undefined;
+    } catch (error) {
+      // If extraction fails, return undefined
+      return undefined;
+    }
+  }
+
+  /**
    * Extract all imports from the source file.
    */
   private extractImports(): void {
@@ -66,21 +86,27 @@ export class ImportManager {
     for (const importDecl of importDeclarations) {
       const moduleSpecifier = importDecl.getModuleSpecifierValue();
 
+      // Extract import attributes/assertions (e.g., assert { type: 'json' } or with { type: 'json' })
+      const attributes = this.extractImportAttributes(importDecl);
+
       // String-only import (e.g., import 'reflect-metadata')
       // Must check for ABSENCE of import clause, not just empty arrays
       // import {} from 'lib' has a named imports clause (even though empty)
       // import 'lib' has NO import clause
       if (!importDecl.getImportClause()) {
-        this.imports.push(new StringImport(moduleSpecifier));
+        this.imports.push(new StringImport(moduleSpecifier, attributes));
         continue;
       }
 
       // Namespace import (e.g., import * as foo from 'lib')
       const namespaceImport = importDecl.getNamespaceImport();
       if (namespaceImport) {
+        const isTypeOnly = importDecl.isTypeOnly();
         this.imports.push(new NamespaceImport(
           moduleSpecifier,
           namespaceImport.getText(),
+          isTypeOnly,
+          attributes,
         ));
         continue;
       }
@@ -101,6 +127,7 @@ export class ImportManager {
         specifiers,
         defaultImport?.getText(),
         isTypeOnly,
+        attributes,
       ));
     }
 
@@ -115,9 +142,11 @@ export class ImportManager {
           if (expression) {
             // Remove quotes from require('module-name')
             const moduleSpecifier = expression.getText().slice(1, -1);
+            // Note: ExternalModuleImport (require syntax) doesn't support attributes
             this.imports.push(new ExternalModuleImport(
               moduleSpecifier,
-              stmt.getName()
+              stmt.getName(),
+              undefined  // No attributes for require() syntax
             ));
           }
         }
@@ -283,13 +312,13 @@ export class ImportManager {
 
       // Create new import object instead of mutating readonly property
       if (imp instanceof NamedImport) {
-        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias, imp.isTypeOnly);
+        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
       } else if (imp instanceof NamespaceImport) {
-        return new NamespaceImport(newLibraryName, imp.alias);
+        return new NamespaceImport(newLibraryName, imp.alias, imp.isTypeOnly, imp.attributes);
       } else if (imp instanceof ExternalModuleImport) {
-        return new ExternalModuleImport(newLibraryName, imp.alias);
+        return new ExternalModuleImport(newLibraryName, imp.alias, imp.attributes);
       } else if (imp instanceof StringImport) {
-        return new StringImport(newLibraryName);
+        return new StringImport(newLibraryName, imp.attributes);
       }
       return imp;
     });
@@ -311,7 +340,7 @@ export class ImportManager {
         keep = this.imports.map(imp => {
           if (imp instanceof NamedImport && imp.specifiers.length > 0) {
             const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly);
+            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
           }
           return imp;
         });
@@ -326,7 +355,7 @@ export class ImportManager {
           // Still need to sort specifiers for NamedImport to maintain consistent formatting
           if (imp instanceof NamedImport && imp.specifiers.length > 0) {
             const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly));
+            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes));
           } else {
             keep.push(imp);
           }
@@ -370,6 +399,7 @@ export class ImportManager {
               usedSpecifiers,
               keepDefault ? imp.defaultAlias : undefined,
               imp.isTypeOnly,
+              imp.attributes,
             ));
           }
           // else: Remove the import entirely (no used specifiers or default)
@@ -435,7 +465,7 @@ export class ImportManager {
           if (isLegacy && imp instanceof NamedImport && imp.isTypeOnly) {
             // Strip isTypeOnly flag and individual specifier flags
             const specs = imp.specifiers.map(s => ({ ...s, isTypeOnly: false }));
-            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false));
+            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false, imp.attributes));
           } else {
             merged.push(imp);
           }
@@ -483,6 +513,7 @@ export class ImportManager {
             finalSpecifiers,
             mergedDefault,
             isLegacy ? false : namedImports[0].isTypeOnly, // Legacy: strip type-only
+            namedImports[0].attributes, // Preserve attributes from first import
           );
         }
 
@@ -613,6 +644,7 @@ export class ImportManager {
 
     // Calculate how many blank lines to insert after imports based on mode
     const hasCodeAfter = scanLine < this.document.lineCount;
+    // Only add blank lines if there's code after the imports
     const finalBlankLinesAfter = hasCodeAfter ? this.calculateBlankLinesAfter(
       existingBlankLinesAfter,
       blankLinesBefore,
@@ -719,17 +751,21 @@ export class ImportManager {
     const quote = this.config.stringQuoteStyle(this.document.uri);
     const semi = this.config.insertSemicolons(this.document.uri) ? ';' : '';
     const spaceInBraces = this.config.insertSpaceBeforeAndAfterImportBraces(this.document.uri);
+    const attrs = imp.attributes ? ` ${imp.attributes}` : '';
 
     if (imp instanceof StringImport) {
-      return `import ${quote}${imp.libraryName}${quote}${semi}`;
+      return `import ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 
     if (imp instanceof NamespaceImport) {
-      return `import * as ${imp.alias} from ${quote}${imp.libraryName}${quote}${semi}`;
+      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
+      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
+      const typeKeyword = useTypeKeyword ? 'type ' : '';
+      return `import ${typeKeyword}* as ${imp.alias} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 
     if (imp instanceof ExternalModuleImport) {
-      return `import ${imp.alias} = require(${quote}${imp.libraryName}${quote})${semi}`;
+      return `import ${imp.alias} = require(${quote}${imp.libraryName}${quote})${attrs}${semi}`;
     }
 
     if (imp instanceof NamedImport) {
@@ -768,7 +804,7 @@ export class ImportManager {
 
       // Add 'type' keyword for type-only imports (TS 3.8+)
       const typeKeyword = imp.isTypeOnly ? 'type ' : '';
-      return `import ${typeKeyword}${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${semi}`;
+      return `import ${typeKeyword}${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 
     return '';

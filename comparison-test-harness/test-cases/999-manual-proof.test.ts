@@ -36,4 +36,32 @@ const z: OnInit = null as any;
     assert.strictEqual(oldResult, expected, 'Old extension must produce correct output (USER GROUND TRUTH)');
     assert.strictEqual(newResult, expected, 'New extension must produce correct output (USER GROUND TRUTH)');
   });
+
+  test('PROOF: Old extension does NOT preserve inline comments in imports', async () => {
+    const input = `import {
+  Z, // keep this
+  /* mid */ A,
+  B // end
+} from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // Testing what old extension ACTUALLY does with inline comments
+    const oldResult = await organizeImportsOld(input);
+
+    // Log the actual result so we can see what the old extension does
+    console.log('Old extension result:', JSON.stringify(oldResult));
+
+    // The old extension STRIPS inline comments, so we expect them to be gone
+    // This test exists to PROVE that the old extension doesn't preserve comments
+    const expectedWithoutComments = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // This assertion proves the old extension doesn't preserve comments
+    assert.strictEqual(oldResult, expectedWithoutComments,
+      'Old extension STRIPS inline comments (PROOF that feature is not supported)');
+  });
 });

@@ -13,9 +13,25 @@
  */
 
 import * as assert from 'assert';
+import { Uri } from 'vscode';
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
 import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
+
+/**
+ * Mock configuration for testing.
+ */
+class MockImportsConfig extends ImportsConfig {
+  private mockConfig: Map<string, any> = new Map();
+
+  setConfig(key: string, value: any): void {
+    this.mockConfig.set(key, value);
+  }
+
+  override legacyMode(_resource: Uri): boolean {
+    return this.mockConfig.get('legacyMode') ?? false;
+  }
+}
 
 suite('ImportManager - Edge Cases (Second Audit - Task B)', () => {
 
@@ -23,7 +39,7 @@ suite('ImportManager - Edge Cases (Second Audit - Task B)', () => {
   // B1: Import assertions and attributes
   // ============================================================================
 
-  test('B1: Import assertions stripped (ts-morph limitation)', async () => {
+  test('B1: Import assertions preserved', async () => {
     const content = `import data from './data.json' assert { type: 'json' };
 import { B } from './b';
 import { A } from './a';
@@ -33,11 +49,10 @@ const y = B;
 const z = data;
 `;
 
-    // ACTUAL: ts-morph strips the 'assert { type: "json" }' clause
-    // Import is sorted and assertion is removed
+    // FIXED: Import assertions are now preserved
     const expected = `import { A } from './a';
 import { B } from './b';
-import data from './data.json';
+import data from './data.json' assert { type: 'json' };
 
 const x = A;
 const y = B;
@@ -52,7 +67,7 @@ const z = data;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Import assertions are stripped by ts-morph (known limitation)');
+      assert.strictEqual(result, expected, 'Import assertions must be preserved');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -62,16 +77,15 @@ const z = data;
   // B2: Namespace type-only import
   // ============================================================================
 
-  test('B2a: Type-only namespace import type keyword stripped', async () => {
+  test('B2a: Type-only namespace import preserved in modern mode', async () => {
     const content = `import type * as Types from './pkg';
 import { Foo } from './pkg';
 
 const x: Types.Bar = Foo;
 `;
 
-    // ACTUAL: Even in modern mode, 'type' keyword is stripped from namespace imports
-    // This appears to be current behavior
-    const expected = `import * as Types from './pkg';
+    // FIXED: Type keyword is now preserved for namespace imports in modern mode
+    const expected = `import type * as Types from './pkg';
 import { Foo } from './pkg';
 
 const x: Types.Bar = Foo;
@@ -85,7 +99,7 @@ const x: Types.Bar = Foo;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Type keyword stripped from namespace imports');
+      assert.strictEqual(result, expected, 'Type keyword must be preserved in modern mode');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -107,9 +121,8 @@ const x: Types.Bar = Foo;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
-      // Mock legacyMode: true
-      config.legacyMode = () => true;
+      const config = new MockImportsConfig();
+      config.setConfig('legacyMode', true);
 
       const manager = new ImportManager(doc, config);
       const edits = manager.organizeImports();
@@ -126,7 +139,7 @@ const x: Types.Bar = Foo;
   // B3: ES module attributes ordering
   // ============================================================================
 
-  test('B3: Import with attributes stripped (ts-morph limitation)', async () => {
+  test('B3: Import with attributes preserved', async () => {
     const content = `import data from './data.json' with { type: 'json' };
 import { A } from './a';
 
@@ -134,9 +147,9 @@ const x = A;
 const y = data;
 `;
 
-    // ACTUAL: ts-morph strips the 'with { type: "json" }' clause
+    // FIXED: Import attributes are now preserved
     const expected = `import { A } from './a';
-import data from './data.json';
+import data from './data.json' with { type: 'json' };
 
 const x = A;
 const y = data;
