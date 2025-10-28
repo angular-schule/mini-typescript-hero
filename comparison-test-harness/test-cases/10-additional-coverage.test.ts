@@ -73,7 +73,72 @@ const user: User = getUser();
     assert.strictEqual(newResult, expected, 'Specifier-level type modifier preserved and sorted');
   });
 
-  // Side-effect import tests removed - need more work to match old extension behavior
+  // ============================================================================
+  // Side-effect + normal import from same module
+  // ============================================================================
+
+  test('133. Side-effect import + named import stay separate', async () => {
+    const input = `import { polyfill } from './polyfills';
+import './polyfills';
+
+polyfill();
+`;
+
+    // Side-effect imports and normal imports must never merge.
+    // Actual behavior to be verified against old extension.
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    // Both extensions should produce the same output
+    assert.strictEqual(newResult, oldResult, 'New extension matches old extension behavior for side-effect imports');
+  });
+
+  test('134. Multiple side-effect imports ordering', async () => {
+    const input = `import { config } from './config';
+import './polyfills/dom';
+import './polyfills/fetch';
+import './styles.css';
+
+config.init();
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.strictEqual(newResult, oldResult, 'New extension matches old extension side-effect ordering');
+  });
+
+  // ============================================================================
+  // Import assertions on side-effect imports
+  // ============================================================================
+
+  test('135. Side-effect import with assert syntax', async () => {
+    const input = `import './data.json' assert { type: 'json' };
+import { config } from './config';
+
+config.init();
+`;
+
+    // Only test new extension (old doesn't support assertions)
+    const newResult = await organizeImportsNew(input);
+
+    // Verify assertions are preserved (exact format to be determined)
+    assert.ok(newResult.includes("assert { type: 'json' }"), 'Assertions preserved in side-effect import');
+  });
+
+  test('136. Side-effect import with "with" syntax', async () => {
+    const input = `import './styles.css' with { type: 'css' };
+import { Component } from './component';
+
+const c = Component;
+`;
+
+    // Only test new extension (old doesn't support "with" syntax)
+    const newResult = await organizeImportsNew(input);
+
+    // Verify "with" syntax is preserved
+    assert.ok(newResult.includes("with { type: 'css' }"), '"with" syntax preserved in side-effect import');
+  });
 
   // ============================================================================
   // Default + named + namespace combinations
@@ -141,7 +206,31 @@ const x = Utils.foo(helper());
     assert.strictEqual(newResult, expected, 'New extension keeps namespace separate');
   });
 
-  // Test 140 removed - old extension crashes on default + namespace combination
+  test('140. Default + namespace from same module', async () => {
+    const input = `import * as Utils from './utils';
+import utils from './utils';
+
+const x = utils.foo(Utils.bar());
+`;
+
+    // Old extension may crash with "libraryAlreadyImported.specifiers is not iterable"
+    // Try old extension, if it crashes, skip comparison
+    let oldResult: string | null = null;
+    try {
+      oldResult = await organizeImportsOld(input);
+    } catch (error) {
+      // Old extension crashes, only test new extension
+      const newResult = await organizeImportsNew(input);
+      // Verify new extension at least produces valid output
+      assert.ok(newResult.includes('import utils from'), 'New extension handles default + namespace');
+      assert.ok(newResult.includes('import * as Utils from'), 'New extension handles default + namespace');
+      return;
+    }
+
+    // If old extension didn't crash, compare outputs
+    const newResult = await organizeImportsNew(input);
+    assert.strictEqual(newResult, oldResult, 'New extension matches old extension for default + namespace');
+  });
 
   // ============================================================================
   // Scoped packages with trailing /index
@@ -168,7 +257,39 @@ const x = helper(config);
     assert.strictEqual(newResult, expected, 'New extension removes /index from scoped packages');
   });
 
-  // Tests 142-143 removed - scoped package /index behavior needs more investigation
+  test('142. Scoped package: /index and no /index with merging disabled', async () => {
+    const input = `import { a } from '@company/utils/index';
+import { b } from '@company/utils';
+
+const x = a + b;
+`;
+
+    const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
+    const newResult = await organizeImportsNew(input, {
+      mergeImportsFromSameModule: false,
+      disableImportRemovalOnOrganize: true
+    });
+
+    // Both extensions should remove /index and keep imports separate (no merging)
+    assert.strictEqual(newResult, oldResult, 'New extension matches old extension for /index with merging disabled');
+  });
+
+  test('143. Scoped package: /index timing in legacy mode', async () => {
+    const input = `import { a } from '@company/utils/index';
+import { b } from '@company/utils';
+
+const x = a + b;
+`;
+
+    const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
+    const newResult = await organizeImportsNew(input, {
+      legacyMode: true,
+      disableImportRemovalOnOrganize: true
+    });
+
+    // Legacy mode: merge timing affects whether /index and no /index are treated as same module
+    assert.strictEqual(newResult, oldResult, 'New extension matches old extension /index timing in legacy mode');
+  });
 
   // ============================================================================
   // Property access false positives
