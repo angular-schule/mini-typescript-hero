@@ -1,22 +1,39 @@
+# Build artifacts (tests)
+out/**
+**/.vscode-test.*
+
+# Development files
 .vscode/**
 .vscode-test/**
 .claude/**
-out/**
-node_modules/**
+.editorconfig
 src/**
-manual-test-cases/**
-.gitignore
-.yarnrc
-blog-post.md
-CLAUDE_TODO.md
-README-for-developers.md
-logo.svg
-logo.ai
-logo.png
-esbuild.js
-vsc-extension-quickstart.md
+**/*.ts
+!dist/**/*.d.ts
 **/tsconfig.json
 **/eslint.config.mjs
-**/*.map
-**/*.ts
-**/.vscode-test.*
+esbuild.js
+.gitignore
+.yarnrc
+
+# Test infrastructure (DO NOT SHIP)
+comparison-test-harness/**
+manual-test-cases/**
+
+# Documentation (internal)
+blog-post.md
+CLAUDE_TODO.md
+CLAUDE_TODO_BACKUP.md
+CLAUDE.md
+README-for-developers.md
+vsc-extension-quickstart.md
+
+# Design files
+logo.svg
+logo.ai
+
+# Source maps (keep for production debugging)
+# **/*.map
+
+# Dependencies
+node_modules/**

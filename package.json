@@ -40,6 +40,7 @@
     "Programming Languages"
   ],
   "activationEvents": [
+    "onCommand:miniTypescriptHero.imports.organize",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",

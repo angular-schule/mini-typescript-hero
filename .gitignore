@@ -1,8 +1,10 @@
 out
-dist
 node_modules
 .vscode-test
 *.vsix
+
+# NOTE: dist/ is NOT ignored - it must be committed for VSIX packaging
+# The bundled extension.js is needed for distribution
 
 # Logs
 logs

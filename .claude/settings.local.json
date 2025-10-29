@@ -33,7 +33,8 @@
       "WebFetch(domain:ts-morph.com)",
       "Bash(npm outdated)",
       "Bash(npm run check-types)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm run package)"
     ],
     "deny": [],
     "ask": []
