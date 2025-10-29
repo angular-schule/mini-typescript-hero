@@ -52,8 +52,10 @@ class MockOutputChannel implements OutputChannel {
  * Mock ImportsConfig for testing
  */
 class MockImportsConfig extends ImportsConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mockConfig: Record<string, any> = {};
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public setConfig(key: string, value: any): void {
     this.mockConfig[key] = value;
   }
@@ -111,6 +113,7 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['blankLinesAfterImports'] ?? 'one';
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public grouping(_resource: Uri): any[] {
     return this.mockConfig['grouping'] ?? [];
   }

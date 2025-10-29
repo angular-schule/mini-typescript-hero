@@ -22,8 +22,10 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
  * Mock configuration for testing.
  */
 class MockImportsConfig extends ImportsConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mockConfig: Map<string, any> = new Map();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setConfig(key: string, value: any): void {
     this.mockConfig.set(key, value);
   }

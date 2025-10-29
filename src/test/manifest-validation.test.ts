@@ -11,6 +11,7 @@ import * as path from 'path';
 
 suite('Manifest Validation', () => {
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let packageJson: any;
 
   suiteSetup(() => {
@@ -20,6 +21,7 @@ suite('Manifest Validation', () => {
   });
 
   test('contributes only miniTypescriptHero.* commands', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const commands = (packageJson.contributes?.commands ?? []).map((c: any) => c.command);
 
     // All commands must start with miniTypescriptHero

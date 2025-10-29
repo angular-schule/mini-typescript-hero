@@ -87,12 +87,15 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
  * - Tests can verify different configuration combinations
  */
 class MockImportsConfig extends ImportsConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mockConfig: Map<string, any> = new Map();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setConfig(key: string, value: any): void {
     this.mockConfig.set(key, value);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   override(key: string, value: any): void {
     this.mockConfig.set(key, value);
   }
@@ -154,6 +157,7 @@ class MockImportsConfig extends ImportsConfig {
     let importGroups: ImportGroup[] = [];
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       importGroups = groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
     } catch (e) {
       // Fall back to default on invalid config (same as real ImportsConfig)

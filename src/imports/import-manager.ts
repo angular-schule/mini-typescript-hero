@@ -1,4 +1,4 @@
-import { Project, SourceFile, Node, SyntaxKind } from 'ts-morph';
+import { Project, SourceFile, Node, SyntaxKind, ImportDeclaration, ImportEqualsDeclaration, ExportDeclaration } from 'ts-morph';
 import { EndOfLine, Position, Range, TextDocument, TextEdit } from 'vscode';
 
 import { ImportsConfig } from '../configuration';
@@ -72,7 +72,7 @@ export class ImportManager {
    * Extract import attributes/assertions from an import declaration.
    * Returns the raw text of the attributes (e.g., "assert { type: 'json' }")
    */
-  private extractImportAttributes(importDecl: any): string | undefined {
+  private extractImportAttributes(importDecl: ImportDeclaration): string | undefined {
     try {
       // Get the full text of the import declaration
       const fullText = importDecl.getText();
@@ -698,13 +698,18 @@ export class ImportManager {
     // Get the range of all import declarations (both modern and old-style)
     const importDeclarations = this.sourceFile.getImportDeclarations();
     const importEquals = this.sourceFile.getStatements()
-      .filter(stmt => Node.isImportEqualsDeclaration(stmt));
+      .filter(stmt => Node.isImportEqualsDeclaration(stmt)) as ImportEqualsDeclaration[];
 
     // Also include re-export declarations in the range (they'll be moved after imports)
     const exportDeclarations = this.sourceFile.getExportDeclarations()
       .filter(exportDecl => exportDecl.getModuleSpecifier() !== undefined);
 
-    const allImports = [...importDeclarations, ...importEquals as any[], ...exportDeclarations as any[]];
+    // Combine all declaration types - they all have getStart() and getStartLineNumber() methods
+    const allImports: Array<ImportDeclaration | ImportEqualsDeclaration | ExportDeclaration> = [
+      ...importDeclarations,
+      ...importEquals,
+      ...exportDeclarations
+    ];
 
     if (allImports.length === 0) {
       return edits;

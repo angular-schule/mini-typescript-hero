@@ -4322,3 +4322,193 @@ Total:                    370 tests, 367 passing, 0 warnings
 - **Comparison harness**: 179 passing (includes 17 new Additional Coverage tests)
 - **Total**: 438 tests passing ✅
 
+
+---
+
+## Session: 2025-10-29 - Code Quality Audit and Improvements
+
+### 1. Current Work Status
+
+#### ✅ Completed Tasks:
+1. **Comprehensive Project Audit** - Conducted full codebase audit covering:
+   - Source code quality (TypeScript, architecture, patterns)
+   - Test coverage and quality (259 tests passing)
+   - Configuration files and build setup
+   - Documentation accuracy
+   - Dependency freshness
+   - Error handling patterns
+
+2. **Added `.editorconfig`** - Created EditorConfig file with Angular defaults:
+   - UTF-8 charset, 2-space indentation, LF line endings
+   - Trim trailing whitespace, insert final newline
+   - Special rules for TypeScript, Markdown, YAML, JSON
+
+3. **Enhanced ESLint Configuration** - Added strict error-level rules:
+   - `"no-console": "error"` - Prevents accidental console.log statements
+   - `"no-debugger": "error"` - Prevents committed debugger statements
+   - `"@typescript-eslint/no-explicit-any": "error"` - Enforces proper typing
+
+4. **Fixed All `any` Types in Production Code**:
+   - `src/imports/import-manager.ts`:
+     - Fixed `extractImportAttributes(importDecl: ImportDeclaration)` - was `any`
+     - Fixed `allImports` array type: `Array<ImportDeclaration | ImportEqualsDeclaration | ExportDeclaration>` - was `as any[]`
+     - Added proper type imports from `ts-morph`
+   - Test files: Documented legitimate `any` usage in mocks with `eslint-disable` comments
+
+5. **Corrected Redundant Work** - Discovered existing CI/CD workflow:
+   - Removed redundant `ci.yml` that was mistakenly created
+   - Existing `test.yml` already runs linter via `npm test` → `pretest` hook
+   - Linter runs TWICE in CI: once in compile, once directly
+
+#### ❌ In-Progress Tasks:
+None - all tasks completed.
+
+#### 🚫 Blocked Items:
+None.
+
+---
+
+### 2. Technical Context
+
+#### Files Modified:
+1. **`.editorconfig`** (NEW)
+   - Created with Angular defaults for consistent formatting
+
+2. **`eslint.config.mjs`**
+   - Added three new error-level rules: `no-console`, `no-debugger`, `@typescript-eslint/no-explicit-any`
+
+3. **`src/imports/import-manager.ts`**
+   - Line 1: Added `ImportDeclaration`, `ImportEqualsDeclaration`, `ExportDeclaration` to imports
+   - Line 75: Fixed parameter type from `any` to `ImportDeclaration`
+   - Lines 700-712: Fixed array type casting from `as any[]` to proper union type
+
+4. **Test Files (5 files)** - Added `eslint-disable` comments for legitimate mock `any` usage:
+   - `src/test/import-manager.test.ts`
+   - `src/test/import-manager.edge-cases-audit.test.ts`
+   - `src/test/import-manager.edge-cases.test.ts`
+   - `src/test/import-organizer.test.ts`
+   - `src/test/import-manager.blank-lines.test.ts`
+   - `src/test/manifest-validation.test.ts`
+   - `src/test/configuration/settings-migration.test.ts`
+
+5. **`.github/workflows/ci.yml`** (CREATED THEN DELETED)
+   - Mistakenly created duplicate workflow
+   - Deleted after discovering existing `test.yml`
+
+#### Files Created:
+- `.editorconfig` (permanent)
+- `.github/workflows/ci.yml` (temporary - already deleted)
+
+#### Files Deleted:
+- `.github/workflows/ci.yml` (redundant duplicate)
+
+---
+
+### 3. Important Decisions
+
+#### Architecture Choices:
+1. **`any` Type Strategy**:
+   - Production code: Zero tolerance - all `any` must have proper types
+   - Test mocks: Allowed with explicit `eslint-disable` comments
+   - Rationale: Test mocks legitimately need `any` for flexibility, but should be documented
+
+2. **EditorConfig Standards**:
+   - Adopted Angular's standard configuration
+   - Ensures consistency across IDEs (VS Code, WebStorm, etc.)
+
+3. **ESLint Strictness**:
+   - Made `no-console`, `no-debugger`, `no-explicit-any` ERROR level (not warnings)
+   - Rationale: These should fail CI, not just warn
+
+#### Open Questions:
+None - all decisions finalized.
+
+---
+
+### 4. Next Steps
+
+#### Immediate TODO:
+1. **Update Dependencies** (from audit findings):
+   ```bash
+   npm update
+   ```
+   - `@types/node`: 22.18.8 → 24.9.1 (2 major versions behind)
+   - `@types/vscode`: 1.104.0 → 1.105.0
+   - `@typescript-eslint/*`: 8.45.0 → 8.46.2
+   - `esbuild`, `eslint`, `ts-morph`: minor updates available
+
+2. **Clean up CLAUDE_TODO.md** (163 KB file):
+   - Archive old completed session logs
+   - Keep only recent/relevant context
+   - Consider creating `CLAUDE_TODO_ARCHIVE.md` for historical sessions
+
+3. **Decide on Version Number**:
+   - Currently: `4.0.0-rc.0` (Release Candidate)
+   - Decision: Ready for `4.0.0` release? Or document RC blockers?
+
+#### Testing Needed:
+✅ All testing complete:
+- TypeScript compilation: PASS
+- ESLint: PASS (0 errors, 0 warnings)
+- Build: PASS (esbuild successful)
+- Tests: PASS (259/259 passing in 16s)
+
+#### Documentation Updates:
+None needed - all documentation accurate.
+
+---
+
+### 5. Audit Findings Summary
+
+#### 🟢 STRENGTHS (What's Excellent):
+- Clean TypeScript with zero type errors
+- Comprehensive test coverage (259 tests)
+- Excellent documentation (CLAUDE.md, README.md)
+- Modern architecture with proper separation of concerns
+- Real VSCode API usage in tests (no brittle mocks)
+- Existing CI/CD on 3 platforms
+
+#### 🟡 MEDIUM PRIORITY (Recommended):
+- 8 outdated dependencies (security & compatibility)
+- Large CLAUDE_TODO.md file (163 KB - needs cleanup)
+- Version still marked as RC (decide on 4.0.0 release)
+
+#### 🟢 LOW PRIORITY (Nice-to-have):
+- TypeScript target could be ES2023/ES2024 (currently ES2022)
+- `.DS_Store` might be in git (check gitignore)
+
+#### Overall Assessment: **Grade A-** (Excellent)
+Project is production-ready. Only dependency updates are truly necessary before release.
+
+---
+
+### 6. Verification Results
+
+```bash
+✅ npm run check-types: PASS (0 errors)
+✅ npm run lint: PASS (0 errors, 0 warnings)
+✅ npm run compile: PASS (build successful)
+✅ npm test: PASS (259/259 tests passing in 16s)
+```
+
+---
+
+### 7. CI/CD Status
+
+**Existing Workflow**: `.github/workflows/test.yml`
+- ✅ Runs on: Ubuntu, macOS, Windows
+- ✅ Node version: 18.x
+- ✅ Tests: Main extension tests + comparison-test-harness
+- ✅ Linter: Runs TWICE (via pretest hook)
+  - Once in `npm run compile` (check-types → lint → esbuild)
+  - Once directly in `pretest` hook
+
+**Linter Execution Points**:
+| Command | Linter? | Type Check? | Build? | Tests? |
+|---------|---------|-------------|--------|--------|
+| `npm run lint` | ✅ Once | ❌ | ❌ | ❌ |
+| `npm run compile` | ✅ Once | ✅ | ✅ | ❌ |
+| `npm test` | ✅ **Twice** | ✅ | ✅ | ✅ |
+
+All new ESLint rules (`no-console`, `no-debugger`, `no-explicit-any`) now enforce in CI automatically.
+

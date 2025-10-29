@@ -16,8 +16,10 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
  * Extends ImportsConfig to allow setting test values.
  */
 class MockImportsConfig extends ImportsConfig {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mockConfig: Map<string, any> = new Map();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setConfig(key: string, value: any): void {
     this.mockConfig.set(key, value);
   }
@@ -282,6 +284,7 @@ const x = A + Z;
     try {
       const config = new ImportsConfig();
       // Mock multiLineTrailingComma: false
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (config as any).mockConfig = new Map([['multiLineTrailingComma', false]]);
       const manager = new ImportManager(doc, config);
       const edits = manager.organizeImports();
@@ -380,6 +383,7 @@ const x = A + B;
     try {
       const config = new ImportsConfig();
       // Mock removeTrailingIndex: true
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (config as any).mockConfig = new Map([['removeTrailingIndex', true]]);
       const manager = new ImportManager(doc, config);
       const edits = manager.organizeImports();

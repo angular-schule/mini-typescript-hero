@@ -19,10 +19,13 @@ export default [{
             selector: "import",
             format: ["camelCase", "PascalCase"],
         }],
+        "@typescript-eslint/no-explicit-any": "error",
 
         curly: "warn",
         eqeqeq: "warn",
         "no-throw-literal": "warn",
         semi: "warn",
+        "no-console": "error",
+        "no-debugger": "error",
     },
 }];

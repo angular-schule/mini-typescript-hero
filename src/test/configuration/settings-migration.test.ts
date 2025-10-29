@@ -37,19 +37,27 @@ suite('Settings Migration Tests', () => {
       },
       subscriptions: [],
       extensionPath: '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       extensionUri: {} as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       environmentVariableCollection: {} as any,
       extensionMode: 3, // ExtensionMode.Production
       storageUri: undefined,
       storagePath: undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       globalStorageUri: {} as any,
       globalStoragePath: '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       logUri: {} as any,
       logPath: '',
       asAbsolutePath: (relativePath: string) => relativePath,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       workspaceState: {} as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       secrets: {} as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       extension: {} as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       languageModelAccessInformation: {} as any,
     };
   });

@@ -30,7 +30,10 @@
       "SlashCommand(/git-quick)",
       "Read(///**)",
       "Bash(gh run view 18709470348 --log)",
-      "WebFetch(domain:ts-morph.com)"
+      "WebFetch(domain:ts-morph.com)",
+      "Bash(npm outdated)",
+      "Bash(npm run check-types)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []
