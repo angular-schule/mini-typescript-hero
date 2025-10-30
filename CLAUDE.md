@@ -279,6 +279,25 @@ All settings are under `miniTypescriptHero.imports.*`:
 
 ## 🔧 Technical Implementation Notes
 
+### 🌟 GOLDEN RULE: ts-morph Usually Supports Everything
+
+**CRITICAL**: ts-morph is the leading TypeScript manipulation library. NEVER assume a feature is not available!
+
+**Process**:
+1. Check the API first with `Object.getOwnPropertyNames(Object.getPrototypeOf(obj))`
+2. Search for methods related to your feature (e.g., `getAttributes()`, `getModifiers()`)
+3. Test with real code to understand the API behavior
+4. Only fall back to text manipulation if absolutely necessary
+
+**Example**: Import attributes (`with { type: 'json' }`)
+- ❌ Wrong assumption: "ts-morph doesn't support this, use regex"
+- ✅ Correct approach: Check API → found `getAttributes()` → use proper API
+
+**Why This Matters**:
+- ts-morph handles edge cases (nested braces, comments, multi-line, etc.)
+- Text manipulation is brittle and error-prone
+- ts-morph APIs are well-tested and maintained
+
 ### Type-Only Imports Support (TS 3.8+)
 
 **Location**: `src/imports/import-types.ts`, `src/imports/import-manager.ts`

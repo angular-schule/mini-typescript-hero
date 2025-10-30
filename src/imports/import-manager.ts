@@ -70,18 +70,18 @@ export class ImportManager {
 
   /**
    * Extract import attributes/assertions from an import declaration.
-   * Returns the raw text of the attributes (e.g., "assert { type: 'json' }")
+   * Returns the raw text of the attributes (e.g., "with { type: 'json' }")
+   * Uses ts-morph's getAttributes() API for proper parsing (handles nested braces, comments, etc.)
    */
   private extractImportAttributes(importDecl: ImportDeclaration): string | undefined {
     try {
-      // Get the full text of the import declaration
-      const fullText = importDecl.getText();
+      const attributes = importDecl.getAttributes();
+      if (!attributes) {
+        return undefined;
+      }
 
-      // Extract attributes/assertions using regex
-      // Match either "assert { ... }" or "with { ... }"
-      const attributesMatch = fullText.match(/(assert|with)\s*\{[^}]+\}/);
-
-      return attributesMatch ? attributesMatch[0] : undefined;
+      // Return the full text including the "with" or "assert" keyword
+      return attributes.getText();
     } catch (error) {
       // If extraction fails, return undefined
       return undefined;
