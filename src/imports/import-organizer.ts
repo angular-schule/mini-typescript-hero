@@ -17,6 +17,7 @@ import { ImportManager } from './import-manager';
  */
 export class ImportOrganizer implements Disposable {
   private disposables: Disposable[] = [];
+  private runningOrganizes = new Set<string>();
 
   constructor(
     private readonly config: ImportsConfig,
@@ -43,7 +44,20 @@ export class ImportOrganizer implements Disposable {
     this.disposables.push(
       workspace.onWillSaveTextDocument((event: TextDocumentWillSaveEvent) => {
         if (this.shouldOrganizeOnSave(event.document)) {
-          event.waitUntil(this.organizeImportsForDocument(event.document));
+          // Guard: Re-entrancy protection
+          const key = event.document.uri.toString();
+          if (this.runningOrganizes.has(key)) {
+            this.logger.appendLine(`[ImportOrganizer] Skipping organize-on-save for ${event.document.fileName} (already running)`);
+            return;
+          }
+
+          this.runningOrganizes.add(key);
+          event.waitUntil(
+            this.organizeImportsForDocument(event.document)
+              .finally(() => {
+                this.runningOrganizes.delete(key);
+              }),
+          );
         }
       }),
     );

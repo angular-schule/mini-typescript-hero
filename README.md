@@ -111,7 +111,7 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to preserve 100% of the original TypeScript Hero behavior (blank line preservation, within-group sorting bug, and removeTrailingIndex timing). New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior across all scenarios covered by our comprehensive test suite (370+ tests). This preserves blank line preservation, within-group sorting behavior, and removeTrailingIndex timing. New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
 
 ### No Old Settings?
 
