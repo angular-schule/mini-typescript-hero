@@ -1666,21 +1666,26 @@ console.log(A, B);
     }
   });
 
-  test('63. Two defaults from same module both used - first wins', async () => {
-    // Scenario: Invalid TypeScript (can't have two default imports from same module) but both used in code
+  test('63. Duplicate defaults from same module - first wins', async () => {
+    // Scenario: Invalid TypeScript (can't have two default imports from same module)
+    // Both defaults are used in code, but TypeScript only allows one default per module
     //
-    // DECISION: We do NOT need to fix broken TypeScript - let the TS compiler report the error
-    // Our job is just to organize imports, not validate TypeScript correctness
+    // BEHAVIOR (DETERMINISTIC):
+    // - Merges into single import statement (same module)
+    // - Keeps FIRST default only (Default1)
+    // - Drops second default (Default2)
+    // - This is handled by merge logic at import-manager.ts:613-620
     //
-    // ACTUAL BEHAVIOR (DETERMINISTIC):
-    // - Merges into one import statement (both from same module)
-    // - Keeps first default only (second default dropped)
-    // - This happens naturally through our merge logic
+    // CODE LOCATION: import-manager.ts lines 613-620
+    // if (namedImp.defaultAlias && !mergedDefault) {
+    //   mergedDefault = namedImp.defaultAlias; // First default wins
+    // }
     //
-    // WHY THIS IS OK:
-    // - Invalid TS will still be caught by TypeScript compiler
-    // - No need for special error handling or warnings in our extension
-    // - Simpler code, fewer edge cases
+    // IMPORTANT: This is INTENTIONAL DIFFERENCE from old extension!
+    // - Old extension: Keeps LAST default (possibly a bug)
+    // - New extension: Keeps FIRST default (more intuitive, predictable)
+    // - See comparison test A10 for proof of difference
+    // - Parity not required for this edge case (invalid TypeScript)
     const content = `import Default1 from './lib';
 import Default2 from './lib';
 
@@ -1694,11 +1699,13 @@ console.log(Default1, Default2);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-      // DETERMINISTIC: Merges into one import, keeps first default
-      // Second default is dropped (TypeScript will report error about unused Default2)
+      // DETERMINISTIC: Merges into one import, keeps first default only
       assert.strictEqual(lines.length, 1, 'Should merge into one import');
-      assert.ok(lines[0].includes('Default1'), 'Should have Default1 (first wins)');
-      // Default2 is dropped - TypeScript doesn't allow two defaults from same module
+      assert.ok(lines[0].includes('Default1'), 'Should keep first default (Default1)');
+      assert.ok(!lines[0].includes('Default2'), 'Should drop second default (Default2)');
+
+      // Expected output: import Default1 from './lib';
+      // Default2 reference in code will be undefined (TypeScript error)
     } finally {
       await deleteTempDocument(doc);
     }

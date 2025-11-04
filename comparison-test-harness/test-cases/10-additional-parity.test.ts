@@ -438,4 +438,63 @@ const x = A;
     assert.strictEqual(newResult, expected, 'New extension must add blank lines between groups');
   });
 
+  // ============================================================================
+  // A10: Duplicate default imports from same module - INTENTIONAL DIFFERENCE
+  // ============================================================================
+
+  test('A10: Duplicate defaults from same module - OLD keeps LAST, NEW keeps FIRST', async () => {
+    // Scenario: Invalid TypeScript (multiple default imports from same module)
+    // Both defaults are referenced in code, but TypeScript only allows one default per module
+    //
+    // IMPORTANT DISCOVERY:
+    // - Old extension: Keeps LAST default (Default2) - possibly a bug
+    // - New extension: Keeps FIRST default (Default1) - more intuitive
+    //
+    // This is an INTENTIONAL DIFFERENCE - not required for parity
+    // Keeping the FIRST default is more predictable and matches intuition
+    const input = `import Default1 from './lib';
+import Default2 from './lib';
+
+console.log(Default1, Default2);
+`;
+
+    const config = {
+      mergeImportsFromSameModule: true,
+      legacyMode: false,
+    };
+
+    // Old extension keeps LAST default (Default2)
+    const expectedOld = `import Default2 from './lib';
+
+console.log(Default1, Default2);
+`;
+
+    // New extension keeps FIRST default (Default1)
+    const expectedNew = `import Default1 from './lib';
+
+console.log(Default1, Default2);
+`;
+
+    const oldResult = await organizeImportsOld(input, config);
+    const newResult = await organizeImportsNew(input, config);
+
+    // Document the difference
+    assert.strictEqual(oldResult, expectedOld, 'Old extension keeps LAST default (Default2)');
+    assert.strictEqual(newResult, expectedNew, 'New extension keeps FIRST default (Default1)');
+
+    // Both merge to single import
+    const oldLines = oldResult.split('\n').filter(l => l.startsWith('import'));
+    const newLines = newResult.split('\n').filter(l => l.startsWith('import'));
+
+    assert.strictEqual(oldLines.length, 1, 'Old: Should merge to single import');
+    assert.strictEqual(newLines.length, 1, 'New: Should merge to single import');
+
+    // Verify the specific difference
+    assert.ok(oldLines[0].includes('Default2'), 'Old: Keeps LAST default (Default2)');
+    assert.ok(newLines[0].includes('Default1'), 'New: Keeps FIRST default (Default1)');
+
+    assert.ok(!oldLines[0].includes('Default1'), 'Old: Drops FIRST default (Default1)');
+    assert.ok(!newLines[0].includes('Default2'), 'New: Drops LAST default (Default2)');
+  });
+
 });
