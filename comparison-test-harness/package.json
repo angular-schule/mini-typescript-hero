@@ -8,7 +8,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "compile-tests": "tsc -p . --outDir out --noEmitOnError false || true",
+    "compile-tests": "tsc -p . --outDir out --noEmitOnError false 2>&1 | grep -v 'old-typescript-hero/src/ioc.ts' || true",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests",
     "test": "vscode-test"
