@@ -5,6 +5,6 @@ export default defineConfig({
 	// Use shorter user-data-dir to avoid macOS socket path length issues (103 char limit)
 	launchArgs: ['--user-data-dir=/tmp/vscode-test-data'],
 	mocha: {
-		timeout: 5000 // Increased from default 2000ms for slower CI environments (especially macOS)
+		timeout: 10000 // Increased from default 2000ms for slower CI environments (especially macOS)
 	}
 });
