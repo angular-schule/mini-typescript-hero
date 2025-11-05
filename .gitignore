@@ -1,10 +1,12 @@
 out
+dist
 node_modules
 .vscode-test
 *.vsix
 
-# NOTE: dist/ is NOT ignored - it must be committed for VSIX packaging
-# The bundled extension.js is needed for distribution
+# NOTE: dist/ is ignored in git but INCLUDED in VSIX via .vscodeignore
+# Build artifacts should not be committed to version control
+# CI/CD or local build generates dist/ before packaging
 
 # Logs
 logs

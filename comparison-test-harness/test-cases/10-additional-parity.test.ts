@@ -439,19 +439,22 @@ const x = A;
   });
 
   // ============================================================================
-  // A10: Duplicate default imports from same module - INTENTIONAL DIFFERENCE
+  // A10: Duplicate default imports from same module - PERFECT PARITY
   // ============================================================================
 
-  test('A10: Duplicate defaults from same module - OLD keeps LAST, NEW keeps FIRST', async () => {
+  test('A10: Duplicate defaults from same module - both keep LAST default', async () => {
     // Scenario: Invalid TypeScript (multiple default imports from same module)
     // Both defaults are referenced in code, but TypeScript only allows one default per module
     //
-    // IMPORTANT DISCOVERY:
-    // - Old extension: Keeps LAST default (Default2) - possibly a bug
-    // - New extension: Keeps FIRST default (Default1) - more intuitive
+    // BEHAVIOR: Both extensions keep LAST default (PERFECT PARITY)
+    // - Old extension: Keeps LAST default (Default2)
+    // - New extension: Keeps LAST default (Default2) - matches old exactly
     //
-    // This is an INTENTIONAL DIFFERENCE - not required for parity
-    // Keeping the FIRST default is more predictable and matches intuition
+    // WHY: Both behaviors are equivalent since Default1 and Default2 both refer
+    // to the same default export from './lib'. The difference is just which local
+    // name we keep. Invalid TypeScript either way.
+    //
+    // We chose to match old behavior for 100% parity on this edge case.
     const input = `import Default1 from './lib';
 import Default2 from './lib';
 
@@ -463,14 +466,8 @@ console.log(Default1, Default2);
       legacyMode: false,
     };
 
-    // Old extension keeps LAST default (Default2)
-    const expectedOld = `import Default2 from './lib';
-
-console.log(Default1, Default2);
-`;
-
-    // New extension keeps FIRST default (Default1)
-    const expectedNew = `import Default1 from './lib';
+    // Both extensions keep LAST default (Default2)
+    const expected = `import Default2 from './lib';
 
 console.log(Default1, Default2);
 `;
@@ -478,9 +475,10 @@ console.log(Default1, Default2);
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    // Document the difference
-    assert.strictEqual(oldResult, expectedOld, 'Old extension keeps LAST default (Default2)');
-    assert.strictEqual(newResult, expectedNew, 'New extension keeps FIRST default (Default1)');
+    // Verify PERFECT PARITY - both produce identical output
+    assert.strictEqual(oldResult, expected, 'Old extension keeps LAST default (Default2)');
+    assert.strictEqual(newResult, expected, 'New extension keeps LAST default (Default2)');
+    assert.strictEqual(oldResult, newResult, 'PERFECT PARITY: Both extensions produce identical output');
 
     // Both merge to single import
     const oldLines = oldResult.split('\n').filter(l => l.startsWith('import'));
@@ -489,12 +487,13 @@ console.log(Default1, Default2);
     assert.strictEqual(oldLines.length, 1, 'Old: Should merge to single import');
     assert.strictEqual(newLines.length, 1, 'New: Should merge to single import');
 
-    // Verify the specific difference
+    // Both keep LAST default
     assert.ok(oldLines[0].includes('Default2'), 'Old: Keeps LAST default (Default2)');
-    assert.ok(newLines[0].includes('Default1'), 'New: Keeps FIRST default (Default1)');
+    assert.ok(newLines[0].includes('Default2'), 'New: Keeps LAST default (Default2)');
 
+    // Both drop FIRST default
     assert.ok(!oldLines[0].includes('Default1'), 'Old: Drops FIRST default (Default1)');
-    assert.ok(!newLines[0].includes('Default2'), 'New: Drops LAST default (Default2)');
+    assert.ok(!newLines[0].includes('Default1'), 'New: Drops FIRST default (Default1)');
   });
 
 });

@@ -11,7 +11,7 @@
 ### Extension Metadata
 - **Extension ID**: `mini-typescript-hero`
 - **Publisher**: `angular-schule`
-- **Publisher Website**: http://angular.schule
+- **Publisher Website**: https://angular.schule
 - **Publisher Email**: team@angular.schule
 - **Copyright**: Copyright (c) 2025 Angular.Schule (by Johannes Hoppe)
 - **Original Author Credit**: Christoph Bühler (maintain MIT license with attribution)

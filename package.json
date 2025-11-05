@@ -12,7 +12,7 @@
   "author": {
     "name": "Johannes Hoppe",
     "email": "team@angular.schule",
-    "url": "http://angular.schule"
+    "url": "https://angular.schule"
   },
   "license": "MIT",
   "repository": {
@@ -32,7 +32,7 @@
     "formatter"
   ],
   "engines": {
-    "vscode": "^1.85.0",
+    "vscode": "^1.104.0",
     "node": ">=18.0.0"
   },
   "categories": [

@@ -610,13 +610,13 @@ export class ImportManager {
               : namedImp.specifiers;
             allSpecifiers.push(...specs);
 
-            // Handle duplicate defaults: Keep FIRST default only
+            // Handle duplicate defaults: Keep LAST default (matches old TypeScript Hero)
             // If multiple default imports from same module exist (invalid TypeScript),
-            // we merge them into one import and keep only the first default.
-            // Additional defaults are dropped - they would cause TypeScript errors anyway.
-            // This matches old TypeScript Hero behavior (see test 63).
-            if (namedImp.defaultAlias && !mergedDefault) {
-              mergedDefault = namedImp.defaultAlias;
+            // we merge them into one import and keep the last default encountered.
+            // Earlier defaults are dropped - they would cause TypeScript errors anyway.
+            // This matches old TypeScript Hero behavior exactly (see test 63 and comparison test A10).
+            if (namedImp.defaultAlias) {
+              mergedDefault = namedImp.defaultAlias; // Always overwrite, last wins
             }
           }
 

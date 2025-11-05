@@ -65,7 +65,7 @@ const c = VeryLongName3;
 
 **Key Info**:
 - **Extension ID**: `mini-typescript-hero`
-- **Publisher**: `angular-schule` (http://angular.schule)
+- **Publisher**: `angular-schule` (https://angular.schule)
 - **Repository**: https://github.com/angular-schule/mini-typescript-hero
 - **Branch**: `mini-typescript-hero-v4`
 - **Version**: 4.0.0-rc.0
@@ -4883,4 +4883,171 @@ Flaky Tests:              0
 **Documentation**: Complete 638-line AUDIT-RESPONSE.md tracks all items with verification and rationale.
 
 **Next Session**: Consider version bump to 4.0.0 (remove -rc.0) and publish to marketplace.
+
+
+---
+
+## Session: 2025-11-05 - Perfect Parity for Duplicate Defaults & VSIX Packaging Cleanup
+
+### 1. Current Work Status
+
+#### Completed Tasks
+1. ✅ **Achieved Perfect Parity for Duplicate Default Imports**
+   - Changed merge logic to keep LAST default (matches old TypeScript Hero exactly)
+   - Updated unit test 63 with correct expectations (Default2 instead of Default1)
+   - Updated comparison test A10 to verify perfect parity between both extensions
+   - All 259 main tests + 180 comparison tests passing
+
+2. ✅ **Fixed VSIX Packaging Issues**
+   - Removed `dist/` from git version control (added to .gitignore)
+   - Cleaned up .vscodeignore to exclude all unnecessary files:
+     - All .md files except README.md and CHANGELOG.md
+     - All .txt files except LICENSE.txt
+     - .github/ folder, .gitmodules, test harnesses
+   - Final VSIX: 10 files, 2.48 MB (down from 14 files, 2.6 MB)
+
+3. ✅ **Fixed VSCode Engine Version Mismatch**
+   - Updated `engines.vscode` from `^1.85.0` to `^1.104.0` to match `@types/vscode`
+   - VSIX packaging now works without errors
+
+4. ✅ **Verified Best Practices Against Major Extensions**
+   - Downloaded and inspected Prettier, ESLint, GitLens VSIX files
+   - Confirmed our approach matches industry standard:
+     - ✅ Minification enabled (esbuild with production flag)
+     - ✅ Complete package.json with scripts/devDependencies (standard practice)
+     - ✅ Bundle size normal (6.27 MB includes TypeScript compiler from ts-morph)
+     - ✅ Compressed VSIX size reasonable (2.48 MB)
+
+#### In-Progress Tasks
+None - all work completed successfully.
+
+#### Blocked Items
+None.
+
+### 2. Technical Context
+
+#### Files Modified
+
+1. **`src/imports/import-manager.ts` (lines 613-620)**
+   - **Change**: Removed `&& !mergedDefault` condition in default import merging
+   - **Reason**: Keep LAST default instead of FIRST (matches old TypeScript Hero)
+   - **Impact**: Perfect parity for duplicate default imports edge case
+
+2. **`src/test/import-manager.test.ts` (test 63, lines 1669-1712)**
+   - **Change**: Updated test expectations from Default1 to Default2
+   - **Reason**: Verify new behavior keeps LAST default
+   - **Details**: Added comments explaining both behaviors are equivalent (same export, different local name)
+
+3. **`comparison-test-harness/test-cases/10-additional-parity.test.ts` (test A10, lines 441-500)**
+   - **Change**: Updated from documenting difference to verifying perfect parity
+   - **Reason**: Assert both extensions produce identical output
+   - **Details**: Added `assert.strictEqual(oldResult, newResult)` to prove parity
+
+4. **`.gitignore`**
+   - **Change**: Added `dist` to ignored files
+   - **Reason**: Build artifacts should not be committed to version control
+   - **Details**: Updated comment to explain dist/ is ignored in git but included in VSIX
+
+5. **`.vscodeignore`**
+   - **Change**: Added pattern-based exclusions for all .md and .txt files
+   - **Reason**: Exclude internal documentation from VSIX package
+   - **Details**: 
+     - `**/*.md` + `**/*.txt` (exclude all)
+     - `!README.md` + `!CHANGELOG.md` + `!LICENSE.txt` (whitelist essentials)
+     - Added `.github/**` and `.gitmodules` to exclusions
+
+6. **`package.json`**
+   - **Change**: Updated `engines.vscode` from `^1.85.0` to `^1.104.0`
+   - **Reason**: Match `@types/vscode` version to fix VSIX packaging error
+
+#### Files Created
+None.
+
+#### Files Removed from Git Tracking
+- `dist/extension.js` (removed with `git rm --cached`)
+- `dist/extension.js.map` (removed with `git rm --cached`)
+
+#### Temporary/Debug Files
+None created.
+
+### 3. Important Decisions
+
+#### Architecture Choices
+
+1. **Duplicate Default Imports: Keep LAST Default**
+   - **Decision**: Match old TypeScript Hero behavior exactly (keep LAST default)
+   - **Rationale**: Both approaches are semantically equivalent (both refer to same default export, only local alias differs). For perfect parity on edge cases, match old behavior when difference is trivial.
+   - **Code Location**: `src/imports/import-manager.ts:618`
+
+2. **VSIX Packaging: Keep Complete package.json**
+   - **Decision**: Ship full package.json including scripts and devDependencies
+   - **Rationale**: Industry standard practice (Prettier, ESLint, GitLens all do this). VSCode ignores these fields at runtime. Size impact negligible (~8KB in 2.48MB package).
+
+3. **dist/ Folder: Ignore in Git, Include in VSIX**
+   - **Decision**: Add dist/ to .gitignore but ensure it's included in VSIX via .vscodeignore
+   - **Rationale**: Build artifacts shouldn't bloat git history. CI/CD or local build generates dist/ before packaging.
+
+4. **Minification: Use esbuild with Production Flag**
+   - **Decision**: Keep current esbuild setup with `minify: production`
+   - **Rationale**: Verified our minification matches webpack-based extensions. Bundle size (6.27 MB) is normal for ts-morph (includes TypeScript compiler).
+
+#### Open Questions
+None - all questions resolved through investigation.
+
+### 4. Next Steps
+
+#### Immediate TODO
+1. Consider updating CHANGELOG.md with:
+   - Perfect parity achievement for duplicate defaults
+   - VSIX packaging improvements
+   - Version bump preparation for 4.0.0 release
+
+#### Testing Needed
+✅ All testing completed:
+- 259 main extension tests passing
+- 180 comparison tests passing
+- VSIX packaging verified (10 files, 2.48 MB)
+
+#### Documentation Updates
+None required - CLAUDE.md is already up to date with project structure and best practices.
+
+### 5. Key User Insights from Session
+
+1. **"How is this a bug? Doesn't matter, right? It's the exact same default"**
+   - User correctly identified that keeping first vs last default is semantically equivalent
+   - Led to decision to match old behavior for perfect parity
+
+2. **"Why the fuck do we commit the dist folder to git?"**
+   - Legitimate concern about build artifacts in version control
+   - Fixed by adding dist/ to .gitignore and removing from tracking
+
+3. **"I see bullshit in the vsix! Make sure this is all ignored!"**
+   - User noticed unnecessary files in VSIX (digest.txt, README-how-we-handle-blank-lines.md, .github/)
+   - Fixed with pattern-based .vscodeignore rules
+
+4. **Investigation Request: "Verify this by downloading their vsix files"**
+   - User wanted evidence-based comparison with major extensions
+   - Downloaded Prettier, ESLint, GitLens VSIX files to verify best practices
+
+### 6. Investigation Results
+
+**Downloaded and Analyzed VSIX Files:**
+- ✅ Prettier v11.0.0: Full package.json, webpack minified, 13 scripts, 32 devDeps
+- ✅ ESLint v3.0.19 (Microsoft): Full package.json, webpack minified, 14 scripts, 15 devDeps
+- ✅ GitLens (latest): Full package.json, webpack minified, 50+ scripts, 100+ devDeps
+
+**Verdict:** Our extension follows exact same patterns as industry leaders.
+
+### 7. Git Status Before Commit
+
+Changes to commit:
+- M .gitignore (added dist)
+- M .vscodeignore (pattern-based exclusions)
+- D AUDIT-RESPONSE.md (deleted during session)
+- M comparison-test-harness/test-cases/10-additional-parity.test.ts (perfect parity test)
+- D dist/extension.js (removed from tracking)
+- D dist/extension.js.map (removed from tracking)
+- M package.json (engines.vscode version bump)
+- M src/imports/import-manager.ts (keep LAST default)
+- M src/test/import-manager.test.ts (test 63 updated)
 

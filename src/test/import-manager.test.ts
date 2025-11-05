@@ -1666,26 +1666,26 @@ console.log(A, B);
     }
   });
 
-  test('63. Duplicate defaults from same module - first wins', async () => {
+  test('63. Duplicate defaults from same module - last wins (matches old extension)', async () => {
     // Scenario: Invalid TypeScript (can't have two default imports from same module)
     // Both defaults are used in code, but TypeScript only allows one default per module
     //
-    // BEHAVIOR (DETERMINISTIC):
+    // BEHAVIOR (DETERMINISTIC) - Matches Old TypeScript Hero:
     // - Merges into single import statement (same module)
-    // - Keeps FIRST default only (Default1)
-    // - Drops second default (Default2)
+    // - Keeps LAST default only (Default2)
+    // - Drops first default (Default1)
     // - This is handled by merge logic at import-manager.ts:613-620
     //
     // CODE LOCATION: import-manager.ts lines 613-620
-    // if (namedImp.defaultAlias && !mergedDefault) {
-    //   mergedDefault = namedImp.defaultAlias; // First default wins
+    // if (namedImp.defaultAlias) {
+    //   mergedDefault = namedImp.defaultAlias; // Always overwrite, last wins
     // }
     //
-    // IMPORTANT: This is INTENTIONAL DIFFERENCE from old extension!
-    // - Old extension: Keeps LAST default (possibly a bug)
-    // - New extension: Keeps FIRST default (more intuitive, predictable)
-    // - See comparison test A10 for proof of difference
-    // - Parity not required for this edge case (invalid TypeScript)
+    // WHY LAST (not first)?
+    // - Matches old TypeScript Hero behavior exactly (100% parity)
+    // - Both behaviors are equivalent (same default export, different local name)
+    // - Invalid TypeScript either way - compiler will catch undefined reference
+    // - See comparison test A10 for proof of parity with old extension
     const content = `import Default1 from './lib';
 import Default2 from './lib';
 
@@ -1699,13 +1699,13 @@ console.log(Default1, Default2);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
 
-      // DETERMINISTIC: Merges into one import, keeps first default only
+      // DETERMINISTIC: Merges into one import, keeps LAST default (matches old extension)
       assert.strictEqual(lines.length, 1, 'Should merge into one import');
-      assert.ok(lines[0].includes('Default1'), 'Should keep first default (Default1)');
-      assert.ok(!lines[0].includes('Default2'), 'Should drop second default (Default2)');
+      assert.ok(lines[0].includes('Default2'), 'Should keep last default (Default2)');
+      assert.ok(!lines[0].includes('Default1'), 'Should drop first default (Default1)');
 
-      // Expected output: import Default1 from './lib';
-      // Default2 reference in code will be undefined (TypeScript error)
+      // Expected output: import Default2 from './lib';
+      // Default1 reference in code will be undefined (TypeScript error)
     } finally {
       await deleteTempDocument(doc);
     }
