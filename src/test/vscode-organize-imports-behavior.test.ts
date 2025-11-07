@@ -263,15 +263,21 @@ const b: BookService = null as any;
 
       const result = await organizeImportsViaVSCode(input);
 
-      // Let's see what VS Code actually does!
-      // eslint-disable-next-line no-console
-      console.log('=== VS CODE OUTPUT ===');
-      // eslint-disable-next-line no-console
-      console.log(result);
-      // eslint-disable-next-line no-console
-      console.log('======================');
+      // Expected: VS Code sorts everything together alphabetically (no auto-grouping)
+      const expected = `import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { BookService } from './services/book';
+import { UserService } from './services/user';
 
-      // Check if there's a blank line between external and internal imports
+const x: Component = null as any;
+const y: Router = null as any;
+const u: UserService = null as any;
+const b: BookService = null as any;
+`;
+
+      assert.strictEqual(result, expected, 'VS Code should sort all imports together without auto-grouping');
+
+      // Verify no blank line exists between external and internal imports
       const lines = result.split('\n');
       const hasBlankLineBetweenGroups = lines.some((line, i) =>
         line === '' &&
@@ -280,11 +286,11 @@ const b: BookService = null as any;
         lines[i + 1]?.includes('import')
       );
 
-      // eslint-disable-next-line no-console
-      console.log('Has blank line between import groups:', hasBlankLineBetweenGroups);
-
-      // We'll update this assertion based on what we discover
-      assert.ok(result.includes('import'), 'Should have imports');
+      assert.strictEqual(
+        hasBlankLineBetweenGroups,
+        false,
+        'Should have NO blank lines between imports (proves no automatic grouping)'
+      );
     });
 
     test('does NOT automatically create groups based on PATTERN MATCHING (like /^@angular/)', async () => {
@@ -304,18 +310,30 @@ const s = switchMap;
 
       const result = await organizeImportsViaVSCode(input);
 
-      // eslint-disable-next-line no-console
-      console.log('=== PATTERN TEST OUTPUT ===');
-      // eslint-disable-next-line no-console
-      console.log(result);
-      // eslint-disable-next-line no-console
-      console.log('===========================');
+      // Expected: VS Code merges rxjs imports and sorts alphabetically
+      // NO blank line separating Angular from RxJS (no pattern-based grouping)
+      const expected = `import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { map, switchMap } from 'rxjs/operators';
 
-      // If pattern-based grouping worked, we'd see:
-      // @angular/core, @angular/router, then blank line, then rxjs
-      // Let's see what actually happens!
+const x: Component = null as any;
+const y: Router = null as any;
+const m = map;
+const s = switchMap;
+`;
 
-      assert.ok(result.includes('import'), 'Should have imports');
+      assert.strictEqual(
+        result,
+        expected,
+        'VS Code should merge rxjs imports but NOT create separate groups for @angular vs rxjs'
+      );
+
+      // Verify Angular and RxJS imports are NOT separated by blank line
+      const importSection = result.split('\n\n')[0]; // Get everything before first blank line
+      assert.ok(
+        importSection.includes('@angular/core') && importSection.includes('rxjs/operators'),
+        'Angular and RxJS imports should be in same group (no blank line between them)'
+      );
     });
 
     test('does NOT remove /index from paths', async () => {
@@ -382,15 +400,32 @@ const w: UserService = null as any;
 
       const result = await organizeImportsViaVSCode(input);
 
-      // eslint-disable-next-line no-console
-      console.log('=== COMMENTS TEST OUTPUT ===');
-      // eslint-disable-next-line no-console
-      console.log(result);
-      // eslint-disable-next-line no-console
-      console.log('============================');
+      // Expected: Comment is preserved (important for documentation)
+      const expected = `import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+// This import is required for the payment gateway integration
+import { PaymentService } from './services/payment';
+import { UserService } from './services/user';
 
-      // Check if comment is preserved
-      assert.ok(result.includes('payment gateway'), 'Comment should be preserved');
+const x: Component = null as any;
+const y: Router = null as any;
+const z: PaymentService = null as any;
+const w: UserService = null as any;
+`;
+
+      assert.strictEqual(result, expected, 'VS Code should preserve comment between imports');
+
+      // Verify comment is preserved with exact text
+      assert.ok(result.includes('payment gateway'), 'Comment text should be preserved exactly');
+
+      // Note: Comment acts as group separator - PaymentService and UserService stay below comment
+      const lines = result.split('\n');
+      const commentIndex = lines.findIndex(l => l.includes('payment gateway'));
+      const paymentIndex = lines.findIndex(l => l.includes('PaymentService'));
+      assert.ok(
+        commentIndex >= 0 && paymentIndex > commentIndex,
+        'Comment should appear before PaymentService import (acts as group separator)'
+      );
     });
 
     test('CRITICAL: Does VS Code handle mixed external/internal imports WITHOUT auto-grouping?', async () => {
@@ -461,16 +496,34 @@ const y: Router = null as any;
 
       const result = await organizeImportsViaVSCode(input);
 
-      // eslint-disable-next-line no-console
-      console.log('=== SIDE EFFECTS TEST OUTPUT ===');
-      // eslint-disable-next-line no-console
-      console.log(result);
-      // eslint-disable-next-line no-console
-      console.log('=================================');
+      // Expected: Side-effect imports (string imports) sorted AFTER named imports
+      const expected = `import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import 'zone.js';
+import './styles.css';
 
-      // Check if side-effect imports are handled
-      assert.ok(result.includes('zone.js'), 'Should preserve side-effect imports');
-      assert.ok(result.includes('styles.css'), 'Should preserve CSS imports');
+const x: Component = null as any;
+const y: Router = null as any;
+`;
+
+      assert.strictEqual(result, expected, 'VS Code should sort side-effect imports AFTER named imports');
+
+      // Verify side-effect imports are preserved
+      assert.ok(result.includes('zone.js'), 'Should preserve zone.js side-effect import');
+      assert.ok(result.includes('styles.css'), 'Should preserve CSS side-effect import');
+
+      // Verify side-effect imports come AFTER named imports
+      const lines = result.split('\n');
+      const namedImportLines = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter(({ line }) => line.includes('import') && line.includes('from'));
+      const lastNamedImportIndex = namedImportLines.length > 0 ? namedImportLines[namedImportLines.length - 1].index : -1;
+      const firstSideEffectIndex = lines.findIndex(l => l.includes('zone.js'));
+
+      assert.ok(
+        firstSideEffectIndex > lastNamedImportIndex,
+        'Side-effect imports should appear AFTER all named imports'
+      );
     });
   });
 
