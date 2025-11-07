@@ -132,7 +132,7 @@ export class ImportOrganizer implements Disposable {
 
     try {
       const manager = new ImportManager(document, this.config);
-      return manager.organizeImports();
+      return await manager.organizeImports();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.appendLine(`[ImportOrganizer] Error organizing ${document.fileName}: ${errorMessage}`);
@@ -144,11 +144,25 @@ export class ImportOrganizer implements Disposable {
    * Check if organize-on-save is enabled for this document.
    */
   private shouldOrganizeOnSave(document: TextDocument): boolean {
+    // Guard: Only process file:// scheme (skip untitled:, vscode-notebook-cell:, etc.)
+    if (document.uri.scheme !== 'file') {
+      return false;
+    }
+
     if (!this.isSupportedLanguage(document.languageId)) {
       return false;
     }
 
-    return this.config.organizeOnSave(document.uri);
+    if (!this.config.organizeOnSave(document.uri)) {
+      return false;
+    }
+
+    // Note: Conflict detection runs on activation (see extension.ts)
+    // If user has both Mini TS Hero AND VSCode built-in organize imports enabled,
+    // they were warned and offered auto-resolution via "Disable for Me" button.
+    // We proceed here - if they chose to keep both, that's their decision.
+
+    return true;
   }
 
   /**

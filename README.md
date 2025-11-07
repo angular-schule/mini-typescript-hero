@@ -14,12 +14,14 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 
 - ✨ **Sort imports** alphabetically (by module path or first specifier)
 - 🧹 **Remove unused imports** automatically
-- 🔀 **Merge imports** from the same module (e.g., `import { A, B } from './lib'`)
-- 📦 **Group imports** into customizable categories (Plains, Modules, Workspace, Regex patterns)
-- 📏 **Smart blank line handling** — Choose your preferred spacing: 1 line (standard from ESLint), 2 lines, preserve existing, or legacy mode
-- ⚙️ **Highly configurable** formatting (quotes, semicolons, spaces, multiline thresholds)
+- 🔀 **Merge duplicate imports** from the same module (e.g., `import { A, B } from './lib'`)
+- 📦 **Custom grouping patterns** with regex (e.g., group all `/@angular/` imports together)
+- 📏 **Blank line control** between groups (1 line, 2 lines, or preserve existing)
+- ⚙️ **Formatting control** — quotes (`'` vs `"`), semicolons, spaces in braces, trailing commas
+- 🎯 **Multi-line wrapping** at configurable character threshold
+- 🗂️ **Remove `/index`** from paths (shorten `./lib/index` to `./lib`)
 - 💾 **Organize on save** (optional)
-- 🎯 **Works with TypeScript, JavaScript, TSX, and JSX**
+- 🌍 **Works with TypeScript, JavaScript, TSX, and JSX**
 
 ## Example
 
@@ -58,21 +60,72 @@ import { UserDetail } from './components/user-detail';
 - Consistent quotes and semicolons
 - Exactly 1 blank line after imports (configurable)
 
+## Why Use This Instead of VS Code's Built-in?
+
+**VS Code has a built-in "Organize Imports"** ([docs](https://code.visualstudio.com/docs/typescript/typescript-refactoring#_organize-imports)) that removes unused imports, sorts alphabetically, and merges duplicate imports. Since TypeScript 4.7+, it preserves blank lines you manually add between import groups. However, the fundamental difference is in **how groups are created**: VS Code requires you to manually type blank lines to separate groups (manual maintenance), while Mini TypeScript Hero automatically separates external (node_modules) from internal (local files) imports with blank lines between them. This alone covers 90% of use cases. Optionally, you can configure additional patterns like `["/^@angular/", "/rxjs/", "Workspace"]` if you want specific libraries (e.g., all RxJS imports) grouped together separately.
+
+### What is a "Group"?
+
+**VS Code's approach:** You manually type blank lines between imports to create groups. VS Code then preserves those blank lines and sorts within each group. If you delete a blank line, imports merge into one group.
+
+**Mini TypeScript Hero's approach:** The extension automatically groups imports by external (node_modules) vs internal (local files), creating blank lines between them. Optionally, you can add more specific patterns (e.g., `/^@angular/`, `/rxjs/`) if you want framework imports or specific libraries grouped separately.
+
+### What VS Code Cannot Do
+
+❌ **Automatically create groups based on patterns** — VS Code sorts everything alphabetically unless you manually add blank lines
+❌ **Remove `/index` from paths** — Keeps `./foo/index` as-is instead of cleaning to `./foo`
+❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
+
+### Example: Automatic vs Manual Grouping
+
+**Mini TypeScript Hero** with default grouping (`["Modules", "Workspace"]`):
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { map, switchMap } from 'rxjs/operators';
+
+import { BookList } from './components/book-list';
+import { UserDetail } from './components/user-detail';
+```
+
+External imports (node_modules) automatically separated from internal imports (local files) with a blank line between them.
+
+**VS Code built-in** without manual blank lines:
+
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { BookList } from './components/book-list';
+import { map, switchMap } from 'rxjs/operators';
+import { UserDetail } from './components/user-detail';
+```
+
+VS Code sorts everything alphabetically as one flat list. External and internal imports mixed together. To separate them, you'd need to manually type a blank line between `rxjs/operators` and `./components/book-list` and maintain it yourself every time you add new imports.
+
 ## Usage
 
-### Command Palette
+### Available Commands
 
+Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+
+1. **Mini TS Hero: Organize imports** — Sort and remove unused imports
+   - Keyboard shortcut: `Ctrl+Alt+O` (`Cmd+Alt+O` on macOS)
+2. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
+3. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
+
+### Organize Imports
+
+**Command Palette:**
 1. Open a TypeScript or JavaScript file
 2. Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (macOS)
 3. Type "Mini TS Hero: Organize imports"
 4. Press Enter
 
-### Keyboard Shortcut
+**Keyboard Shortcut:**
+Press `Ctrl+Alt+O` (Windows/Linux) or `Cmd+Alt+O` (macOS)
 
-Press `Ctrl+Alt+O` (Windows/Linux) or `Cmd+Alt+O` (macOS) to organize imports in the current file.
-
-### Organize on Save
-
+**Organize on Save:**
 Enable automatic import organization on file save:
 
 ```json
@@ -80,6 +133,22 @@ Enable automatic import organization on file save:
   "miniTypescriptHero.imports.organizeOnSave": true
 }
 ```
+
+### Check for Conflicts
+
+If you have multiple import organizers enabled (VSCode built-in, old TypeScript Hero extension, etc.), you may see a warning on first activation. You can also manually check for conflicts:
+
+1. Press `Ctrl+Shift+P` / `Cmd+Shift+P`
+2. Type "Mini TS Hero: Check for configuration conflicts"
+3. The extension will show if any conflicts exist and offer to fix them automatically (where possible)
+
+### Toggle Legacy Mode
+
+Switch between modern best practices and original TypeScript Hero behavior:
+
+1. Press `Ctrl+Shift+P` / `Cmd+Shift+P`
+2. Type "Mini TS Hero: Toggle legacy mode"
+3. The current value will be toggled and saved to the appropriate settings scope
 
 ## Migrating from TypeScript Hero
 
@@ -111,13 +180,65 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior across all scenarios covered by our comprehensive test suite (370+ tests). This preserves blank line preservation, within-group sorting behavior, and removeTrailingIndex timing. New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior. This preserves blank line preservation, within-group sorting behavior, and removeTrailingIndex timing. New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
 
 ### No Old Settings?
 
 If you've never used TypeScript Hero before, the migration simply won't run — no action needed!
 
 ## Configuration
+
+### 🎯 Configuration Priority (Smart Defaults)
+
+**Mini TypeScript Hero respects your existing editor configuration!** Instead of requiring duplicate configuration, the extension follows this priority order:
+
+1. **`.editorconfig`** (highest priority - team standard)
+   - Only if the [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) is installed
+   - Respects `quote_type = single` or `quote_type = double`
+
+2. **VSCode TypeScript/JavaScript preferences** (middle priority - user/workspace settings)
+   - `typescript.preferences.quoteStyle` - Quote style for TypeScript files
+   - `typescript.format.semicolons` - Semicolon behavior
+   - `javascript.preferences.quoteStyle` - Quote style for JavaScript files
+   - `javascript.format.semicolons` - Semicolon behavior
+
+3. **`miniTypescriptHero.imports.*` settings** (lowest priority - fallback only)
+   - Used when `.editorconfig` and VSCode preferences are not configured
+
+**Why this order?** It matches how other formatters (Prettier, ESLint) work, preventing configuration conflicts and ensuring consistency across your entire project.
+
+#### Example Scenarios
+
+**Scenario 1: Using `.editorconfig` (recommended for teams)**
+```ini
+# .editorconfig
+[*.ts]
+quote_type = single
+```
+
+Result: **Single quotes** (from `.editorconfig`, even if VSCode or extension settings say double quotes)
+
+**Scenario 2: Using VSCode settings (no `.editorconfig`)**
+```json
+{
+  "typescript.preferences.quoteStyle": "double",
+  "miniTypescriptHero.imports.stringQuoteStyle": "'"
+}
+```
+
+Result: **Double quotes** (from VSCode preferences, extension setting is ignored)
+
+**Scenario 3: Fallback to extension settings (nothing else configured)**
+```json
+{
+  "miniTypescriptHero.imports.stringQuoteStyle": "'",
+  "miniTypescriptHero.imports.insertSemicolons": false
+}
+```
+
+Result: **Single quotes, no semicolons** (from extension settings)
+
+💡 **Tip**: For team projects, use `.editorconfig` to enforce standards. For personal projects, use VSCode settings. The extension's settings are there as convenient fallbacks.
 
 ### Basic Settings
 
@@ -129,9 +250,11 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
   // Blank lines after imports: "one" (default), "two", or "preserve"
   "miniTypescriptHero.imports.blankLinesAfterImports": "one",
 
+  // Quote style (fallback - respects .editorconfig and VSCode preferences first)
   // Use single quotes (') or double quotes (")
   "miniTypescriptHero.imports.stringQuoteStyle": "'",
 
+  // Semicolons (fallback - respects VSCode typescript.format.semicolons first)
   // Add semicolons at the end of import statements
   "miniTypescriptHero.imports.insertSemicolons": true,
 
@@ -314,6 +437,10 @@ Control ascending or descending sort per group:
 
 - VSCode 1.85.0 or higher
 - Node.js 18.0.0 or higher (for extension development)
+
+## Privacy
+
+**This extension does not collect any telemetry or user data.** Your code, settings, and usage patterns remain completely private. We respect your privacy and believe in keeping your development environment local and secure.
 
 ## Credits
 

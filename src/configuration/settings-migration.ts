@@ -76,6 +76,9 @@ async function performMigration(): Promise<number> {
   const newConfig = workspace.getConfiguration(NEW_SECTION);
 
   let migratedCount = 0;
+  let migratedGlobalCount = 0;
+  let migratedWorkspaceCount = 0;
+  let migratedWorkspaceFolderCount = 0;
 
   for (const setting of SETTINGS_TO_MIGRATE) {
     // Check if old setting exists (has been configured by user)
@@ -92,22 +95,26 @@ async function performMigration(): Promise<number> {
     if (inspect.workspaceValue !== undefined) {
       await newConfig.update(setting, inspect.workspaceValue, ConfigurationTarget.Workspace);
       migratedCount++;
+      migratedWorkspaceCount++;
     }
 
     // Migrate workspace folder settings
     if (inspect.workspaceFolderValue !== undefined) {
       await newConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
       migratedCount++;
+      migratedWorkspaceFolderCount++;
     }
 
     // Migrate global (user) settings
     if (inspect.globalValue !== undefined) {
       await newConfig.update(setting, inspect.globalValue, ConfigurationTarget.Global);
       migratedCount++;
+      migratedGlobalCount++;
     }
   }
 
   // For migrated users: Enable legacyMode for 100% backward compatibility
+  // Write legacyMode to the SAME scope(s) where old settings were found
   if (migratedCount > 0) {
     // Simply enable legacyMode: true to replicate ALL old behaviors:
     // - Within-group sorting bug (always sorts by library name, ignores disableImportsSorting/organizeSortsByFirstSpecifier)
@@ -118,7 +125,22 @@ async function performMigration(): Promise<number> {
     if (legacyModeInspect?.globalValue === undefined &&
         legacyModeInspect?.workspaceValue === undefined &&
         legacyModeInspect?.workspaceFolderValue === undefined) {
-      await newConfig.update('legacyMode', true, ConfigurationTarget.Global);
+
+      // Collect the scopes where we migrated settings
+      const scopesToSet: ConfigurationTarget[] = [];
+      if (migratedWorkspaceCount > 0) {scopesToSet.push(ConfigurationTarget.Workspace);}
+      if (migratedWorkspaceFolderCount > 0) {scopesToSet.push(ConfigurationTarget.WorkspaceFolder);}
+      if (migratedGlobalCount > 0) {scopesToSet.push(ConfigurationTarget.Global);}
+
+      // If no scopes detected (shouldn't happen), default to Global
+      if (scopesToSet.length === 0) {
+        scopesToSet.push(ConfigurationTarget.Global);
+      }
+
+      // Write legacyMode to all scopes where old settings existed
+      for (const target of scopesToSet) {
+        await newConfig.update('legacyMode', true, target);
+      }
     }
   }
 

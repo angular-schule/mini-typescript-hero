@@ -34,12 +34,12 @@ class MockImportsConfig extends ImportsConfig {
     return this.overrides.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
   }
 
-  public insertSemicolons(_resource: Uri): boolean {
-    return this.overrides.get('insertSemicolons') ?? true;
+  public async insertSemicolons(_resource: Uri): Promise<boolean> {
+    return Promise.resolve(this.overrides.get('insertSemicolons') ?? true);
   }
 
-  public stringQuoteStyle(_resource: Uri): '"' | '\'' {
-    return this.overrides.get('stringQuoteStyle') ?? '\'';
+  public async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
+    return Promise.resolve(this.overrides.get('stringQuoteStyle') ?? `'`);
   }
 
   public multiLineWrapThreshold(_resource: Uri): number {
@@ -91,7 +91,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -107,7 +107,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -123,7 +123,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -139,7 +139,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -155,7 +155,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -181,7 +181,7 @@ suite('Blank Lines - Mode "two"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -197,7 +197,7 @@ suite('Blank Lines - Mode "two"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -213,7 +213,7 @@ suite('Blank Lines - Mode "two"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -229,7 +229,7 @@ suite('Blank Lines - Mode "two"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -255,7 +255,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -271,7 +271,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -287,7 +287,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -303,7 +303,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -319,7 +319,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -346,7 +346,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -362,7 +362,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -378,7 +378,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -394,7 +394,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -410,7 +410,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -426,7 +426,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -442,7 +442,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -458,7 +458,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -474,7 +474,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -490,7 +490,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -506,7 +506,7 @@ suite('Blank Lines - Header Detection', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -532,7 +532,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -548,7 +548,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -564,7 +564,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -580,7 +580,7 @@ suite('Blank Lines - Import Group Separation', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -607,7 +607,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -625,7 +625,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -656,7 +656,7 @@ suite('Blank Lines - Edge Cases', () => {
       const expected = `import { A } from './a';${eol}`;
 
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -671,7 +671,7 @@ suite('Blank Lines - Edge Cases', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       // No edits should be made
       assert.strictEqual(edits.length, 0);
@@ -686,7 +686,7 @@ suite('Blank Lines - Edge Cases', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       assert.strictEqual(edits.length, 0);
     } finally {
@@ -700,7 +700,7 @@ suite('Blank Lines - Edge Cases', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       // No imports means no edits
       assert.strictEqual(edits.length, 0);
@@ -716,7 +716,7 @@ suite('Blank Lines - Edge Cases', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);
@@ -732,7 +732,7 @@ suite('Blank Lines - Edge Cases', () => {
     const doc = await createTempDocument(input);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.strictEqual(result, expected);

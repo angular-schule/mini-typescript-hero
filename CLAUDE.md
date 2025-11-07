@@ -20,7 +20,7 @@
 ## 🎯 Project Goal
 
 Extract and modernize the "Sort and organize your imports" feature with:
-- ✅ **Comprehensive backward compatibility** with TypeScript Hero settings (verified across 370+ test scenarios)
+- ✅ **Comprehensive backward compatibility** with TypeScript Hero settings
 - ✅ **Modern 2025 tech stack** (ts-morph, esbuild, TypeScript 5.7)
 - ✅ **No dependencies on deprecated libraries** (typescript-parser is 7 years old!)
 - ✅ **Simplified architecture** (no InversifyJS DI container overkill)
@@ -162,7 +162,7 @@ mini-typescript-hero/                     ← Project root
 │   ├── configuration/
 │   │   ├── imports-config.ts             ← 13 config options wrapper
 │   │   └── settings-migration.ts         ← Migrates old TypeScript Hero settings
-│   └── test/                             ← General extension tests (215 tests)
+│   └── test/                             ← General extension tests
 │       ├── imports/import-manager.test.ts
 │       ├── imports/blank-lines.test.ts
 │       └── configuration/settings-migration.test.ts
@@ -171,7 +171,7 @@ mini-typescript-hero/                     ← Project root
 │   ├── old-extension/adapter.ts          ← Adapter for old TypeScript Hero
 │   ├── new-extension/adapter.ts          ← Adapter for new Mini TypeScript Hero
 │   ├── old-typescript-hero/              ← Git submodule (original extension)
-│   └── test-cases/*.test.ts              ← 129 comparison tests
+│   └── test-cases/*.test.ts              ← Comparison tests
 │
 ├── manual-test-cases/                    ← Manual testing scenarios
 ├── package.json                          ← Extension manifest, config schema

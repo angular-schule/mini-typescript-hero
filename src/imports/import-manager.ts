@@ -432,7 +432,7 @@ export class ImportManager {
    * Organize imports: remove unused, sort, and group.
    * Returns TextEdits to apply the changes.
    */
-  public organizeImports(): TextEdit[] {
+  public async organizeImports(): Promise<TextEdit[]> {
     let keep: Import[] = [];
 
     // Filter unused imports (unless disabled)
@@ -692,13 +692,13 @@ export class ImportManager {
     }
 
     // Generate import text
-    return this.generateTextEdits(importGroups);
+    return await this.generateTextEdits(importGroups);
   }
 
   /**
    * Generate TextEdits to replace the old imports with the new organized imports.
    */
-  private generateTextEdits(importGroups: ImportGroup[]): TextEdit[] {
+  private async generateTextEdits(importGroups: ImportGroup[]): Promise<TextEdit[]> {
     const edits: TextEdit[] = [];
 
     // Get the range of all import declarations (both modern and old-style)
@@ -828,7 +828,7 @@ export class ImportManager {
         : (useSorting && !useFirstSpecifierSort)
           ? group.sortedImports
           : group.imports;
-      const groupLines = importsToUse.map(imp => this.generateImportStatement(imp));
+      const groupLines = await Promise.all(importsToUse.map(imp => this.generateImportStatement(imp)));
       importLines.push(...groupLines);
 
       // Add blank line between groups
@@ -894,9 +894,9 @@ export class ImportManager {
   /**
    * Generate a single import statement string.
    */
-  private generateImportStatement(imp: Import): string {
-    const quote = this.config.stringQuoteStyle(this.document.uri);
-    const semi = this.config.insertSemicolons(this.document.uri) ? ';' : '';
+  private async generateImportStatement(imp: Import): Promise<string> {
+    const quote = await this.config.stringQuoteStyle(this.document.uri);
+    const semi = (await this.config.insertSemicolons(this.document.uri)) ? ';' : '';
     const spaceInBraces = this.config.insertSpaceBeforeAndAfterImportBraces(this.document.uri);
     const attrs = imp.attributes ? ` ${imp.attributes}` : '';
 

@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e \"\nconst { Project } = require(''ts-morph'');\nconst project = new Project({ useInMemoryFileSystem: true });\nconst sf = project.createSourceFile(''test.ts'', \\`import data from ''./data.json'' with { type: ''json'' };\\`);\nconst imp = sf.getImportDeclarations()[0];\nconst allMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(imp));\nconst attributeMethods = allMethods.filter(m => m.toLowerCase().includes(''assert'') || m.toLowerCase().includes(''attribute'') || m.toLowerCase().includes(''with''));\nconsole.log(''Import Attribute Related Methods:'', attributeMethods);\nconsole.log(''\\nAll methods count:'', allMethods.length);\nconsole.log(''Sample methods:'', allMethods.slice(0, 30));\n\")"
+      "Bash(npm run compile)",
+      "Bash(find src/test -name \"*.test.ts\" -exec sed -i '' 's/public insertSemicolons(_resource: Uri): boolean {/public async insertSemicolons(_resource: Uri): Promise<boolean> {/g' {} ;)",
+      "Bash(find src/test -name \"*.test.ts\" -exec sed -i '' 's/public stringQuoteStyle(_resource: Uri): .* {/public async stringQuoteStyle(_resource: Uri): Promise<\"\"\\\"\"\"\" | \"\"'\"''\"'\"\"> {/g' {} ;)",
+      "Bash(find src/test -name \"*.test.ts\" -exec sed -i '' 's/return this.overrides.get(.insertSemicolons.)/return Promise.resolve(this.overrides.get(''''insertSemicolons''''))/g' {} ;)",
+      "Bash(find src/test -name \"*.test.ts\" -exec sed -i '' 's/return this.overrides.get(.stringQuoteStyle.)/return Promise.resolve(this.overrides.get(''''stringQuoteStyle''''))/g' {} ;)",
+      "Bash(npm test)",
+      "WebSearch",
+      "Bash(npm test -- --grep \"VS Code Organize Imports Behavior\")",
+      "Bash(npm test -- --grep \"preserves blank lines between import groups\")",
+      "Bash(npm test -- --grep \"does NOT automatically create groups based on patterns\")",
+      "Bash(npm test -- --grep \"INVESTIGATION\")",
+      "Bash(npm test -- --grep \"does NOT automatically create groups based on PATTERN MATCHING\")",
+      "Bash(npm test -- --grep \"sorts alphabetically by module path\")",
+      "Bash(npm test -- --grep \"PROOF\")",
+      "Bash(npm run compile-tests)",
+      "Bash(npm test -- --grep \"Edge Cases - Comments and Real-World Scenarios\")",
+      "SlashCommand(/git-quick)"
     ],
     "deny": [],
     "ask": []

@@ -50,6 +50,22 @@ His response was incredibly kind and supportive. He gave me his blessing, shared
 
 **My mission was simple**: Preserve this feature for myself. And hopefully, other people will like it too.
 
+## Wait, Doesn't VS Code Already Have This?
+
+**Yes, but no.** VS Code has a built-in "Organize Imports" feature that removes unused imports, sorts alphabetically, and merges duplicate imports. Since TypeScript 4.7+, it preserves blank lines you manually add between import groups. The fundamental difference is **how groups are created**: you manually type blank lines (VS Code preserves them), versus automatic grouping (Mini TypeScript Hero creates them).
+
+**VS Code's approach:** You type blank lines between imports to create groups. VS Code sees these blank lines and treats them as group separators, sorting within each group while preserving the blank lines. If you want external (node_modules) imports separated from internal (local files) imports, you manually add a blank line between them and maintain it yourself every time you add new imports.
+
+**Mini TypeScript Hero's approach:** The extension automatically separates external (node_modules) from internal (local files) imports with blank lines between them—covering 90% of use cases without any configuration. Want more? Optionally add specific patterns like `["/^@angular/", "/rxjs/", "Workspace"]` to group framework or library imports separately. No manual maintenance required.
+
+**What VS Code cannot do:**
+
+❌ **Automatically create groups based on patterns** — Without manual blank lines, VS Code sorts everything alphabetically as one flat list
+❌ **Remove `/index` from paths** — Keeps `./lib/index` as-is instead of cleaning to `./lib`
+❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
+
+**The real-world impact:** Imagine you add a new Angular import. With VS Code, you need to manually place it in the right location and ensure blank lines are correct. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically goes to the Angular group with proper spacing. Configure once, benefit forever.
+
 ## What Changed Under the Hood
 
 The original TypeScript Hero used Christoph's own `typescript-parser` library ([node-typescript-parser](https://github.com/buehler/node-typescript-parser) on GitHub), a great piece of software that did its job well. But like the extension itself, it hasn't been maintained in years. Updating it to work with modern TypeScript versions would become increasingly challenging.
@@ -64,7 +80,7 @@ For a tool I rely on daily, that was a ticking time bomb.
 **The new engine:**
 - [`ts-morph`](https://github.com/dsherret/ts-morph) v27 (actively maintained, modern)
 - TypeScript 5.7 with strict mode
-- Simpler, cleaner architecture
+- Simpler, cleaner architecture, everything new
 - No deprecated dependencies
 
 **Key improvements:**
@@ -111,6 +127,6 @@ Ready to organize your imports with a single keystroke?
 
 ---
 
-**TL;DR:** TypeScript Hero isn't dead. It's just been upgraded for 2025 with a new name. The most important feature was preserved. All other features are now directly integrated in VSCode.
+**TL;DR:** TypeScript Hero isn't dead. It's been rescued and modernized for 2025 as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and professional import organization that matches your team's style guide.
 
 Happy coding! ✨

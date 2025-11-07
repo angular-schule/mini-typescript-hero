@@ -1,20 +1,9 @@
 # Changelog
 
-## [4.0.0-rc.0] - 2025-10-06
+## [4.0.0-rc.0]
 
-### Release Candidate
+**Initial release** of Mini TypeScript Hero
 
-This is the first release candidate for Mini TypeScript Hero v4.0.0.
-
-**Testing Period:** Please test this RC version and report any issues before the final 4.0.0 release.
-
-**Read the announcement:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
-
-## [4.0.0] - TBD
-
-### Added
-
-- **Initial release** of Mini TypeScript Hero
 - Organize imports command (`Ctrl+Alt+O` / `Cmd+Alt+O`)
 - Automatic removal of unused imports
 - Intelligent import sorting (by module path or first specifier)
@@ -32,6 +21,11 @@ This is the first release candidate for Mini TypeScript Hero v4.0.0.
   - Ignored imports (never removed)
   - Disable sorting option
   - Disable removal option
+- **Configuration Priority Order** - Respects `.editorconfig` and VSCode settings before extension settings
+- **Commands:**
+  - `Mini TS Hero: Organize imports` - Sort and remove unused imports (the main command)
+  - `Mini TS Hero: Check for configuration conflicts` - Detect if multiple tools would organize imports
+  - `Mini TS Hero: Toggle legacy mode` - Switch between modern and legacy behavior
 - Modern implementation using ts-morph (v27)
 - Built with esbuild for optimal performance
 

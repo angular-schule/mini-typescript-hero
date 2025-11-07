@@ -62,7 +62,7 @@ const y = config;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -93,7 +93,7 @@ const x: Types.MyType = getValue();
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -122,7 +122,7 @@ const x: Types.MyType = getValue();
       const config = new MockImportsConfig();
       config.setConfig('legacyMode', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -161,7 +161,7 @@ const y = Component;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -201,7 +201,7 @@ const x = A + B + Z;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -233,7 +233,7 @@ const x = A + B + Z;
       const config = new MockImportsConfig();
       config.setConfig('legacyMode', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -257,7 +257,7 @@ const x = A + Z;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -287,7 +287,7 @@ const x = A + Z;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (config as any).mockConfig = new Map([['multiLineTrailingComma', false]]);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -318,7 +318,7 @@ const x = A + a + B + b + Ä + ä + α + β + Ω;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -350,7 +350,7 @@ const x = X + Y;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -386,7 +386,7 @@ const x = A + B;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (config as any).mockConfig = new Map([['removeTrailingIndex', true]]);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -417,7 +417,7 @@ const x = A + B;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -450,7 +450,7 @@ const x = B;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -489,7 +489,7 @@ const x = A;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -520,7 +520,7 @@ const y = { foo: 'bar' } as const satisfies MyType;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -546,7 +546,7 @@ const y = A;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -585,7 +585,7 @@ const z = A;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -617,7 +617,7 @@ import { Z } from './z';
       const config = new MockImportsConfig();
       config.setConfig('disableImportRemovalOnOrganize', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -652,7 +652,7 @@ const x = A + Z;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -687,7 +687,7 @@ async function action() {
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -718,7 +718,7 @@ const x = A + Z;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -747,14 +747,14 @@ const x = A + Z;
 
       // Run organizer twice
       const manager1 = new ImportManager(doc, config);
-      const edits1 = manager1.organizeImports();
+      const edits1 = await manager1.organizeImports();
       await applyEditsToDocument(doc, edits1);
 
       const result1 = doc.getText();
 
       // Run again on the organized output
       const manager2 = new ImportManager(doc, config);
-      const edits2 = manager2.organizeImports();
+      const edits2 = await manager2.organizeImports();
       await applyEditsToDocument(doc, edits2);
 
       const result2 = doc.getText();
@@ -787,7 +787,7 @@ const foo = Y;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -819,7 +819,7 @@ const y = A + B;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
@@ -850,7 +850,7 @@ const y = <MyType>bar;
     try {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();

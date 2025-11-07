@@ -40,7 +40,6 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onCommand:miniTypescriptHero.imports.organize",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
@@ -52,6 +51,14 @@
       {
         "command": "miniTypescriptHero.imports.organize",
         "title": "Mini TS Hero: Organize imports (sort and remove unused)"
+      },
+      {
+        "command": "miniTypescriptHero.checkConflicts",
+        "title": "Mini TS Hero: Check for configuration conflicts"
+      },
+      {
+        "command": "miniTypescriptHero.toggleLegacyMode",
+        "title": "Mini TS Hero: Toggle legacy mode"
       }
     ],
     "keybindings": [
@@ -79,7 +86,7 @@
         "miniTypescriptHero.imports.insertSemicolons": {
           "type": "boolean",
           "default": true,
-          "description": "Defines if there should be a semicolon at the end of a statement.",
+          "description": "Defines if there should be a semicolon at the end of a statement. Fallback setting - respects VSCode 'typescript.format.semicolons' and 'javascript.format.semicolons' first.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.stringQuoteStyle": {
@@ -88,7 +95,7 @@
             "\""
           ],
           "default": "'",
-          "description": "Defines if single or double quotes should be used.",
+          "description": "Defines if single or double quotes should be used. Fallback setting - respects .editorconfig 'quote_type', VSCode 'typescript.preferences.quoteStyle', and 'javascript.preferences.quoteStyle' first.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.multiLineWrapThreshold": {
@@ -244,6 +251,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "editorconfig": "3.0.1",
     "ts-morph": "^27.0.0"
   }
 }

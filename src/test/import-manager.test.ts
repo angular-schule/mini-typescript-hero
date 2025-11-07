@@ -104,16 +104,16 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
   }
 
-  insertSemicolons(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSemicolons') ?? true;
+  async insertSemicolons(_resource: Uri): Promise<boolean> {
+    return Promise.resolve(this.mockConfig.get('insertSemicolons') ?? true);
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
     return this.mockConfig.get('removeTrailingIndex') ?? true;
   }
 
-  stringQuoteStyle(_resource: Uri): '"' | '\'' {
-    return this.mockConfig.get('stringQuoteStyle') ?? '\'';
+  async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
+    return Promise.resolve(this.mockConfig.get('stringQuoteStyle') ?? `'`);
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
@@ -191,7 +191,7 @@ const x = Used;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(!result.includes('Unused'), 'Unused import should be removed');
@@ -213,7 +213,7 @@ const y = C;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('A'), 'Used specifier A should be kept');
@@ -235,7 +235,7 @@ import { Unused } from 'other';
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('react'), 'React should be kept even if unused');
@@ -256,7 +256,7 @@ let x: MyType;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('MyType'), 'Type-only import should be kept');
@@ -283,7 +283,7 @@ class Component {
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(!result.includes('@angular/core'), 'Shadowed import should be removed');
@@ -300,7 +300,7 @@ const x = AngularComponent;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('Component as AngularComponent'), 'Aliased import should be kept');
@@ -318,7 +318,7 @@ const element = React.createElement('div');
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('* as React'), 'Used namespace import should be kept');
@@ -337,7 +337,7 @@ const x = React;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('React'), 'Used default import should be kept');
@@ -358,7 +358,7 @@ const z = ref;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('React'), 'Used default should be kept');
@@ -389,7 +389,7 @@ const y = LocalClass;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const zoneIndex = result.indexOf('zone.js');
@@ -413,7 +413,7 @@ const y = map;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const angularIndex = result.indexOf('@angular/core');
@@ -434,7 +434,7 @@ const y = map;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should have filter before map (alphabetically, and tap removed)
@@ -462,7 +462,7 @@ const z: OnInit = null as any;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const importLine = result.split('\n').find(line => line.includes('@angular/core'));
@@ -490,7 +490,7 @@ const x = Used;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('"lib"'), 'Should use double quotes when configured');
@@ -508,7 +508,7 @@ const x = Used;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const importLine = result.split('\n').find(line => line.includes('import'));
@@ -527,7 +527,7 @@ const x = Used;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('{Used}'), 'Should not have spaces in braces when configured');
@@ -547,7 +547,7 @@ const y = LocalClass;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should have blank lines between groups
@@ -572,7 +572,7 @@ const x = Used;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('./lib'), 'Should have library path');
@@ -592,7 +592,7 @@ import { AlsoUnused } from 'other';
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('Unused'), 'Should keep unused imports when removal is disabled');
@@ -618,7 +618,7 @@ const y = map;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Original order should be preserved (rxjs before angular)
@@ -640,7 +640,7 @@ import 'reflect-metadata';
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('zone.js'), 'String import should be kept');
@@ -658,7 +658,7 @@ export { Foo, Bar };
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Foo and Bar are re-exported, so should be kept
@@ -679,7 +679,7 @@ export default MyClass;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('MyClass'), 'Default re-exported import should be kept');
@@ -697,7 +697,7 @@ export { Utils };
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       assert.ok(result.includes('Utils'), 'Re-exported namespace import should be kept');
@@ -719,7 +719,7 @@ export const MyComponent = () => {
     const doc = await createTempDocument(content, 'tsx');
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // helper() is used in JSX expression, should be kept
@@ -742,7 +742,7 @@ export { MyDefault };
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // MyDefault is re-exported as named export, should be kept
@@ -765,7 +765,7 @@ function myFunction() {
     const doc = await createTempDocument(content, 'js');
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // JavaScript should work like TypeScript
@@ -788,7 +788,7 @@ export default function MyComponent() {
     const doc = await createTempDocument(content, 'jsx');
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // JSX should detect usage correctly
@@ -811,7 +811,7 @@ const instance = new UsedClass();
     const doc = await createTempDocument(content, 'js');
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // All modern JS features should work
@@ -837,7 +837,7 @@ const e = FifthSymbol;
     try {
       config.setConfig('multiLineWrapThreshold', 50); // Very low threshold to force multiline
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should be multiline (contains line breaks in import)
@@ -860,7 +860,7 @@ const c = VeryLongSymbolNameThree;
       config.setConfig('multiLineWrapThreshold', 40); // Force multiline
       config.setConfig('multiLineTrailingComma', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should have trailing comma on last specifier (which will be "Two" after alphabetical sort)
@@ -883,7 +883,7 @@ const c = VeryLongSymbolNameThree;
       config.setConfig('multiLineWrapThreshold', 40); // Force multiline
       config.setConfig('multiLineTrailingComma', false);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should NOT have trailing comma on last specifier (which will be "Two" after alphabetical sort)
@@ -907,7 +907,7 @@ console.log(foo, bar);
     try {
       config.setConfig('organizeSortsByFirstSpecifier', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Expected: sorted by first specifier (bar < foo), not by library name
@@ -934,7 +934,7 @@ const b = names;
     try {
       config.setConfig('multiLineWrapThreshold', 125); // Default high threshold
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should stay single line
@@ -950,7 +950,7 @@ const b = names;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       assert.strictEqual(edits.length, 0, 'Empty file should produce no edits');
     } finally {
@@ -965,7 +965,7 @@ console.log(x);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       assert.strictEqual(edits.length, 0, 'File with no imports should produce no edits');
     } finally {
@@ -983,7 +983,7 @@ const x = 42;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should remove all imports
@@ -1003,7 +1003,7 @@ const x: MyType = { value: 42 };
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Type import should be preserved (used in type annotation)
@@ -1021,7 +1021,7 @@ const x = 42;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Unused type import should be removed
@@ -1055,7 +1055,7 @@ MyHelper;
       ]);
 
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1076,7 +1076,7 @@ MyHelper;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       assert.strictEqual(edits.length, 0, 'Whitespace-only file should produce no edits');
     } finally {
@@ -1095,7 +1095,7 @@ console.log(A, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1123,7 +1123,7 @@ console.log(A, B);
       const customConfig = new MockImportsConfig();
       customConfig.setConfig('mergeImportsFromSameModule', false);
       const manager = new ImportManager(doc, customConfig);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1151,7 +1151,7 @@ console.log(A, B);
       customConfig.setConfig('mergeImportsFromSameModule', false);
       customConfig.setConfig('disableImportRemovalOnOrganize', false);
       const manager = new ImportManager(doc, customConfig);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1176,7 +1176,7 @@ console.log(DefaultExport, Named);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1201,7 +1201,7 @@ console.log(Lib, Named);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1225,7 +1225,7 @@ console.log('side effects');
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1246,7 +1246,7 @@ const x: typeof MyClass = null as any;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Default type import should be preserved when used
@@ -1266,7 +1266,7 @@ console.log(A, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1294,7 +1294,7 @@ console.log(AliasA, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1320,7 +1320,7 @@ console.log(A, B, C, Default);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1348,7 +1348,7 @@ console.log(Z, A, M);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1372,7 +1372,7 @@ console.log(VeryLongNameOne, VeryLongNameTwo);
     try {
       config.setConfig('multiLineWrapThreshold', 30); // Force multiline
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should merge and format as multiline
@@ -1399,7 +1399,7 @@ console.log(A, B, C, D);
     try {
       config.setConfig('grouping', ['/angular/', 'Workspace']);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1426,7 +1426,7 @@ console.log(Z, A);
     try {
       config.setConfig('organizeSortsByFirstSpecifier', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1450,7 +1450,7 @@ console.log(Comp1, Comp2);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1476,7 +1476,7 @@ console.log(Default1, Named);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1503,7 +1503,7 @@ console.log(A, B);
     try {
       config.setConfig('removeTrailingIndex', true);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1529,7 +1529,7 @@ const b: TypeB = null as any;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1553,7 +1553,7 @@ console.log(Named);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1578,7 +1578,7 @@ console.log(Lib, Named);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1603,7 +1603,7 @@ console.log(A, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1627,7 +1627,7 @@ console.log(Lib1, Lib2);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1652,7 +1652,7 @@ console.log(A, B);
     try {
       config.setConfig('removeTrailingIndex', false);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1694,7 +1694,7 @@ console.log(Default1, Default2);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1724,7 +1724,7 @@ const result = filter(doubled, x => x > 5)
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1750,7 +1750,7 @@ console.log(foo, bar);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.trim().length > 0);
@@ -1774,7 +1774,7 @@ console.log(bar);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n').filter(line => line.startsWith('import'));
@@ -1802,7 +1802,7 @@ const local = MyClass;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should be grouped: Plains, Modules (including import equals), Workspace
@@ -1838,7 +1838,7 @@ console.log(foo);
       config.setConfig('stringQuoteStyle', "'");
       config.setConfig('insertSemicolons', false);
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should use single quotes and no semicolon
@@ -1869,7 +1869,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -1900,7 +1900,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -1929,7 +1929,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -1957,7 +1957,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // CRITICAL: Triple-slash directives must be preserved and stay before imports
@@ -1993,7 +1993,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // CRITICAL: Comments must be preserved
@@ -2026,7 +2026,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2064,7 +2064,7 @@ console.log(UserDetail);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2095,7 +2095,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2127,7 +2127,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2159,7 +2159,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2186,7 +2186,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2239,7 +2239,7 @@ console.log(used);
     const doc3 = await createTempDocument(content3);
     try {
       const manager0 = new ImportManager(doc0, config);
-      const edits0 = manager0.organizeImports();
+      const edits0 = await manager0.organizeImports();
       const result0 = await applyEditsToDocument(doc0, edits0);
       const lines0 = result0.split('\n');
       const comment0 = lines0.findIndex(l => l.includes('Comment'));
@@ -2247,7 +2247,7 @@ console.log(used);
       assert.strictEqual(import0 - comment0, 1, 'ZERO blank lines before should be preserved');
 
       const manager1 = new ImportManager(doc1, config);
-      const edits1 = manager1.organizeImports();
+      const edits1 = await manager1.organizeImports();
       const result1 = await applyEditsToDocument(doc1, edits1);
       const lines1 = result1.split('\n');
       const comment1 = lines1.findIndex(l => l.includes('Comment'));
@@ -2255,7 +2255,7 @@ console.log(used);
       assert.strictEqual(import1 - comment1, 2, 'ONE blank line before should be preserved');
 
       const manager2 = new ImportManager(doc2, config);
-      const edits2 = manager2.organizeImports();
+      const edits2 = await manager2.organizeImports();
       const result2 = await applyEditsToDocument(doc2, edits2);
       const lines2 = result2.split('\n');
       const comment2 = lines2.findIndex(l => l.includes('Comment'));
@@ -2263,7 +2263,7 @@ console.log(used);
       assert.strictEqual(import2 - comment2, 3, 'TWO blank lines before should be preserved');
 
       const manager3 = new ImportManager(doc3, config);
-      const edits3 = manager3.organizeImports();
+      const edits3 = await manager3.organizeImports();
       const result3 = await applyEditsToDocument(doc3, edits3);
       const lines3 = result3.split('\n');
       const comment3 = lines3.findIndex(l => l.includes('Comment'));
@@ -2297,7 +2297,7 @@ console.log(helper);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // CRITICAL: Dynamic imports must NOT be touched
@@ -2329,7 +2329,7 @@ console.log(helper, currentUrl);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // CRITICAL: import.meta usage must be preserved
@@ -2351,7 +2351,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Empty import should be cleaned up
@@ -2372,7 +2372,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Whitespace-only import should be cleaned up
@@ -2397,7 +2397,7 @@ import { C } from './c';
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // All imports should be removed, leaving empty file (or just whitespace)
@@ -2424,7 +2424,7 @@ console.log(x, foo);
       // Should not throw error
       let threw = false;
       try {
-        const edits = manager.organizeImports();
+        const edits = await manager.organizeImports();
         const result = await applyEditsToDocument(doc, edits);
 
         // Import should still be recognized and kept (it's used)
@@ -2455,7 +2455,7 @@ console.log(A, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Note: Comments between imports may not be preserved in their exact position
@@ -2479,7 +2479,7 @@ console.log(SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentif
     try {
       config.setConfig('multiLineWrapThreshold', 40); // Low threshold to force wrapping
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Should wrap to multiline (the braces part alone is > 40 chars)
@@ -2515,7 +2515,7 @@ console.log(used);
       // Should not throw error
       let threw = false;
       try {
-        const edits = manager.organizeImports();
+        const edits = await manager.organizeImports();
         const result = await applyEditsToDocument(doc, edits);
 
         // File should still be valid (BOM will be stripped by ts-morph, but that's okay)
@@ -2544,7 +2544,7 @@ console.log(helper, message);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Import should be preserved
@@ -2582,7 +2582,7 @@ console.log(A, B);
       // Should not throw - must fall back to defaults
       let threw = false;
       try {
-        const edits = manager.organizeImports();
+        const edits = await manager.organizeImports();
         const result = await applyEditsToDocument(doc, edits);
 
         // Should still organize with default grouping
@@ -2611,7 +2611,7 @@ console.log(instance);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2648,7 +2648,7 @@ console.log(used);
     try {
       config.override('blankLinesAfterImports', 'preserve');
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2679,7 +2679,7 @@ console.log(used);
     try {
       config.override('blankLinesAfterImports', 'preserve');
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2707,7 +2707,7 @@ console.log(used);
     try {
       config.override('blankLinesAfterImports', 'preserve');
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2755,7 +2755,7 @@ console.log(used);
     const doc3 = await createTempDocument(content3);
     try {
       const manager0 = new ImportManager(doc0, config);
-      const edits0 = manager0.organizeImports();
+      const edits0 = await manager0.organizeImports();
       const result0 = await applyEditsToDocument(doc0, edits0);
       const lines0 = result0.split('\n');
       const import0 = lines0.findIndex(l => l.includes('import'));
@@ -2763,7 +2763,7 @@ console.log(used);
       assert.strictEqual(code0 - import0, 1, 'ZERO blank lines after should be preserved');
 
       const manager1 = new ImportManager(doc1, config);
-      const edits1 = manager1.organizeImports();
+      const edits1 = await manager1.organizeImports();
       const result1 = await applyEditsToDocument(doc1, edits1);
       const lines1 = result1.split('\n');
       const import1 = lines1.findIndex(l => l.includes('import'));
@@ -2771,7 +2771,7 @@ console.log(used);
       assert.strictEqual(code1 - import1, 2, 'ONE blank line after should be preserved');
 
       const manager2 = new ImportManager(doc2, config);
-      const edits2 = manager2.organizeImports();
+      const edits2 = await manager2.organizeImports();
       const result2 = await applyEditsToDocument(doc2, edits2);
       const lines2 = result2.split('\n');
       const import2 = lines2.findIndex(l => l.includes('import'));
@@ -2779,7 +2779,7 @@ console.log(used);
       assert.strictEqual(code2 - import2, 3, 'TWO blank lines after should be preserved');
 
       const manager3 = new ImportManager(doc3, config);
-      const edits3 = manager3.organizeImports();
+      const edits3 = await manager3.organizeImports();
       const result3 = await applyEditsToDocument(doc3, edits3);
       const lines3 = result3.split('\n');
       const import3 = lines3.findIndex(l => l.includes('import'));
@@ -2810,7 +2810,7 @@ console.log(used);
     try {
       config.override('blankLinesAfterImports', 'preserve');
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       const lines = result.split('\n');
@@ -2838,7 +2838,7 @@ console.log(used);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
 
       // The ImportManager should detect CRLF and use it in generated imports
       assert.strictEqual(edits.length, 1, 'Should have one edit');
@@ -2852,7 +2852,7 @@ console.log(used);
       const doc2 = await createTempDocument(content2);
       try {
         const manager2 = new ImportManager(doc2, config);
-        const edits2 = manager2.organizeImports();
+        const edits2 = await manager2.organizeImports();
 
         // Multiline import should have CRLF after opening brace and before closing brace
         assert.strictEqual(edits2.length, 1, 'Should have one edit');
@@ -2886,7 +2886,7 @@ const r = React;
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // CRITICAL: Specifiers must be in alphabetical order
@@ -2919,7 +2919,7 @@ console.log(A, B);
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
-      const edits = manager.organizeImports();
+      const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
       // Verify imports are organized

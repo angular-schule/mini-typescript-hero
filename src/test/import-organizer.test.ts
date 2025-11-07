@@ -69,7 +69,7 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['insertSpaceBeforeAndAfterImportBraces'] ?? true;
   }
 
-  public insertSemicolons(_resource: Uri): boolean {
+  public async insertSemicolons(_resource: Uri): Promise<boolean> {
     return this.mockConfig['insertSemicolons'] ?? true;
   }
 
@@ -77,7 +77,7 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['removeTrailingIndex'] ?? true;
   }
 
-  public stringQuoteStyle(_resource: Uri): '"' | '\'' {
+   public async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
     return this.mockConfig['stringQuoteStyle'] ?? '\'';
   }
 
