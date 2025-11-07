@@ -199,7 +199,9 @@ const x = A + B + Z;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
+      const config = new (class extends ImportsConfig {
+        public indentation() { return '  '; } // 2 spaces (modern default)
+      })();
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);

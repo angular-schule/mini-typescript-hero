@@ -1,4 +1,4 @@
-import { Uri, workspace, extensions } from 'vscode';
+import { Uri, workspace, extensions, window } from 'vscode';
 import * as editorconfig from 'editorconfig';
 
 import { ImportGroup, ImportGroupSetting, ImportGroupSettingParser, RemainImportGroup } from '../imports/import-grouping';
@@ -26,17 +26,23 @@ export class ImportsConfig {
 
   /**
    * Get semicolon preference with priority order:
-   * 1. .editorconfig (highest - team standard)
-   * 2. VSCode TypeScript/JavaScript preferences
-   * 3. Our extension settings (lowest - fallback)
+   * 1. VSCode TypeScript/JavaScript preferences
+   * 2. Our extension settings (fallback)
    */
   public async insertSemicolons(resource: Uri): Promise<boolean> {
-    // Priority 1: .editorconfig
-    // Note: EditorConfig doesn't have a direct semicolon setting
-    // But we check for consistency with other formatters
+    // If user wants strict control, skip VS Code settings
+    if (this.useOnlyExtensionSettings(resource)) {
+      return workspace
+        .getConfiguration(sectionKey, resource)
+        .get('insertSemicolons', true);
+    }
 
-    // Priority 2: VSCode TypeScript/JavaScript format settings
-    const languageId = resource.path.endsWith('.tsx') || resource.path.endsWith('.ts') ? 'typescript' : 'javascript';
+    // Priority 1: VSCode TypeScript/JavaScript format settings
+    const p = resource.path.toLowerCase();
+    const isTS = p.endsWith('.ts') || p.endsWith('.tsx') ||
+                 p.endsWith('.mts') || p.endsWith('.cts');
+    const languageId = isTS ? 'typescript' : 'javascript';
+
     const formatSemicolons = workspace
       .getConfiguration(`${languageId}.format`, resource)
       .get<'ignore' | 'insert' | 'remove'>('semicolons');
@@ -44,7 +50,7 @@ export class ImportsConfig {
     if (formatSemicolons === 'insert') {return true;}
     if (formatSemicolons === 'remove') {return false;}
 
-    // Priority 3: Our setting (fallback)
+    // Priority 2: Our setting (fallback)
     return workspace
       .getConfiguration(sectionKey, resource)
       .get('insertSemicolons', true);
@@ -63,8 +69,16 @@ export class ImportsConfig {
    * 3. Our extension settings (lowest - fallback)
    */
   public async stringQuoteStyle(resource: Uri): Promise<'"' | '\''> {
+    // If user wants strict control, skip all external sources
+    if (this.useOnlyExtensionSettings(resource)) {
+      return workspace
+        .getConfiguration(sectionKey, resource)
+        .get('stringQuoteStyle', `'`);
+    }
+
     // Priority 1: .editorconfig (HIGHEST - team standard)
     // Only check if EditorConfig extension is installed and active
+    // Note: quote_type is a non-standard property (Prettier extension), so we parse manually
     if (this.isEditorConfigActive()) {
       try {
         const config = await editorconfig.parse(resource.fsPath);
@@ -76,7 +90,11 @@ export class ImportsConfig {
     }
 
     // Priority 2: VSCode TypeScript/JavaScript preferences
-    const languageId = resource.path.endsWith('.tsx') || resource.path.endsWith('.ts') ? 'typescript' : 'javascript';
+    const p = resource.path.toLowerCase();
+    const isTS = p.endsWith('.ts') || p.endsWith('.tsx') ||
+                 p.endsWith('.mts') || p.endsWith('.cts');
+    const languageId = isTS ? 'typescript' : 'javascript';
+
     const quoteStyle = workspace
       .getConfiguration(`${languageId}.preferences`, resource)
       .get<'single' | 'double' | 'auto'>('quoteStyle');
@@ -88,6 +106,104 @@ export class ImportsConfig {
     return workspace
       .getConfiguration(sectionKey, resource)
       .get('stringQuoteStyle', `'`);
+  }
+
+  /**
+   * Get whether to use only extension settings (ignore VS Code settings).
+   */
+  public useOnlyExtensionSettings(resource: Uri): boolean {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('useOnlyExtensionSettings', false);
+  }
+
+  /**
+   * Get indentation string for multiline imports.
+   *
+   * Legacy mode: Matches old TypeScript Hero exactly
+   * - Always uses spaces (never tabs)
+   * - Default: 4 spaces (VS Code default)
+   * - Reads window.activeTextEditor.options.tabSize first
+   * - Fallback: workspace.getConfiguration('editor').get('tabSize', 4)
+   *
+   * Modern mode: Enhanced with full control
+   * - Respects editor.insertSpaces (supports tabs)
+   * - Default: 2 spaces (better for TS/JS)
+   * - Extension config can override
+   * - useOnlyExtensionSettings skips VS Code entirely
+   *
+   * Note: VS Code automatically resolves settings from all sources (EditorConfig, workspace, user settings).
+   * We just read the final resolved value!
+   */
+  public indentation(resource: Uri): string {
+    // Master override: use only extension settings
+    if (this.useOnlyExtensionSettings(resource)) {
+      return this.indentationFromExtensionConfig(resource);
+    }
+
+    // Legacy mode: match old TypeScript Hero exactly
+    if (this.legacyMode(resource)) {
+      return this.indentationLegacyMode(resource);
+    }
+
+    // Modern mode: respect VS Code settings fully
+    const editorConfig = workspace.getConfiguration('editor', resource);
+    const insertSpaces = editorConfig.get<boolean>('insertSpaces', true);
+
+    // Check if tabSize is explicitly configured (vs just VS Code's built-in default of 4)
+    const tabSizeInspect = editorConfig.inspect<number>('tabSize');
+    let tabSize: number;
+
+    if (tabSizeInspect && (
+      tabSizeInspect.workspaceFolderValue !== undefined ||
+      tabSizeInspect.workspaceValue !== undefined ||
+      tabSizeInspect.globalValue !== undefined
+    )) {
+      // User explicitly configured it - use their value
+      tabSize = editorConfig.get<number>('tabSize', 2);
+    } else {
+      // Not explicitly configured - use our modern default of 2 (better for TS/JS)
+      tabSize = 2;
+    }
+
+    if (insertSpaces === false) {
+      return '\t';
+    }
+    return ' '.repeat(tabSize);
+  }
+
+  /**
+   * Legacy mode indentation - matches old TypeScript Hero exactly.
+   * ALWAYS uses spaces (never tabs), default 4 spaces.
+   *
+   * Priority order (from old extension source code):
+   * 1. window.activeTextEditor.options.tabSize (includes EditorConfig!)
+   * 2. workspace.getConfiguration('editor').get('tabSize', 4)
+   */
+  private indentationLegacyMode(resource: Uri): string {
+    // Priority 1: Active editor's resolved tabSize (includes EditorConfig!)
+    const editor = window.activeTextEditor;
+    if (editor && typeof editor.options.tabSize === 'number') {
+      return ' '.repeat(editor.options.tabSize);
+    }
+
+    // Priority 2: Workspace editor.tabSize with default 4
+    const tabSize = workspace.getConfiguration('editor', resource).get<number>('tabSize', 4);
+    return ' '.repeat(tabSize); // Legacy: ALWAYS spaces, never tabs
+  }
+
+  /**
+   * Get indentation from extension-specific settings only.
+   */
+  private indentationFromExtensionConfig(resource: Uri): string {
+    const config = workspace.getConfiguration(sectionKey, resource);
+    const insertSpaces = config.get<boolean>('insertSpaces', true);
+    const tabSize = config.get<number>('tabSize', 2);
+
+    if (insertSpaces === false) {
+      return '\t';
+    }
+    return ' '.repeat(tabSize);
   }
 
   public multiLineWrapThreshold(resource: Uri): number {

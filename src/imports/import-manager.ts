@@ -807,6 +807,12 @@ export class ImportManager {
     const useFirstSpecifierSort = this.config.organizeSortsByFirstSpecifier(this.document.uri);
     const useLegacyWithinGroupSorting = this.config.legacyWithinGroupSorting(this.document.uri);
 
+    // Cache formatting config values once (avoid repeated lookups per import)
+    const quote = await this.config.stringQuoteStyle(this.document.uri);
+    const semi = (await this.config.insertSemicolons(this.document.uri)) ? ';' : '';
+    const spaceInBraces = this.config.insertSpaceBeforeAndAfterImportBraces(this.document.uri);
+    const indent = this.config.indentation(this.document.uri);
+
     for (const group of importGroups) {
       if (group.imports.length === 0) {
         continue;
@@ -828,7 +834,7 @@ export class ImportManager {
         : (useSorting && !useFirstSpecifierSort)
           ? group.sortedImports
           : group.imports;
-      const groupLines = await Promise.all(importsToUse.map(imp => this.generateImportStatement(imp)));
+      const groupLines = await Promise.all(importsToUse.map(imp => this.generateImportStatement(imp, quote, semi, spaceInBraces, indent)));
       importLines.push(...groupLines);
 
       // Add blank line between groups
@@ -893,11 +899,18 @@ export class ImportManager {
 
   /**
    * Generate a single import statement string.
+   * @param quote Quote style (' or ")
+   * @param semi Semicolon string (';' or '')
+   * @param spaceInBraces Whether to insert spaces in braces
+   * @param indent Indentation string for multiline imports (e.g., '  ' or '\t')
    */
-  private async generateImportStatement(imp: Import): Promise<string> {
-    const quote = await this.config.stringQuoteStyle(this.document.uri);
-    const semi = (await this.config.insertSemicolons(this.document.uri)) ? ';' : '';
-    const spaceInBraces = this.config.insertSpaceBeforeAndAfterImportBraces(this.document.uri);
+  private async generateImportStatement(
+    imp: Import,
+    quote: '"' | '\'',
+    semi: string,
+    spaceInBraces: boolean,
+    indent: string
+  ): Promise<string> {
     const attrs = imp.attributes ? ` ${imp.attributes}` : '';
 
     if (imp instanceof StringImport) {
@@ -997,7 +1010,7 @@ export class ImportManager {
             return result;
           });
 
-          const namedPart = `{${this.eol}  ${formattedSpecifiers.join(this.eol + '  ')}${this.eol}}`;
+          const namedPart = `{${this.eol}${indent}${formattedSpecifiers.join(this.eol + indent)}${this.eol}}`;
           parts.push(namedPart);
         } else {
           parts.push(singleLine);

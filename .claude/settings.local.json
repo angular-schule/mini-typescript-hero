@@ -5,7 +5,12 @@
       "Bash(npm test)",
       "WebSearch",
       "Bash(npm run compile-tests)",
-      "SlashCommand(/git-quick)"
+      "SlashCommand(/git-quick)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run check-types)",
+      "Bash(npm run lint)",
+      "Bash(npm run)",
+      "Bash(npm run build)"
     ],
     "deny": [],
     "ask": []

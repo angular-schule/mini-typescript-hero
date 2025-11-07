@@ -239,7 +239,9 @@ const x = A + B + C;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
+      const config = new (class extends ImportsConfig {
+        public indentation() { return '  '; } // 2 spaces (modern default)
+      })();
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
@@ -277,9 +279,11 @@ const z = useEffect;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
-      config.multiLineWrapThreshold = () => 20; // Force multiline
-      config.multiLineTrailingComma = () => true;
+      const config = new (class extends ImportsConfig {
+        public multiLineWrapThreshold() { return 20; } // Force multiline
+        public multiLineTrailingComma() { return true; }
+        public indentation() { return '  '; } // 2 spaces (modern default)
+      })();
 
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
@@ -313,9 +317,11 @@ const z = useEffect;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
-      config.multiLineWrapThreshold = () => 20; // Force multiline
-      config.multiLineTrailingComma = () => false;
+      const config = new (class extends ImportsConfig {
+        public multiLineWrapThreshold() { return 20; } // Force multiline
+        public multiLineTrailingComma() { return false; }
+        public indentation() { return '  '; } // 2 spaces (modern default)
+      })();
 
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();

@@ -160,6 +160,25 @@
           "description": "Enable full legacy mode for 100% compatibility with old TypeScript Hero extension. When true: replicates ALL old behaviors (within-group sorting bug, preserve blank lines, merge-before-removeTrailingIndex timing, type-only merge). When false: modern best practices (correct sorting, 1 blank line, correct merge timing, type-only separation). Migrated users get 'true' automatically.",
           "scope": "resource"
         },
+        "miniTypescriptHero.imports.tabSize": {
+          "type": "number",
+          "minimum": 1,
+          "default": 2,
+          "markdownDescription": "The number of spaces a tab is equal to when formatting multiline imports. Fallback setting - respects VS Code `editor.tabSize` first.\n\n**Priority:** VS Code `editor.tabSize` → this setting",
+          "scope": "resource"
+        },
+        "miniTypescriptHero.imports.insertSpaces": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Insert spaces when formatting multiline imports. When false, uses tabs. Fallback setting - respects VS Code `editor.insertSpaces` first.\n\n**Priority:** VS Code `editor.insertSpaces` → this setting",
+          "scope": "resource"
+        },
+        "miniTypescriptHero.imports.useOnlyExtensionSettings": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "When enabled, ignores VS Code settings and uses only Mini TypeScript Hero extension settings for all formatting options (quotes, semicolons, indentation).\n\n**Use case:** Enforce consistent import formatting across all team members regardless of their editor configuration.",
+          "scope": "resource"
+        },
         "miniTypescriptHero.imports.blankLinesAfterImports": {
           "enum": [
             "one",
