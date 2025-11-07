@@ -65,7 +65,7 @@ class MockImportsConfig extends ImportsConfig {
     return value;
   }
 
-  insertSemicolons(_resource: Uri): boolean {
+  async insertSemicolons(_resource: Uri): Promise<boolean> {
     const value = this.mockConfig.get('insertSemicolons');
     if (value === undefined) {throw new Error('insertSemicolons must be explicitly configured in tests');}
     return value;
@@ -77,7 +77,7 @@ class MockImportsConfig extends ImportsConfig {
     return value;
   }
 
-  stringQuoteStyle(_resource: Uri): '"' | '\'' {
+  async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
     const value = this.mockConfig.get('stringQuoteStyle');
     if (value === undefined) {throw new Error('stringQuoteStyle must be explicitly configured in tests');}
     return value;
@@ -227,7 +227,7 @@ export async function organizeImportsNew(
     });
 
     const manager = new ImportManager(doc, config);
-    const edits = manager.organizeImports();
+    const edits = await manager.organizeImports();
 
     // If no edits (empty file or no imports), return original content
     if (!edits || edits.length === 0) {
