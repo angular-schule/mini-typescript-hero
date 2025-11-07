@@ -253,14 +253,13 @@ const a = ComponentD;
 const b = ComponentE;
 `;
 
-    // TODO: Adapter doesn't yet support insertSpaces configuration
-    // Expected: 2 spaces (default) for now
+    // New extension: Uses tabs when insertSpaces = false
     const expectedNew = `import {
-  ComponentA,
-  ComponentB,
-  ComponentC,
-  ComponentD,
-  ComponentE,
+	ComponentA,
+	ComponentB,
+	ComponentC,
+	ComponentD,
+	ComponentE,
 } from 'react';
 
 const x = ComponentA;
@@ -274,19 +273,19 @@ const b = ComponentE;
     const configNew = {
       legacyMode: false,
       multiLineWrapThreshold: 50,
-      insertSpaces: false // Not yet supported by adapter
+      insertSpaces: false // Modern mode supports tabs!
     };
 
     const oldResult = await organizeImportsOld(input, configOld);
     const newResult = await organizeImportsNew(input, configNew);
 
-    // Old uses spaces
+    // Old uses spaces (never tabs)
     assert.ok(!oldResult.includes('\t'), 'Old extension never uses tabs');
     assert.strictEqual(oldResult, expectedOld, 'Old extension uses spaces');
 
-    // TODO: When adapter supports insertSpaces, expect tabs
-    assert.ok(!newResult.includes('\t'), 'Adapter does not yet support tabs');
-    assert.strictEqual(newResult, expectedNew, 'New extension uses default indentation');
+    // New uses tabs when insertSpaces = false
+    assert.ok(newResult.includes('\t'), 'New extension uses tabs when insertSpaces = false');
+    assert.strictEqual(newResult, expectedNew, 'New extension respects insertSpaces = false');
   });
 
   test('M3: Extension config overrides VS Code settings', async () => {
@@ -298,13 +297,12 @@ const z = VeryLongNameC;
 const a = VeryLongNameD;
 `;
 
-    // New extension with custom tabSize: uses default (2 spaces) for now
-    // TODO: Update adapter to properly pass through tabSize configuration
+    // New extension with custom tabSize: uses 3 spaces
     const expectedNew = `import {
-  VeryLongNameA,
-  VeryLongNameB,
-  VeryLongNameC,
-  VeryLongNameD,
+   VeryLongNameA,
+   VeryLongNameB,
+   VeryLongNameC,
+   VeryLongNameD,
 } from 'lib';
 
 const x = VeryLongNameA;
@@ -316,12 +314,15 @@ const a = VeryLongNameD;
     const configNew = {
       legacyMode: false,
       multiLineWrapThreshold: 50,
-      tabSize: 3 // Custom indentation (not yet supported by adapter)
+      tabSize: 3 // Custom indentation
     };
 
     const newResult = await organizeImportsNew(input, configNew);
 
-    // TODO: When adapter supports tabSize config, expect 3-space indentation
+    // Verify 3-space indentation
+    const lines = newResult.split('\n');
+    const importLine = lines.find(l => l.includes('VeryLongNameA'));
+    assert.ok(importLine?.startsWith('   '), 'Should use 3-space indentation');
     assert.strictEqual(newResult, expectedNew, 'New extension uses tabSize from configuration');
   });
 
@@ -374,14 +375,13 @@ const d = NameG;
 const x = A + B + C + D + E;
 `;
 
-    // TODO: Adapter doesn't yet support custom tabSize configuration
-    // Expected: default 2-space indentation for now
+    // New extension with large tabSize: uses 8 spaces
     const expectedNew = `import {
-  A,
-  B,
-  C,
-  D,
-  E,
+        A,
+        B,
+        C,
+        D,
+        E,
 } from 'lib';
 
 const x = A + B + C + D + E;
@@ -390,12 +390,15 @@ const x = A + B + C + D + E;
     const configNew = {
       legacyMode: false,
       multiLineWrapThreshold: 10, // Lower threshold to force multiline
-      tabSize: 8 // Not yet supported by adapter
+      tabSize: 8 // Large indentation
     };
 
     const newResult = await organizeImportsNew(input, configNew);
 
-    // TODO: When adapter supports tabSize config, expect 8-space indentation
+    // Verify 8-space indentation
+    const lines = newResult.split('\n');
+    const importLine = lines.find(l => l.includes('A,'));
+    assert.ok(importLine?.startsWith('        '), 'Should use 8-space indentation');
     assert.strictEqual(newResult, expectedNew, 'New extension handles large tabSize');
   });
 });

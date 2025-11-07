@@ -49,18 +49,26 @@ class MockConfiguration extends Configuration {
   }
 
   typescriptGeneratorOptions(resource: Uri): any {
+    // Get tabSize from config if provided, otherwise use the original logic
+    let tabSize: number;
+    const configTabSize = (this.imports as MockImportsConfig).getConfigValue('tabSize');
+    if (configTabSize !== undefined) {
+      tabSize = configTabSize;
+    } else {
+      // Match original extension logic: try activeTextEditor.options.tabSize, fallback to editor.tabSize (default: 4)
+      tabSize = window.activeTextEditor && window.activeTextEditor.options.tabSize
+        ? (window.activeTextEditor.options.tabSize as any) * 1
+        : workspace.getConfiguration('editor', resource).get('tabSize', 4);
+    }
+
     return {
       eol: this.imports.insertSemicolons(resource) ? ';' : '',
-      insertSpaces: true,
+      insertSpaces: true, // Old extension ALWAYS uses spaces (never tabs)
       multiLineTrailingComma: this.imports.multiLineTrailingComma(resource),
       multiLineWrapThreshold: this.imports.multiLineWrapThreshold(resource),
       spaceBraces: this.imports.insertSpaceBeforeAndAfterImportBraces(resource),
       stringQuoteStyle: this.imports.stringQuoteStyle(resource),
-      // Match original extension logic: try activeTextEditor.options.tabSize, fallback to editor.tabSize (default: 4)
-      tabSize:
-        window.activeTextEditor && window.activeTextEditor.options.tabSize
-          ? (window.activeTextEditor.options.tabSize as any) * 1
-          : workspace.getConfiguration('editor', resource).get('tabSize', 4),
+      tabSize: tabSize,
       wrapMethod: MultiLineImportRule.oneImportPerLineOnlyAfterThreshold,
     };
   }
@@ -75,6 +83,10 @@ class MockImportsConfig {
 
   setConfig(key: string, value: any): void {
     this.mockConfig.set(key, value);
+  }
+
+  getConfigValue(key: string): any {
+    return this.mockConfig.get(key);
   }
 
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {

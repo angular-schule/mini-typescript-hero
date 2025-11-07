@@ -120,33 +120,38 @@ export class ImportsConfig {
   /**
    * Get indentation string for multiline imports.
    *
-   * Legacy mode: Matches old TypeScript Hero exactly
+   * PRIORITY ORDER (highest to lowest):
+   * 1. useOnlyExtensionSettings = true → Use extension config only (ignore VS Code)
+   * 2. legacyMode = true → Match old TypeScript Hero exactly (see indentationLegacyMode)
+   * 3. Modern mode (default) → Respect VS Code settings with smart defaults
+   *
+   * Legacy mode behavior: Matches old TypeScript Hero exactly
    * - Always uses spaces (never tabs)
    * - Default: 4 spaces (VS Code default)
    * - Reads window.activeTextEditor.options.tabSize first
    * - Fallback: workspace.getConfiguration('editor').get('tabSize', 4)
    *
-   * Modern mode: Enhanced with full control
-   * - Respects editor.insertSpaces (supports tabs)
-   * - Default: 2 spaces (better for TS/JS)
-   * - Extension config can override
-   * - useOnlyExtensionSettings skips VS Code entirely
+   * Modern mode behavior: Enhanced with full control
+   * - Respects editor.insertSpaces (supports tabs when false)
+   * - Default: 2 spaces (better for TS/JS, only when tabSize not explicitly configured)
+   * - Extension config can override via useOnlyExtensionSettings
    *
-   * Note: VS Code automatically resolves settings from all sources (EditorConfig, workspace, user settings).
+   * Note: VS Code automatically resolves editor.tabSize from all sources:
+   * EditorConfig → workspace folder → workspace → user → built-in default (4)
    * We just read the final resolved value!
    */
   public indentation(resource: Uri): string {
-    // Master override: use only extension settings
+    // Priority 1: Master override - use only extension settings
     if (this.useOnlyExtensionSettings(resource)) {
       return this.indentationFromExtensionConfig(resource);
     }
 
-    // Legacy mode: match old TypeScript Hero exactly
+    // Priority 2: Legacy mode - match old TypeScript Hero exactly
     if (this.legacyMode(resource)) {
       return this.indentationLegacyMode(resource);
     }
 
-    // Modern mode: respect VS Code settings fully
+    // Priority 3: Modern mode - respect VS Code settings fully
     const editorConfig = workspace.getConfiguration('editor', resource);
     const insertSpaces = editorConfig.get<boolean>('insertSpaces', true);
 
@@ -159,10 +164,10 @@ export class ImportsConfig {
       tabSizeInspect.workspaceValue !== undefined ||
       tabSizeInspect.globalValue !== undefined
     )) {
-      // User explicitly configured it - use their value
+      // User explicitly configured tabSize - respect their value
       tabSize = editorConfig.get<number>('tabSize', 2);
     } else {
-      // Not explicitly configured - use our modern default of 2 (better for TS/JS)
+      // No explicit configuration - use our modern default of 2 (better for TS/JS)
       tabSize = 2;
     }
 
@@ -194,6 +199,11 @@ export class ImportsConfig {
 
   /**
    * Get indentation from extension-specific settings only.
+   * Used when useOnlyExtensionSettings = true.
+   *
+   * Reads only from miniTypescriptHero.imports.* settings:
+   * - insertSpaces (default: true) → spaces vs tabs
+   * - tabSize (default: 2) → number of spaces or tab width
    */
   private indentationFromExtensionConfig(resource: Uri): string {
     const config = workspace.getConfiguration(sectionKey, resource);

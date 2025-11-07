@@ -164,13 +164,13 @@
           "type": "number",
           "minimum": 1,
           "default": 2,
-          "markdownDescription": "The number of spaces a tab is equal to when formatting multiline imports. Fallback setting - respects VS Code `editor.tabSize` first.\n\n**Priority:** VS Code `editor.tabSize` → this setting",
+          "markdownDescription": "The number of spaces a tab is equal to when formatting multiline imports. Fallback setting - respects VS Code `editor.tabSize` first.\n\n**Priority:** VS Code `editor.tabSize` → this setting\n\n**Note:** VS Code automatically reads `editor.tabSize` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.insertSpaces": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Insert spaces when formatting multiline imports. When false, uses tabs. Fallback setting - respects VS Code `editor.insertSpaces` first.\n\n**Priority:** VS Code `editor.insertSpaces` → this setting",
+          "markdownDescription": "Insert spaces when formatting multiline imports. When false, uses tabs. Fallback setting - respects VS Code `editor.insertSpaces` first.\n\n**Priority:** VS Code `editor.insertSpaces` → this setting\n\n**Note:** VS Code automatically reads `editor.insertSpaces` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.useOnlyExtensionSettings": {

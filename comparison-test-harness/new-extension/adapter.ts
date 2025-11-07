@@ -153,6 +153,66 @@ class MockImportsConfig extends ImportsConfig {
     return this.legacyMode(_resource);
   }
 
+  useOnlyExtensionSettings(_resource: Uri): boolean {
+    const value = this.mockConfig.get('useOnlyExtensionSettings');
+    if (value === undefined) {
+      return false; // Default: respect VS Code settings
+    }
+    return value;
+  }
+
+  indentation(_resource: Uri): string {
+    // Priority 1: Check if custom indentation is directly mocked
+    const customIndentation = this.mockConfig.get('indentation');
+    if (customIndentation !== undefined) {
+      return customIndentation;
+    }
+
+    // Priority 2: Master override - use only extension settings
+    if (this.useOnlyExtensionSettings(_resource)) {
+      return this.indentationFromExtensionConfig(_resource);
+    }
+
+    // Priority 3: Legacy mode - match old TypeScript Hero exactly
+    if (this.legacyMode(_resource)) {
+      return this.indentationLegacyMode(_resource);
+    }
+
+    // Priority 4: Modern mode - use mocked tabSize/insertSpaces
+    const insertSpaces = this.mockConfig.get('insertSpaces');
+    const tabSize = this.mockConfig.get('tabSize');
+
+    // Use extension defaults if not provided
+    const finalInsertSpaces = insertSpaces !== undefined ? insertSpaces : true;
+    const finalTabSize = tabSize !== undefined ? tabSize : 2;
+
+    if (finalInsertSpaces === false) {
+      return '\t';
+    }
+    return ' '.repeat(finalTabSize);
+  }
+
+  private indentationLegacyMode(_resource: Uri): string {
+    // Legacy mode: ALWAYS spaces, default 2 spaces (VS Code default in test environment)
+    // Note: In test environment, we can't mock window.activeTextEditor, so we use config
+    const tabSize = this.mockConfig.get('tabSize');
+    const finalTabSize = tabSize !== undefined ? tabSize : 2; // Test environment default
+    return ' '.repeat(finalTabSize); // Legacy: ALWAYS spaces, never tabs
+  }
+
+  private indentationFromExtensionConfig(_resource: Uri): string {
+    const insertSpaces = this.mockConfig.get('insertSpaces');
+    const tabSize = this.mockConfig.get('tabSize');
+
+    const finalInsertSpaces = insertSpaces !== undefined ? insertSpaces : true;
+    const finalTabSize = tabSize !== undefined ? tabSize : 2;
+
+    if (finalInsertSpaces === false) {
+      return '\t';
+    }
+    return ' '.repeat(finalTabSize);
+  }
+
   grouping(_resource: Uri): ImportGroup[] {
     const groupSettings = this.mockConfig.get('grouping') ?? ['Plains', 'Modules', 'Workspace'];
     let importGroups: ImportGroup[] = [];
