@@ -3126,4 +3126,104 @@ console.log(Component, readFileSync, MyService);
       await deleteTempDocument(doc);
     }
   });
+
+  test('96. Selective dedup: non-affected duplicates remain separate', async () => {
+    // Verify selective dedup only affects imports changed by /index removal
+    // Two duplicate imports from './lib' (NOT from /index) should stay separate
+    // when mergeImportsFromSameModule=false
+
+    const content = `import { A } from './lib';
+import { B } from './lib';
+
+console.log(A, B);
+`;
+
+    config.setConfig('removeTrailingIndex', true);
+    config.setConfig('mergeImportsFromSameModule', false);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+      // Should have 2 separate imports (NOT merged) because neither had /index
+      assert.strictEqual(lines.length, 2, 'Should have 2 separate import lines (unaffected by /index removal)');
+      assert.ok(lines[0].includes('A'), 'First import should have A');
+      assert.ok(lines[1].includes('B'), 'Second import should have B');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('97. Import attributes are preserved unchanged', async () => {
+    // Verify import attributes (with { ... }) survive organize unchanged
+    // TypeScript 4.5+ and ECMAScript import assertions/attributes
+
+    const content = `import data from './data.json' with { type: 'json' };
+import { Component } from '@angular/core';
+
+console.log(data, Component);
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Verify attributes are preserved exactly
+      assert.ok(result.includes("with { type: 'json' }"), 'Import attributes must be preserved exactly');
+      assert.ok(result.includes('@angular/core'), 'Regular import should also be present');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('98. Comment preservation stress test', async () => {
+    // Stress test: multiple comments with "import" keyword in various positions
+    // All must survive organize
+
+    const content = `import { A } from './a';
+// import { OldFeature } - this was removed
+/* TODO: Re-enable import of experimental feature */
+// The following import is important
+import { B } from './b';
+/**
+ * Note: import { C } might be needed later
+ * when we re-import the feature
+ */
+import { C } from './c';
+
+console.log(A, B, C);
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Verify ALL comments are preserved
+      assert.ok(result.includes('// import { OldFeature } - this was removed'),
+        'Single-line comment with "import" must be preserved');
+      assert.ok(result.includes('/* TODO: Re-enable import of experimental feature */'),
+        'Multi-line comment with "import" must be preserved');
+      assert.ok(result.includes('// The following import is important'),
+        'Regular comment mentioning "import" must be preserved');
+      assert.ok(result.includes('* Note: import { C } might be needed later'),
+        'JSDoc-style comment with "import" must be preserved');
+      assert.ok(result.includes('* when we re-import the feature'),
+        'JSDoc-style comment continuation with "import" must be preserved');
+
+      // Verify imports are still there
+      assert.ok(result.includes("import { A } from './a';"), 'Import A should be present');
+      assert.ok(result.includes("import { B } from './b';"), 'Import B should be present');
+      assert.ok(result.includes("import { C } from './c';"), 'Import C should be present');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
 });

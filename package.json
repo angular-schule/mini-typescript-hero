@@ -43,7 +43,8 @@
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
     "onLanguage:javascript",
-    "onLanguage:javascriptreact"
+    "onLanguage:javascriptreact",
+    "onCommand:miniTypescriptHero.imports.organize"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -203,7 +204,8 @@
               },
               {
                 "type": "string",
-                "pattern": "\\/[A-Za-z-_0-9]+\\/"
+                "pattern": "^/.+/$",
+                "description": "Regex pattern for custom grouping (e.g., '/^@angular/', '/rxjs/', etc.)"
               },
               {
                 "type": "object",

@@ -27,6 +27,7 @@ manual-test-cases/**
 **/*.txt
 !README.md
 !CHANGELOG.md
+!LICENSE
 !LICENSE.txt
 
 # Design files

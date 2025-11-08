@@ -312,9 +312,9 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
   - Example: `import {\n  Foo,\n  Bar\n} from './lib';`
 
 - **Legacy mode** (`legacyMode: true`):
-  - Default: **4 spaces** (VS Code default)
+  - Reads VS Code's resolved editor settings (usually **2 spaces** for TypeScript)
+  - Falls back to **4 spaces** when no editor context is available
   - Always uses spaces (never tabs)
-  - Respects `editor.tabSize` automatically
   - Matches old TypeScript Hero behavior exactly
 
 **Note:** VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. The extension reads these resolved values, so EditorConfig integration works automatically.
@@ -478,8 +478,16 @@ Control ascending or descending sort per group:
 
 ## Requirements
 
-- VSCode 1.85.0 or higher
+- VS Code 1.104.0 or higher
 - Node.js 18.0.0 or higher (for extension development)
+
+### Activation
+
+The extension activates when:
+- You open a TypeScript/JavaScript file (`onLanguage`)
+- You run the organize command from the palette (`onCommand`)
+
+This ensures commands work from the palette while keeping the extension lazy-loaded for performance.
 
 ## Privacy
 
