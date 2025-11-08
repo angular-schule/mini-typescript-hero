@@ -2933,4 +2933,197 @@ console.log(A, B);
       await deleteTempDocument(doc);
     }
   });
+
+  test('91. removeTrailingIndex + mergeImportsFromSameModule=false edge case', async () => {
+    // BUG: If removeTrailingIndex=true and mergeImportsFromSameModule=false,
+    // imports like './lib' and './lib/index' both become './lib' but remain unmerged.
+    // This creates duplicate imports for the same module.
+    //
+    // EXPECTED: Should NOT create duplicates
+    // SOLUTION: Deduplicate after /index removal for affected imports only
+
+    const content = `import { A } from './lib';
+import { B } from './lib/index';
+
+console.log(A, B);
+`;
+
+    config.setConfig('removeTrailingIndex', true);
+    config.setConfig('mergeImportsFromSameModule', false);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Count occurrences of "from './lib'" to detect duplicates
+      const libImportMatches = result.match(/from ['"]\.\/lib['"]/g);
+      const libImportCount = libImportMatches ? libImportMatches.length : 0;
+
+      // CRITICAL: Should NOT have duplicate imports
+      // Both imports reference the same module - there should be only ONE import statement
+      assert.strictEqual(
+        libImportCount,
+        1,
+        `Should have exactly 1 import from './lib', but found ${libImportCount}. ` +
+        `Duplicate imports indicate a bug when removeTrailingIndex + mergeImportsFromSameModule=false`
+      );
+
+      // Verify both A and B are present in the single import
+      assert.ok(result.includes('A'), 'Should include specifier A');
+      assert.ok(result.includes('B'), 'Should include specifier B');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('92. Commented-out imports must be preserved (GOLDEN RULE)', async () => {
+    // BUG: Comments containing "import" keyword were filtered out and deleted.
+    // This violates the GOLDEN RULE: NEVER DELETE USER CONTENT
+    //
+    // EXPECTED: ALL comments preserved, including those with "import" keyword
+    // SOLUTION: Remove the filter checking for "import" keyword in comments
+
+    const content = `import { A } from './a';
+// import { OldFeature } from './old-feature';  // Temporarily disabled
+/* import { Experimental } from './experimental'; */
+// TODO: Re-enable this import later: import { Future } from './future';
+import { B } from './b';
+
+console.log(A, B);
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // CRITICAL: ALL comments must be preserved
+      assert.ok(
+        result.includes("// import { OldFeature } from './old-feature';"),
+        'Single-line commented-out import MUST be preserved'
+      );
+      assert.ok(
+        result.includes("/* import { Experimental } from './experimental'; */"),
+        'Multi-line commented-out import MUST be preserved'
+      );
+      assert.ok(
+        result.includes("// TODO: Re-enable this import later: import { Future } from './future';"),
+        'Comment with "import" keyword MUST be preserved'
+      );
+
+      // Verify actual imports are still there
+      assert.ok(result.includes("import { A } from './a';"), 'Should have import A');
+      assert.ok(result.includes("import { B } from './b';"), 'Should have import B');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('93. ignoredFromRemoval works with custom library names', async () => {
+    // Verify that custom libraries can be added to ignoredFromRemoval list
+    // The logic uses exact string matching (no wildcards or sub-paths)
+
+    const content = `import { useState } from 'react';
+import { computed } from 'mobx';
+import { Component } from '@angular/core';
+import { Unused } from './local';
+
+// Only use some imports
+const x = useState;
+const y = computed;
+`;
+
+    config.setConfig('ignoredFromRemoval', ['react', 'mobx', '@angular/core']);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // ALL ignored libraries should be preserved (even though unused)
+      assert.ok(result.includes("import { useState } from 'react';"), 'Should preserve react (ignored)');
+      assert.ok(result.includes("import { computed } from 'mobx';"), 'Should preserve mobx (custom ignored)');
+      assert.ok(result.includes("import { Component } from '@angular/core';"), 'Should preserve @angular/core (custom ignored)');
+
+      // Non-ignored library should be removed
+      assert.ok(!result.includes('./local'), 'Should remove ./local (not ignored, unused)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('94. ignoredFromRemoval uses exact matching (no wildcards)', async () => {
+    // Document that ignoredFromRemoval only supports exact matches
+    // Sub-paths and wildcards are NOT supported
+
+    const content = `import { A } from '@angular/core';
+import { B } from '@angular/common';
+import { C } from '@angular/core/testing';
+
+const x = A; // Only use A
+`;
+
+    // Only '@angular/core' is ignored, not '@angular/common' or '@angular/core/testing'
+    config.setConfig('ignoredFromRemoval', ['@angular/core']);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Exact match: should be preserved
+      assert.ok(result.includes("'@angular/core'"), 'Should preserve exact match @angular/core');
+
+      // Sub-path: should be removed (not exact match)
+      assert.ok(!result.includes('@angular/core/testing'), 'Should remove @angular/core/testing (sub-path, not exact match)');
+
+      // Different library: should be removed
+      assert.ok(!result.includes('@angular/common'), 'Should remove @angular/common (different library)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('95. Invalid grouping config falls back to default grouping', async () => {
+    // Verify that invalid grouping identifiers don't crash the extension
+    // Instead, they should fall back to default grouping: ['Plains', 'Modules', 'Workspace']
+
+    const content = `import { Component } from '@angular/core';
+import { readFileSync } from 'fs';
+import { MyService } from './my-service';
+
+console.log(Component, readFileSync, MyService);
+`;
+
+    // Set invalid grouping (should fallback to default)
+    config.setConfig('grouping', ['InvalidGroupName', 'AnotherBadGroup']);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Should use default grouping: Plains, Modules, Workspace
+      // Let's verify the extension doesn't crash and produces valid output
+      const lines = result.split('\n').filter(line => line.startsWith('import'));
+
+      assert.strictEqual(lines.length, 3, 'Should have 3 imports (all preserved)');
+
+      // Verify all imports are present (order depends on default grouping implementation)
+      assert.ok(result.includes('@angular/core'), 'Should have @angular/core import');
+      assert.ok(result.includes('fs'), 'Should have fs import');
+      assert.ok(result.includes('./my-service'), 'Should have ./my-service import');
+
+      // Most importantly: verify the extension didn't crash with invalid config
+      assert.ok(result.length > 0, 'Should produce valid output despite invalid grouping config');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
 });

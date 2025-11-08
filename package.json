@@ -121,13 +121,13 @@
         "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": {
           "type": "boolean",
           "default": false,
-          "description": "Defines if the imports are organized by first specifier/alias instead of module path.",
+          "description": "Defines if the imports are organized by first specifier/alias instead of module path. Note: Ignored when legacyMode is enabled (legacy mode always sorts by library name).",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.disableImportsSorting": {
           "type": "boolean",
           "default": false,
-          "description": "Defines if sorting is disable during organize imports.",
+          "description": "Defines if sorting is disable during organize imports. Note: Ignored when legacyMode is enabled (legacy mode always sorts within groups).",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.disableImportRemovalOnOrganize": {

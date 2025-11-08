@@ -429,6 +429,103 @@ export class ImportManager {
   }
 
   /**
+   * Helper method to deduplicate imports from specific modules only.
+   *
+   * FIX: When removeTrailingIndex=true and mergeImportsFromSameModule=false,
+   * imports like './lib' and './lib/index' both become './lib' after /index removal.
+   * This creates duplicate imports. We need to merge them to avoid loading the same module twice.
+   *
+   * Strategy: Only merge imports for libraries in the affectedLibraries set.
+   * This preserves the user's intent to keep other imports separate.
+   *
+   * @param imports List of imports to deduplicate
+   * @param affectedLibraries Set of library names that need deduplication
+   */
+  private deduplicateImportsSelective(imports: Import[], affectedLibraries: Set<string>): Import[] {
+    const byLibrary = new Map<string, Import[]>();
+
+    for (const imp of imports) {
+      // Group by libraryName and isTypeOnly (type-only and value imports should NOT merge)
+      const typePrefix = (imp instanceof NamedImport && imp.isTypeOnly) ? 'type:' : '';
+      const groupKey = typePrefix + imp.libraryName;
+
+      if (!byLibrary.has(groupKey)) {
+        byLibrary.set(groupKey, []);
+      }
+      byLibrary.get(groupKey)!.push(imp);
+    }
+
+    const deduplicated: Import[] = [];
+
+    for (const [, duplicates] of byLibrary) {
+      if (duplicates.length === 1) {
+        // No duplicates, keep as-is
+        deduplicated.push(duplicates[0]);
+        continue;
+      }
+
+      // Check if this library is affected by /index removal
+      const libraryName = duplicates[0].libraryName;
+      const isAffected = affectedLibraries.has(libraryName);
+
+      if (!isAffected) {
+        // NOT affected by /index removal - keep all imports separate (respect mergeImportsFromSameModule=false)
+        deduplicated.push(...duplicates);
+        continue;
+      }
+
+      // Multiple imports from same module - merge only NamedImports
+      const namedImports = duplicates.filter(i => i instanceof NamedImport) as NamedImport[];
+
+      if (namedImports.length > 0) {
+        // Merge all named imports into one
+        const allSpecifiers: SymbolSpecifier[] = [];
+        let mergedDefault: string | undefined;
+
+        for (const namedImp of namedImports) {
+          allSpecifiers.push(...namedImp.specifiers);
+          if (namedImp.defaultAlias) {
+            mergedDefault = namedImp.defaultAlias; // Keep LAST default (matches old extension)
+          }
+        }
+
+        // Deduplicate specifiers by name and sort
+        const uniqueSpecifiers = Array.from(
+          new Map(allSpecifiers.map(s => [s.specifier, s])).values()
+        ).sort(specifierSort);
+
+        const mergedImport = new NamedImport(
+          namedImports[0].libraryName,
+          uniqueSpecifiers,
+          mergedDefault,
+          namedImports[0].isTypeOnly,
+          namedImports[0].attributes,
+        );
+
+        // Add merged import at position of first occurrence
+        let namedAdded = false;
+        for (const imp of duplicates) {
+          if (imp instanceof NamedImport) {
+            if (!namedAdded) {
+              deduplicated.push(mergedImport);
+              namedAdded = true;
+            }
+            // Skip other NamedImports (already merged)
+          } else {
+            // String or Namespace - keep as-is
+            deduplicated.push(imp);
+          }
+        }
+      } else {
+        // No NamedImports to merge, keep all (shouldn't happen but handle gracefully)
+        deduplicated.push(...duplicates);
+      }
+    }
+
+    return deduplicated;
+  }
+
+  /**
    * Organize imports: remove unused, sort, and group.
    * Returns TextEdits to apply the changes.
    */
@@ -528,7 +625,28 @@ export class ImportManager {
     // In modern mode, /index removal happens first so imports like './lib/index' and './lib' can merge
     // In legacy mode, we do it after merging to replicate the old extension's bug
     if (this.config.removeTrailingIndex(this.document.uri) && !this.config.legacyMode(this.document.uri)) {
+      // Track which imports will be affected by /index removal BEFORE changing them
+      // This allows us to deduplicate ONLY the imports that became duplicates due to /index removal
+      const affectedLibraries = new Set<string>();
+      for (const imp of keep) {
+        if (imp.libraryName.endsWith('/index')) {
+          const withoutIndex = imp.libraryName.replace(/\/index$/, '');
+          // Check if another import exists with the same name (without /index)
+          const hasDuplicate = keep.some(other =>
+            other !== imp && other.libraryName === withoutIndex
+          );
+          if (hasDuplicate) {
+            affectedLibraries.add(withoutIndex);
+          }
+        }
+      }
+
       keep = this.removeTrailingIndexFromImports(keep);
+
+      // If merging is DISABLED but /index removal created duplicates, deduplicate those specific imports
+      if (!this.config.mergeImportsFromSameModule(this.document.uri) && affectedLibraries.size > 0) {
+        keep = this.deduplicateImportsSelective(keep, affectedLibraries);
+      }
     }
 
     //  Merge imports from same module (configurable)
@@ -761,8 +879,12 @@ export class ImportManager {
       if (!isWithinImport) {
         const lineText = this.document.lineAt(i).text;
         const trimmedText = lineText.trim();
-        const isStandaloneComment = (trimmedText.startsWith('//') || trimmedText.startsWith('/*') || trimmedText.startsWith('*')) &&
-                                     !trimmedText.includes('import ');
+        // GOLDEN RULE - NEVER DELETE USER COMMENTS!
+        // We MUST preserve ALL comments, including those with "import" keyword.
+        // This includes commented-out imports like "// import { Foo } from './bar';"
+        const isStandaloneComment = trimmedText.startsWith('//') ||
+                                     trimmedText.startsWith('/*') ||
+                                     trimmedText.startsWith('*');
 
         if (isStandaloneComment) {
           commentsBetweenImports.push(lineText);

@@ -180,7 +180,15 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior. This preserves blank line preservation, within-group sorting behavior, and removeTrailingIndex timing. New users get `legacyMode: false` by default for modern best practices. You can change this setting anytime in your configuration.
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior exactly. When enabled, legacy mode overrides certain settings to ensure 100% backward compatibility:
+
+- **`blankLinesAfterImports`** — Always preserves existing blank lines (ignores configured value)
+- **`organizeSortsByFirstSpecifier`** — Disabled (always sorts by library name)
+- **`disableImportsSorting`** — Disabled (always sorts within groups)
+- **Merge timing** — Merges BEFORE removeTrailingIndex (replicates old bug)
+- **Type-only imports** — Strips `import type` keywords (old TS <3.8 behavior)
+
+New users get `legacyMode: false` by default for modern best practices. You can toggle this setting anytime via the command palette or your configuration.
 
 ### No Old Settings?
 
@@ -278,6 +286,39 @@ Control spacing after imports with `blankLinesAfterImports`:
 
 📖 **Detailed documentation:** [README-how-we-handle-blank-lines.md](README-how-we-handle-blank-lines.md)
 
+### Multiline Import Indentation
+
+Mini TypeScript Hero respects your editor's indentation settings for multiline imports:
+
+```json
+{
+  // Modern mode (default): Respects VS Code editor.tabSize and editor.insertSpaces
+  // Default: 2 spaces (if no explicit tabSize configured)
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // Legacy mode: Always uses spaces, default 4 (matches old TypeScript Hero)
+  // Reads editor.tabSize automatically
+  "miniTypescriptHero.imports.legacyMode": false
+}
+```
+
+**Default Indentation Behavior:**
+
+- **Modern mode** (`legacyMode: false`):
+  - Default: **2 spaces** (common TypeScript/JavaScript convention)
+  - Supports both spaces and tabs via `editor.insertSpaces`
+  - Respects `editor.tabSize` if explicitly configured
+  - Example: `import {\n  Foo,\n  Bar\n} from './lib';`
+
+- **Legacy mode** (`legacyMode: true`):
+  - Default: **4 spaces** (VS Code default)
+  - Always uses spaces (never tabs)
+  - Respects `editor.tabSize` automatically
+  - Matches old TypeScript Hero behavior exactly
+
+**Note:** VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. The extension reads these resolved values, so EditorConfig integration works automatically.
+
 ### Advanced Settings
 
 ```json
@@ -295,6 +336,8 @@ Control spacing after imports with `blankLinesAfterImports`:
   "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
 
   // Libraries that should never be removed (even if unused)
+  // Uses exact string matching - no wildcards or sub-paths
+  // Example: "react" matches "react" but NOT "react-dom" or "react/jsx-runtime"
   "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],
 
   // Character threshold for multiline imports
