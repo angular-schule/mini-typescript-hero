@@ -218,6 +218,36 @@ All tests use REAL VSCode APIs with explicit expected outputs.
 
 ---
 
+## 📦 Extension Activation
+
+### Why We Keep `activationEvents` in package.json
+
+The `activationEvents` array is **required and correct**:
+
+```json
+"activationEvents": [
+  "onLanguage:typescript",
+  "onLanguage:typescriptreact",
+  "onLanguage:javascript",
+  "onLanguage:javascriptreact"
+],
+```
+
+**Common misconception:** VS Code 1.74+ made activation events "implicit"
+
+**Reality:** Only **command** activation (`onCommand`) became implicit. Language-based activation (`onLanguage`) is different - it activates the extension when specific file types are opened.
+
+**Why we need this:**
+- Our extension must activate when TS/JS files are opened (not when commands are invoked)
+- Without `onLanguage` activation events, the extension won't be ready when users open TypeScript/JavaScript files
+- The `contributes.commands` entries only handle command registration, not language-based activation
+
+**References:**
+- VS Code 1.74 Release Notes: https://code.visualstudio.com/updates/v1_74
+- StackOverflow: https://stackoverflow.com/a/75303487 (about `onCommand`, NOT `onLanguage`)
+
+---
+
 ### 2. Test Harness Tests (`comparison-test-harness/`)
 
 **Purpose**: Validate backward compatibility between old and new extension
