@@ -3226,4 +3226,35 @@ console.log(A, B, C);
       await deleteTempDocument(doc);
     }
   });
+
+  test('99. ignoredFromRemoval libraries have sorted specifiers', async () => {
+    // Verify that libraries in ignoredFromRemoval list still get their specifiers sorted
+    // This ensures consistent formatting even when imports are protected from removal
+
+    const content = `import { Z, A, M } from 'my-protected-lib';
+import { unused } from './other';
+
+console.log(Z, A, M);
+`;
+
+    const customConfig = new MockImportsConfig();
+    customConfig.setConfig('ignoredFromRemoval', ['my-protected-lib']);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, customConfig);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      // Verify specifiers are sorted alphabetically even though library is protected
+      assert.ok(result.includes("import { A, M, Z } from 'my-protected-lib';"),
+        'Protected library specifiers must be sorted alphabetically');
+
+      // Verify unused import from other library was removed
+      assert.ok(!result.includes('./other'),
+        'Non-protected unused import should be removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
 });
