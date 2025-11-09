@@ -65,7 +65,13 @@
       {
         "command": "miniTypescriptHero.imports.organize",
         "key": "ctrl+alt+o",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && editorLangId =~ /^(typescript|typescriptreact|javascript|javascriptreact)$/ && !editorReadonly"
+      },
+      {
+        "command": "miniTypescriptHero.imports.organize",
+        "key": "cmd+alt+o",
+        "mac": "cmd+alt+o",
+        "when": "editorTextFocus && editorLangId =~ /^(typescript|typescriptreact|javascript|javascriptreact)$/ && !editorReadonly"
       }
     ],
     "configuration": {

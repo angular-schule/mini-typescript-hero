@@ -90,4 +90,30 @@ suite('Manifest Validation', () => {
       'Default for mergeImportsFromSameModule must be true (modern behavior)'
     );
   });
+
+  test('activationEvents contains only onLanguage entries (no onCommand)', () => {
+    const activationEvents: string[] = packageJson.activationEvents ?? [];
+
+    // Must have exactly the 4 onLanguage events for TS/JS files
+    const expectedEvents = [
+      'onLanguage:typescript',
+      'onLanguage:typescriptreact',
+      'onLanguage:javascript',
+      'onLanguage:javascriptreact'
+    ].sort();
+
+    assert.deepStrictEqual(
+      activationEvents.sort(),
+      expectedEvents,
+      'activationEvents must contain exactly the 4 onLanguage entries for TS/JS files'
+    );
+
+    // Must NOT have any onCommand activation events (those are implicit via contributes.commands in VS Code 1.74+)
+    const commandEvents = activationEvents.filter(e => e.startsWith('onCommand:'));
+    assert.strictEqual(
+      commandEvents.length,
+      0,
+      'activationEvents must NOT contain onCommand entries (command activation is implicit via contributes.commands)'
+    );
+  });
 });

@@ -39,4 +39,4 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - Native VSCode OutputChannel logging (replaced winston)
 - Modern esbuild bundling (replaced tsc)
 - TypeScript 5.7+ with strict mode
-- VSCode engine 1.85.0+
+- VSCode engine 1.104.0+

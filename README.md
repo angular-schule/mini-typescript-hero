@@ -484,10 +484,10 @@ Control ascending or descending sort per group:
 ### Activation
 
 The extension activates when:
-- You open a TypeScript/JavaScript file (`onLanguage`)
-- You run the organize command from the palette (`onCommand`)
+- You open a TypeScript/JavaScript/TSX/JSX file (`onLanguage`)
+- You run any command from the palette (automatic in VS Code 1.74+)
 
-This ensures commands work from the palette while keeping the extension lazy-loaded for performance.
+Command activation is automatic in VS Code 1.74+ via `contributes.commands`. We explicitly declare `onLanguage` activation events to activate when TypeScript/JavaScript/TSX/JSX files are opened. This ensures commands work from the palette while keeping the extension lazy-loaded for performance.
 
 ## Privacy
 
