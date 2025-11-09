@@ -14,10 +14,10 @@ import { ExtensionContext } from 'vscode';
 import { migrateSettings, resetMigrationFlag } from '../../configuration/settings-migration';
 
 suite('Settings Migration Tests', () => {
-  let mockContext: ExtensionContext;
+  let mockContext: Pick<ExtensionContext, 'globalState'>;
 
   setup(() => {
-    // Create a minimal mock of ExtensionContext
+    // Create a minimal mock of ExtensionContext - only globalState is used by migration
     const globalState = new Map<string, unknown>();
     mockContext = {
       globalState: {
@@ -35,30 +35,6 @@ suite('Settings Migration Tests', () => {
         keys: (): readonly string[] => Array.from(globalState.keys()),
         setKeysForSync: (): void => { }
       },
-      subscriptions: [],
-      extensionPath: '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      extensionUri: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      environmentVariableCollection: {} as any,
-      extensionMode: 3, // ExtensionMode.Production
-      storageUri: undefined,
-      storagePath: undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      globalStorageUri: {} as any,
-      globalStoragePath: '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logUri: {} as any,
-      logPath: '',
-      asAbsolutePath: (relativePath: string) => relativePath,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      workspaceState: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      secrets: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      extension: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      languageModelAccessInformation: {} as any,
     };
   });
 
@@ -191,11 +167,11 @@ suite('Settings Migration Scope Tests', () => {
    * Manual testing with real old TypeScript Hero extension confirms this works correctly.
    */
 
-  let mockContext: ExtensionContext;
+  let mockContext: Pick<ExtensionContext, 'globalState'>;
   const NEW_SECTION = 'miniTypescriptHero.imports';
 
   setup(async () => {
-    // Create mock context
+    // Create a minimal mock of ExtensionContext - only globalState is used by migration
     const globalState = new Map<string, unknown>();
     mockContext = {
       globalState: {
@@ -212,30 +188,6 @@ suite('Settings Migration Scope Tests', () => {
         keys: (): readonly string[] => Array.from(globalState.keys()),
         setKeysForSync: (): void => { }
       },
-      subscriptions: [],
-      extensionPath: '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      extensionUri: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      environmentVariableCollection: {} as any,
-      extensionMode: 3,
-      storageUri: undefined,
-      storagePath: undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      globalStorageUri: {} as any,
-      globalStoragePath: '',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logUri: {} as any,
-      logPath: '',
-      asAbsolutePath: (relativePath: string) => relativePath,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      workspaceState: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      secrets: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      extension: {} as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      languageModelAccessInformation: {} as any,
     };
 
     // Clean up any existing test settings

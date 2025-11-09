@@ -61,6 +61,7 @@ import { ImportManager } from '../imports/import-manager';
 import { ImportsConfig } from '../configuration';
 import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../imports/import-grouping';
 import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
+import { ConfigOverrides, ConfigKey } from './test-types';
 
 /**
  * Mock OutputChannel for testing
@@ -87,78 +88,74 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
  * - Tests can verify different configuration combinations
  */
 class MockImportsConfig extends ImportsConfig {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mockConfig: Map<string, any> = new Map();
+  private mockConfig: Map<ConfigKey, ConfigOverrides[ConfigKey]> = new Map();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setConfig(key: string, value: any): void {
+  setConfig<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.mockConfig.set(key, value);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  override(key: string, value: any): void {
+  override<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.mockConfig.set(key, value);
   }
 
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
+    return (this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') as boolean | undefined) ?? true;
   }
 
   async insertSemicolons(_resource: Uri): Promise<boolean> {
-    return Promise.resolve(this.mockConfig.get('insertSemicolons') ?? true);
+    return Promise.resolve((this.mockConfig.get('insertSemicolons') as boolean | undefined) ?? true);
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
-    return this.mockConfig.get('removeTrailingIndex') ?? true;
+    return (this.mockConfig.get('removeTrailingIndex') as boolean | undefined) ?? true;
   }
 
   async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
-    return Promise.resolve(this.mockConfig.get('stringQuoteStyle') ?? `'`);
+    return Promise.resolve((this.mockConfig.get('stringQuoteStyle') as '"' | '\'' | undefined) ?? `'`);
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
-    return this.mockConfig.get('multiLineWrapThreshold') ?? 125;
+    return (this.mockConfig.get('multiLineWrapThreshold') as number | undefined) ?? 125;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
-    return this.mockConfig.get('multiLineTrailingComma') ?? true;
+    return (this.mockConfig.get('multiLineTrailingComma') as boolean | undefined) ?? true;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
+    return (this.mockConfig.get('disableImportRemovalOnOrganize') as boolean | undefined) ?? false;
   }
 
   mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.mockConfig.get('mergeImportsFromSameModule') ?? true;
+    return (this.mockConfig.get('mergeImportsFromSameModule') as boolean | undefined) ?? true;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportsSorting') ?? false;
+    return (this.mockConfig.get('disableImportsSorting') as boolean | undefined) ?? false;
   }
 
   organizeOnSave(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeOnSave') ?? false;
+    return (this.mockConfig.get('organizeOnSave') as boolean | undefined) ?? false;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeSortsByFirstSpecifier') ?? false;
+    return (this.mockConfig.get('organizeSortsByFirstSpecifier') as boolean | undefined) ?? false;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
-    return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
+    return (this.mockConfig.get('ignoredFromRemoval') as string[] | undefined) ?? ['react'];
   }
 
   blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
-    return this.mockConfig.get('blankLinesAfterImports') ?? 'one';
+    return (this.mockConfig.get('blankLinesAfterImports') as 'one' | 'two' | 'preserve' | undefined) ?? 'one';
   }
 
   grouping(_resource: Uri): ImportGroup[] {
-    const groupSettings = this.mockConfig.get('grouping') ?? ['Plains', 'Modules', 'Workspace'];
+    const groupSettings = (this.mockConfig.get('grouping') as string[] | undefined) ?? ['Plains', 'Modules', 'Workspace'];
     let importGroups: ImportGroup[] = [];
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      importGroups = groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
+      importGroups = groupSettings.map((setting: string) => ImportGroupSettingParser.parseSetting(setting));
     } catch (e) {
       // Fall back to default on invalid config (same as real ImportsConfig)
       importGroups = ImportGroupSettingParser.default;

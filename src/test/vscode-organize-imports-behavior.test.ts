@@ -89,6 +89,7 @@ declare const w: BookService;
 `;
 
       // VS Code preserves the blank line and sorts within each group
+      // Alphabetically: 'c' < 'i', so '../configuration/...' comes before '../imports/...'
       const expected = `import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 

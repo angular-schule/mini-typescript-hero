@@ -20,6 +20,10 @@ export default [
         sourceType: "module",
     },
 
+    linterOptions: {
+        reportUnusedDisableDirectives: "error",
+    },
+
     rules: {
         "@typescript-eslint/naming-convention": ["warn", {
             selector: "import",

@@ -160,7 +160,7 @@ mini-typescript-hero/                     ← Project root
 │   │   ├── import-organizer.ts           ← Orchestrator, VSCode integration
 │   │   └── import-grouping/              ← Group definitions (Plains, Modules, etc.)
 │   ├── configuration/
-│   │   ├── imports-config.ts             ← 13 config options wrapper
+│   │   ├── imports-config.ts             ← 15 config options wrapper
 │   │   └── settings-migration.ts         ← Migrates old TypeScript Hero settings
 │   └── test/                             ← General extension tests
 │       ├── imports/import-manager.test.ts
@@ -186,11 +186,11 @@ mini-typescript-hero/                     ← Project root
 
 ### 1. General Extension Tests (`src/test/`)
 
-**Purpose**: Prove the new extension is 100% bug-free
+**Purpose**: Ensure the new extension has high reliability and catches all known bugs
 
 **What They Test**:
 - All import organization features
-- Configuration options (13 settings)
+- Configuration options (15 settings)
 - Edge cases (shebangs, directives, old TypeScript syntax)
 - Settings migration from old TypeScript Hero
 - **Both** shared functionality (old+new) AND new-only features

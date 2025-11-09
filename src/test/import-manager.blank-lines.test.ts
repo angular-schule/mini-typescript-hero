@@ -4,6 +4,7 @@ import { EndOfLine, Uri } from 'vscode';
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
 import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
+import { ConfigOverrides, ConfigKey } from './test-types';
 
 /**
  * Comprehensive tests for blank line handling.
@@ -17,61 +18,59 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
 
 // Mock config for testing
 class MockImportsConfig extends ImportsConfig {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private overrides: Map<string, any> = new Map();
+  private overrides: Map<ConfigKey, ConfigOverrides[ConfigKey]> = new Map();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  override(key: string, value: any): void {
+  override<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.overrides.set(key, value);
   }
 
   // Override specific methods for testing
   public blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
-    return this.overrides.get('blankLinesAfterImports') ?? 'one';
+    return (this.overrides.get('blankLinesAfterImports') as 'one' | 'two' | 'preserve' | undefined) ?? 'one';
   }
 
   public insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
-    return this.overrides.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
+    return (this.overrides.get('insertSpaceBeforeAndAfterImportBraces') as boolean | undefined) ?? true;
   }
 
   public async insertSemicolons(_resource: Uri): Promise<boolean> {
-    return Promise.resolve(this.overrides.get('insertSemicolons') ?? true);
+    return Promise.resolve((this.overrides.get('insertSemicolons') as boolean | undefined) ?? true);
   }
 
   public async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
-    return Promise.resolve(this.overrides.get('stringQuoteStyle') ?? `'`);
+    return Promise.resolve((this.overrides.get('stringQuoteStyle') as '"' | '\'' | undefined) ?? `'`);
   }
 
   public multiLineWrapThreshold(_resource: Uri): number {
-    return this.overrides.get('multiLineWrapThreshold') ?? 125;
+    return (this.overrides.get('multiLineWrapThreshold') as number | undefined) ?? 125;
   }
 
   public multiLineTrailingComma(_resource: Uri): boolean {
-    return this.overrides.get('multiLineTrailingComma') ?? true;
+    return (this.overrides.get('multiLineTrailingComma') as boolean | undefined) ?? true;
   }
 
   public disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return this.overrides.get('disableImportRemovalOnOrganize') ?? false;
+    return (this.overrides.get('disableImportRemovalOnOrganize') as boolean | undefined) ?? false;
   }
 
   public mergeImportsFromSameModule(_resource: Uri): boolean {
-    return this.overrides.get('mergeImportsFromSameModule') ?? true;
+    return (this.overrides.get('mergeImportsFromSameModule') as boolean | undefined) ?? true;
   }
 
   public disableImportsSorting(_resource: Uri): boolean {
-    return this.overrides.get('disableImportsSorting') ?? false;
+    return (this.overrides.get('disableImportsSorting') as boolean | undefined) ?? false;
   }
 
   public organizeSortsByFirstSpecifier(_resource: Uri): boolean {
-    return this.overrides.get('organizeSortsByFirstSpecifier') ?? false;
+    return (this.overrides.get('organizeSortsByFirstSpecifier') as boolean | undefined) ?? false;
   }
 
   public ignoredFromRemoval(_resource: Uri): string[] {
-    return this.overrides.get('ignoredFromRemoval') ?? [];
+    return (this.overrides.get('ignoredFromRemoval') as string[] | undefined) ?? [];
   }
 
   public removeTrailingIndex(_resource: Uri): boolean {
-    return this.overrides.get('removeTrailingIndex') ?? true;
+    return (this.overrides.get('removeTrailingIndex') as boolean | undefined) ?? true;
   }
 }
 

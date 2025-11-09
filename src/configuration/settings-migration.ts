@@ -38,7 +38,7 @@ const SETTINGS_TO_MIGRATE = [
  *
  * @param context - The extension context for accessing globalState
  */
-export async function migrateSettings(context: ExtensionContext): Promise<void> {
+export async function migrateSettings(context: Pick<ExtensionContext, 'globalState'>): Promise<void> {
   // Check if we've already attempted migration
   const alreadyAttempted = context.globalState.get<boolean>(MIGRATION_KEY, false);
   if (alreadyAttempted) {
@@ -152,6 +152,6 @@ async function performMigration(): Promise<number> {
  *
  * @param context - The extension context
  */
-export async function resetMigrationFlag(context: ExtensionContext): Promise<void> {
+export async function resetMigrationFlag(context: Pick<ExtensionContext, 'globalState'>): Promise<void> {
   await context.globalState.update(MIGRATION_KEY, undefined);
 }

@@ -17,21 +17,20 @@ import { Uri } from 'vscode';
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
 import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
+import { ConfigOverrides, ConfigKey } from './test-types';
 
 /**
  * Mock configuration for testing.
  */
 class MockImportsConfig extends ImportsConfig {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mockConfig: Map<string, any> = new Map();
+  private mockConfig: Map<ConfigKey, ConfigOverrides[ConfigKey]> = new Map();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setConfig(key: string, value: any): void {
+  setConfig<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.mockConfig.set(key, value);
   }
 
   override legacyMode(_resource: Uri): boolean {
-    return this.mockConfig.get('legacyMode') ?? false;
+    return (this.mockConfig.get('legacyMode') as boolean | undefined) ?? false;
   }
 }
 

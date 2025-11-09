@@ -36,9 +36,10 @@ import { organizeImportsNew } from '../new-extension/adapter';
  * 3. Applies the REAL TextEdits it returns
  * 4. Reads back the ACTUAL result from the file
  *
- * MAINTAINER SKEPTICISM:
- * The extension maintainer does not believe TypeScript Hero has this bug.
- * These tests exist to provide IRREFUTABLE PROOF of the behavior.
+ * VERIFICATION METHODOLOGY:
+ * The extension maintainer was initially skeptical about this behavior.
+ * These tests document the actual behavior and provide strong evidence through
+ * real file operations and the old extension's own code.
  *
  * AUDIT REQUEST:
  * Please verify:
@@ -47,8 +48,9 @@ import { organizeImportsNew } from '../new-extension/adapter';
  * ✓ Are the results reproducible?
  * ✓ Is there any configuration that would preserve comments?
  *
- * If these tests are wrong, the entire premise of our new extension is flawed.
- * If these tests are correct, we have proven a critical limitation in the old extension.
+ * If these tests show incorrect behavior, it indicates either a misunderstanding
+ * of the old extension or a flaw in our test approach.
+ * If these tests are correct, they document a critical limitation in the old extension.
  *
  * EXPECTED OUTCOME OF AUDIT:
  * Either confirm this is a real bug in TypeScript Hero, OR show us where our

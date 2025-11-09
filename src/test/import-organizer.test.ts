@@ -18,10 +18,12 @@
  */
 
 import * as assert from 'assert';
-import { OutputChannel, Uri } from 'vscode';
+import { commands, OutputChannel, Uri } from 'vscode';
 import { ImportOrganizer } from '../imports/import-organizer';
 import { ImportsConfig } from '../configuration';
 import { createTempDocument, deleteTempDocument } from './test-helpers';
+import { ConfigOverrides, ConfigKey } from './test-types';
+import { ImportGroup } from '../imports/import-grouping';
 
 /**
  * Mock OutputChannel for testing
@@ -52,11 +54,9 @@ class MockOutputChannel implements OutputChannel {
  * Mock ImportsConfig for testing
  */
 class MockImportsConfig extends ImportsConfig {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mockConfig: Record<string, any> = {};
+  private mockConfig: Partial<ConfigOverrides> = {};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public setConfig(key: string, value: any): void {
+  public setConfig<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.mockConfig[key] = value;
   }
 
@@ -113,9 +113,9 @@ class MockImportsConfig extends ImportsConfig {
     return this.mockConfig['blankLinesAfterImports'] ?? 'one';
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public grouping(_resource: Uri): any[] {
-    return this.mockConfig['grouping'] ?? [];
+  public grouping(_resource: Uri): ImportGroup[] {
+    // Return empty array - tests don't need actual grouping logic
+    return [];
   }
 }
 
@@ -241,28 +241,35 @@ suite('ImportOrganizer Tests', () => {
   });
 
   suite('Command Registration', () => {
-    test('should only register miniTypescriptHero command (no alias)', () => {
+    test('should only register miniTypescriptHero command (no alias)', async () => {
       // Contract test: Verify we DON'T hijack the old typescriptHero command
+      // Note: Commands are registered during extension activation (in extension.ts),
+      // not during test setup. This test validates the ACTUAL registered commands.
+
+      // Create a fresh organizer and activate it to register commands
       const testLogger = new MockOutputChannel();
       const testConfig = new MockImportsConfig();
       const testOrganizer = new ImportOrganizer(testConfig, testLogger);
+      testOrganizer.activate();
 
-      // The actual check: Read the activation code to verify it only registers mini command
-      const activateCode = testOrganizer.activate.toString();
+      try {
+        // Query actual VSCode command registry to check runtime behavior
+        const allCommands = await commands.getCommands(true);
 
-      // Should contain miniTypescriptHero command
-      assert.ok(
-        activateCode.includes('miniTypescriptHero.imports.organize'),
-        'Should register miniTypescriptHero.imports.organize command'
-      );
+        // Should register our command
+        assert.ok(
+          allCommands.includes('miniTypescriptHero.imports.organize'),
+          'Should register miniTypescriptHero.imports.organize command'
+        );
 
-      // Should NOT contain typescriptHero command (no alias!)
-      assert.ok(
-        !activateCode.includes('typescriptHero.imports.organize'),
-        'Should NOT register typescriptHero.imports.organize alias (be polite!)'
-      );
-
-      testOrganizer.dispose();
+        // Should NOT register old command (no alias - be polite!)
+        assert.ok(
+          !allCommands.includes('typescriptHero.imports.organize'),
+          'Should NOT register typescriptHero.imports.organize alias (be polite!)'
+        );
+      } finally {
+        testOrganizer.dispose();
+      }
     });
   });
 
@@ -326,19 +333,26 @@ console.log(A, B);
 
   suite('Error Handling', () => {
     test('should handle malformed TypeScript gracefully', async () => {
-      const content = 'import { A from ./a;'; // Syntax error
+      const content = 'import { A from ./a;'; // Syntax error - missing closing brace
       const doc = await createTempDocument(content, 'ts');
 
       try {
+        // ACTUAL BEHAVIOR (verified by running test):
+        // ts-morph throws: "Expected the module specifier to be a string literal"
+        // The organizer catches it, logs it, and re-throws as Error
+        // The test verifies we get a proper Error (not a crash)
+
         // @ts-expect-error - accessing private method for testing
         await organizer.organizeImportsForDocument(doc);
-        // ts-morph is resilient and tries to parse even malformed code
-        // It shouldn't crash, but might throw in some extreme cases
-        // Either way is acceptable - the important thing is we catch it
-        assert.ok(true, 'Should handle malformed code gracefully');
+
+        assert.fail('Should have thrown an error for malformed import statement');
       } catch (e) {
-        // If it throws, that's also acceptable - we just want to verify it doesn't crash the extension
-        assert.ok(true, 'Handled error appropriately');
+        // Expected: ts-morph throws because module specifier is not a string literal
+        assert.ok(e instanceof Error, 'Should throw proper Error for malformed code');
+        assert.ok(
+          e.message.includes('module specifier') || e.message.includes('string literal'),
+          'Error message should mention module specifier issue'
+        );
       } finally {
         await deleteTempDocument(doc);
       }

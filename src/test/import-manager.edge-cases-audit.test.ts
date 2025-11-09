@@ -10,30 +10,29 @@ import { Uri } from 'vscode';
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
 import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './test-helpers';
+import { ConfigOverrides, ConfigKey } from './test-types';
 
 /**
  * Mock configuration for testing.
  * Extends ImportsConfig to allow setting test values.
  */
 class MockImportsConfig extends ImportsConfig {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private mockConfig: Map<string, any> = new Map();
+  private mockConfig: Map<ConfigKey, ConfigOverrides[ConfigKey]> = new Map();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setConfig(key: string, value: any): void {
+  setConfig<K extends ConfigKey>(key: K, value: ConfigOverrides[K]): void {
     this.mockConfig.set(key, value);
   }
 
   override disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
+    return (this.mockConfig.get('disableImportRemovalOnOrganize') as boolean | undefined) ?? false;
   }
 
   override blankLinesAfterImports(_resource: Uri): 'one' | 'two' | 'preserve' {
-    return this.mockConfig.get('blankLinesAfterImports') ?? 'one';
+    return (this.mockConfig.get('blankLinesAfterImports') as 'one' | 'two' | 'preserve' | undefined) ?? 'one';
   }
 
   override legacyMode(_resource: Uri): boolean {
-    return this.mockConfig.get('legacyMode') ?? false;
+    return (this.mockConfig.get('legacyMode') as boolean | undefined) ?? false;
   }
 }
 
@@ -284,10 +283,8 @@ const x = A + Z;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
-      // Mock multiLineTrailingComma: false
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (config as any).mockConfig = new Map([['multiLineTrailingComma', false]]);
+      const config = new MockImportsConfig();
+      config.setConfig('multiLineTrailingComma', false);
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
@@ -383,10 +380,8 @@ const x = A + B;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
-      // Mock removeTrailingIndex: true
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (config as any).mockConfig = new Map([['removeTrailingIndex', true]]);
+      const config = new MockImportsConfig();
+      config.setConfig('removeTrailingIndex', true);
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);

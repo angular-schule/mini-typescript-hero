@@ -8,21 +8,20 @@
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PackageJson } from './test-types';
 
 suite('Manifest Validation', () => {
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let packageJson: any;
+  let packageJson: PackageJson;
 
   suiteSetup(() => {
     const packagePath = path.resolve(__dirname, '../../package.json');
     const content = fs.readFileSync(packagePath, 'utf8');
-    packageJson = JSON.parse(content);
+    packageJson = JSON.parse(content) as PackageJson;
   });
 
   test('contributes only miniTypescriptHero.* commands', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const commands = (packageJson.contributes?.commands ?? []).map((c: any) => c.command);
+    const commands = (packageJson.contributes?.commands ?? []).map((c) => c.command);
 
     // All commands must start with miniTypescriptHero
     assert.ok(

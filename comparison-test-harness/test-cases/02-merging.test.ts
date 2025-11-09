@@ -76,7 +76,7 @@ const z = B;
     assert.equal(newResult, expected, 'New extension must produce correct output');
   });
 
-  test('019. Duplicate specifiers removed', async () => {
+  test('019. Duplicate specifiers - graceful error handling', async () => {
     const input = `import { A, B } from './lib';
 import { A, C } from './lib';
 
@@ -85,19 +85,31 @@ const y = B;
 const z = C;
 `;
 
-    // ⚠️ GARBAGE IN, GARBAGE OUT
-    // The INPUT is already NON-COMPILING CODE!
-    // Importing the same specifier 'A' twice creates duplicate bindings - SyntaxError
-    // This is invalid TypeScript/JavaScript that would never compile
+    // ⚠️ NOTE: This code has "Duplicate identifier 'A'" - a TypeScript semantic error
+    // This is invalid TypeScript code, but the parsers (typescript-parser and ts-morph)
+    // can still parse the syntax and organize the imports.
     //
-    // DECISION: We do NOT test behavior for non-compiling input code
-    // Both extensions will fail or produce unpredictable output on garbage input
+    // ACTUAL BEHAVIOR (verified by running the test):
+    // - Both extensions successfully organize the imports
+    // - They merge the two imports into one: `import { A, B, C } from './lib';`
+    // - Even though 'A' is duplicated, the parsers treat this as valid import syntax
+    // - TypeScript compiler would error on the duplicate identifier when type-checking
     //
-    // This test exists only to document that we explicitly skip parity testing
-    // for non-compilable code scenarios
+    // This test verifies graceful handling - no crashes, consistent output between extensions
 
-    // Test passes without running - we don't test garbage input
-    assert.ok(true, 'SKIPPED: Input code is non-compilable (duplicate import bindings). Garbage in, garbage out - no parity testing needed.');
+    const expected = `import { A, B, C } from './lib';
+
+const x = A;
+const y = B;
+const z = C;
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    // Both should successfully organize and produce the same merged import
+    assert.strictEqual(oldResult, expected, 'Old extension should merge duplicate imports');
+    assert.strictEqual(newResult, expected, 'New extension should merge duplicate imports');
   });
 
   test('020. Namespace imports cannot merge', async () => {
