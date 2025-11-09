@@ -1,5 +1,5 @@
 /**
- * Additional Coverage Tests - High-value edge cases suggested by audit
+ * Additional Coverage Tests - High-value edge cases from testing analysis
  *
  * These tests cover important combinations and edge cases that ensure
  * correctness in complex real-world scenarios.
@@ -33,7 +33,7 @@ const user: User = getUser();
     const newResult = await organizeImportsNew(input);
 
     assert.strictEqual(oldResult, expected, 'Old extension strips import type and merges');
-    assert.strictEqual(newResult, expected, 'New extension currently matches old behavior (known limitation)');
+    assert.strictEqual(newResult, expected, 'New extension matches old behavior (legacy mode backward compatibility)');
   });
 
   test('131. Type-only + value imports merge in legacy mode', async () => {

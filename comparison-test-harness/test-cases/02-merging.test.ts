@@ -91,13 +91,13 @@ const z = C;
     //
     // ACTUAL BEHAVIOR (verified by running the test):
     // - Both extensions successfully organize the imports
-    // - They merge the two imports into one: `import { A, B, C } from './lib';`
-    // - Even though 'A' is duplicated, the parsers treat this as valid import syntax
+    // - They merge the two imports into one: `import { A, A, B, C } from './lib';`
+    // - The duplicate 'A' is PRESERVED (neither extension deduplicates specifiers)
     // - TypeScript compiler would error on the duplicate identifier when type-checking
     //
     // This test verifies graceful handling - no crashes, consistent output between extensions
 
-    const expected = `import { A, B, C } from './lib';
+    const expected = `import { A, A, B, C } from './lib';
 
 const x = A;
 const y = B;
@@ -108,8 +108,8 @@ const z = C;
     const newResult = await organizeImportsNew(input);
 
     // Both should successfully organize and produce the same merged import
-    assert.strictEqual(oldResult, expected, 'Old extension should merge duplicate imports');
-    assert.strictEqual(newResult, expected, 'New extension should merge duplicate imports');
+    assert.strictEqual(oldResult, expected, 'Old extension keeps duplicate specifiers');
+    assert.strictEqual(newResult, expected, 'New extension keeps duplicate specifiers');
   });
 
   test('020. Namespace imports cannot merge', async () => {

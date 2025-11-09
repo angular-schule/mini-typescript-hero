@@ -12,7 +12,7 @@
 
 import 'reflect-metadata';
 import { TypescriptParser, TypescriptCodeGenerator, File, Generatable, GENERATORS, TypescriptGenerationOptions, MultiLineImportRule } from 'typescript-parser';
-import { Uri, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit } from 'vscode';
+import { Uri, TextDocument, TextEdit, window, TextEditor, workspace, WorkspaceEdit, ExtensionContext } from 'vscode';
 import { ImportManager } from '../old-typescript-hero/src/imports/import-manager';
 import { Configuration } from '../old-typescript-hero/src/configuration';
 import { ImportsConfig } from '../old-typescript-hero/src/configuration/imports-config';
@@ -23,15 +23,19 @@ import { ImportGroup, KeywordImportGroup, RegexImportGroup, RemainImportGroup } 
 import { createTempDocument, deleteTempDocument } from '../../src/test/test-helpers';
 
 /**
- * Mock Logger for old extension
+ * Mock Logger for old extension that implements the Logger interface
  */
 class MockLogger {
-  debug(..._args: any[]): void {
+  error(_message: string, ..._data: unknown[]): void {
     // Silent logging
   }
-  info(..._args: any[]): void {}
-  warn(..._args: any[]): void {}
-  error(..._args: any[]): void {}
+  warn(_message: string, ..._data: unknown[]): void {}
+  info(_message: string, ..._data: unknown[]): void {}
+  debug(_message: string, ..._data: unknown[]): void {}
+  profile(_name: string): void {}
+  startTimer(): { done: (info: { message: string; [key: string]: unknown }) => void } {
+    return { done: () => {} };
+  }
 }
 
 /**
@@ -41,23 +45,23 @@ class MockConfiguration extends Configuration {
   public readonly imports = new MockImportsConfig();
 
   constructor() {
-    // Create minimal ExtensionContext mock
-    const mockContext = {
+    // Create minimal ExtensionContext mock that implements required properties
+    const mockContext: Pick<ExtensionContext, 'subscriptions'> = {
       subscriptions: []
     };
-    super(mockContext as any);
+    super(mockContext as ExtensionContext);
   }
 
-  typescriptGeneratorOptions(resource: Uri): any {
+  typescriptGeneratorOptions(resource: Uri): TypescriptGenerationOptions {
     // Get tabSize from config if provided, otherwise use the original logic
     let tabSize: number;
     const configTabSize = (this.imports as MockImportsConfig).getConfigValue('tabSize');
-    if (configTabSize !== undefined) {
+    if (typeof configTabSize === 'number') {
       tabSize = configTabSize;
     } else {
       // Match original extension logic: try activeTextEditor.options.tabSize, fallback to editor.tabSize (default: 4)
-      tabSize = window.activeTextEditor && window.activeTextEditor.options.tabSize
-        ? (window.activeTextEditor.options.tabSize as any) * 1
+      tabSize = window.activeTextEditor && typeof window.activeTextEditor.options.tabSize === 'number'
+        ? window.activeTextEditor.options.tabSize
         : workspace.getConfiguration('editor', resource).get('tabSize', 4);
     }
 
@@ -74,63 +78,76 @@ class MockConfiguration extends Configuration {
   }
 }
 
+type ConfigValue = string | number | boolean | string[] | ImportGroup[];
+
 /**
  * Mock ImportsConfig for old extension
  * IMPORTANT: Does NOT extend ImportsConfig to avoid calling workspace.getConfiguration()
  */
 class MockImportsConfig {
-  private mockConfig: Map<string, any> = new Map();
+  private mockConfig: Map<string, ConfigValue> = new Map();
 
-  setConfig(key: string, value: any): void {
+  setConfig(key: string, value: ConfigValue): void {
     this.mockConfig.set(key, value);
   }
 
-  getConfigValue(key: string): any {
+  getConfigValue(key: string): ConfigValue | undefined {
     return this.mockConfig.get(key);
   }
 
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces') ?? true;
+    const value = this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces');
+    return typeof value === 'boolean' ? value : true;
   }
 
   insertSemicolons(_resource: Uri): boolean {
-    return this.mockConfig.get('insertSemicolons') ?? true;
+    const value = this.mockConfig.get('insertSemicolons');
+    return typeof value === 'boolean' ? value : true;
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
-    return this.mockConfig.get('removeTrailingIndex') ?? true;
+    const value = this.mockConfig.get('removeTrailingIndex');
+    return typeof value === 'boolean' ? value : true;
   }
 
   stringQuoteStyle(_resource: Uri): '"' | '\'' {
-    return this.mockConfig.get('stringQuoteStyle') ?? '\'';
+    const value = this.mockConfig.get('stringQuoteStyle');
+    return (value === '"' || value === '\'') ? value : '\'';
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
-    return this.mockConfig.get('multiLineWrapThreshold') ?? 125;
+    const value = this.mockConfig.get('multiLineWrapThreshold');
+    return typeof value === 'number' ? value : 125;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
-    return this.mockConfig.get('multiLineTrailingComma') ?? true;
+    const value = this.mockConfig.get('multiLineTrailingComma');
+    return typeof value === 'boolean' ? value : true;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportRemovalOnOrganize') ?? false;
+    const value = this.mockConfig.get('disableImportRemovalOnOrganize');
+    return typeof value === 'boolean' ? value : false;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
-    return this.mockConfig.get('disableImportsSorting') ?? false;
+    const value = this.mockConfig.get('disableImportsSorting');
+    return typeof value === 'boolean' ? value : false;
   }
 
   organizeOnSave(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeOnSave') ?? false;
+    const value = this.mockConfig.get('organizeOnSave');
+    return typeof value === 'boolean' ? value : false;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
-    return this.mockConfig.get('organizeSortsByFirstSpecifier') ?? false;
+    const value = this.mockConfig.get('organizeSortsByFirstSpecifier');
+    return typeof value === 'boolean' ? value : false;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
-    return this.mockConfig.get('ignoredFromRemoval') ?? ['react'];
+    const value = this.mockConfig.get('ignoredFromRemoval');
+    return Array.isArray(value) && value.every(v => typeof v === 'string') ? value : ['react'];
   }
 
   grouping(_resource: Uri): ImportGroup[] {
@@ -139,11 +156,13 @@ class MockImportsConfig {
       // If it's an array of strings, parse each into ImportGroup objects
       if (Array.isArray(customGrouping) && customGrouping.length > 0 && typeof customGrouping[0] === 'string') {
         // Filter out any undefined/null values and parse each string
-        const cleanGrouping: string[] = customGrouping.filter(g => g !== undefined && g !== null);
+        const cleanGrouping = customGrouping.filter((g): g is string => typeof g === 'string');
         return cleanGrouping.map(setting => ImportGroupSettingParser.parseSetting(setting));
       }
       // Otherwise it's already an array of ImportGroup objects
-      return customGrouping;
+      if (Array.isArray(customGrouping) && customGrouping.every((g): g is ImportGroup => g instanceof Object)) {
+        return customGrouping as ImportGroup[];
+      }
     }
     // Return default grouping: Plains, Modules, Workspace, Remain
     return ImportGroupSettingParser.default;
@@ -185,7 +204,7 @@ function extendCodeGenerator(): void {
  */
 export async function organizeImportsOld(
   sourceCode: string,
-  configOverrides: any = {}
+  configOverrides: Record<string, ConfigValue> = {}
 ): Promise<string> {
   // Register custom generators for ImportGroup types (one-time setup)
   extendCodeGenerator();
@@ -199,7 +218,7 @@ export async function organizeImportsOld(
     const parsedDocument: File = await parser.parseSource(doc.getText(), getScriptKind(doc.fileName));
 
     const config = new MockConfiguration();
-    const logger = new MockLogger() as any;
+    const logger = new MockLogger();
 
     // Apply config overrides
     Object.keys(configOverrides).forEach(key => {
@@ -212,13 +231,14 @@ export async function organizeImportsOld(
     };
 
     // Mock window.activeTextEditor (needed by getImportInsertPosition and tabSize)
-    const mockEditor = {
+    // Only provide the properties that the old extension actually uses
+    const mockEditor: Pick<TextEditor, 'document' | 'options'> & { options: { tabSize: number } } = {
       document: doc,
       options: { tabSize: 2 } // Default tabSize for tests
-    } as unknown as TextEditor;
+    };
     const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'activeTextEditor');
     Object.defineProperty(window, 'activeTextEditor', {
-      get: () => mockEditor,
+      get: () => mockEditor as TextEditor,
       configurable: true
     });
 
@@ -239,7 +259,8 @@ export async function organizeImportsOld(
     if (originalDescriptor) {
       Object.defineProperty(window, 'activeTextEditor', originalDescriptor);
     } else {
-      delete (window as any).activeTextEditor;
+      // Safe delete using Reflect
+      Reflect.deleteProperty(window, 'activeTextEditor');
     }
 
     // If no edits (empty file or no imports), return original content

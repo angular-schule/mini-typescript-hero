@@ -35,9 +35,10 @@ const x = a;
     let oldCrashed = false;
     try {
       await organizeImportsOld(input, { legacyMode: true });
-    } catch (error: any) {
+    } catch (error) {
       oldCrashed = true;
-      assert.ok(error.message.includes('is not iterable'), 'Old extension crashes with expected error');
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      assert.ok(errorMessage.includes('is not iterable'), 'Old extension crashes with expected error');
     }
     assert.ok(oldCrashed, 'Old extension MUST crash on this input (known bug)');
 

@@ -48,92 +48,98 @@ class MockOutputChannel implements OutputChannel {
   }
 }
 
+type NewConfigValue = string | number | boolean | string[] | 'one' | 'two' | 'preserve' | '"' | '\'' | ImportGroup[];
+
 /**
  * Mock ImportsConfig (same as in existing tests)
  */
 class MockImportsConfig extends ImportsConfig {
-  private mockConfig: Map<string, any> = new Map();
+  private mockConfig: Map<string, NewConfigValue> = new Map();
 
-  setConfig(key: string, value: any): void {
+  setConfig(key: string, value: NewConfigValue): void {
     this.mockConfig.set(key, value);
   }
 
   insertSpaceBeforeAndAfterImportBraces(_resource: Uri): boolean {
     // Config MUST be provided by tests (no defaults in adapter)
     const value = this.mockConfig.get('insertSpaceBeforeAndAfterImportBraces');
-    if (value === undefined) {throw new Error('insertSpaceBeforeAndAfterImportBraces must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('insertSpaceBeforeAndAfterImportBraces must be explicitly configured in tests');}
     return value;
   }
 
   async insertSemicolons(_resource: Uri): Promise<boolean> {
     const value = this.mockConfig.get('insertSemicolons');
-    if (value === undefined) {throw new Error('insertSemicolons must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('insertSemicolons must be explicitly configured in tests');}
     return value;
   }
 
   removeTrailingIndex(_resource: Uri): boolean {
     const value = this.mockConfig.get('removeTrailingIndex');
-    if (value === undefined) {throw new Error('removeTrailingIndex must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('removeTrailingIndex must be explicitly configured in tests');}
     return value;
   }
 
   async stringQuoteStyle(_resource: Uri): Promise<'"' | '\''> {
     const value = this.mockConfig.get('stringQuoteStyle');
-    if (value === undefined) {throw new Error('stringQuoteStyle must be explicitly configured in tests');}
+    if (value !== '"' && value !== '\'') {throw new Error('stringQuoteStyle must be explicitly configured in tests');}
     return value;
   }
 
   multiLineWrapThreshold(_resource: Uri): number {
     const value = this.mockConfig.get('multiLineWrapThreshold');
-    if (value === undefined) {throw new Error('multiLineWrapThreshold must be explicitly configured in tests');}
+    if (typeof value !== 'number') {throw new Error('multiLineWrapThreshold must be explicitly configured in tests');}
     return value;
   }
 
   multiLineTrailingComma(_resource: Uri): boolean {
     const value = this.mockConfig.get('multiLineTrailingComma');
-    if (value === undefined) {throw new Error('multiLineTrailingComma must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('multiLineTrailingComma must be explicitly configured in tests');}
     return value;
   }
 
   disableImportRemovalOnOrganize(_resource: Uri): boolean {
     const value = this.mockConfig.get('disableImportRemovalOnOrganize');
-    if (value === undefined) {throw new Error('disableImportRemovalOnOrganize must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('disableImportRemovalOnOrganize must be explicitly configured in tests');}
     return value;
   }
 
   mergeImportsFromSameModule(_resource: Uri): boolean {
     const value = this.mockConfig.get('mergeImportsFromSameModule');
-    if (value === undefined) {throw new Error('mergeImportsFromSameModule must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('mergeImportsFromSameModule must be explicitly configured in tests');}
     return value;
   }
 
   disableImportsSorting(_resource: Uri): boolean {
     const value = this.mockConfig.get('disableImportsSorting');
-    if (value === undefined) {throw new Error('disableImportsSorting must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('disableImportsSorting must be explicitly configured in tests');}
     return value;
   }
 
   organizeOnSave(_resource: Uri): boolean {
     const value = this.mockConfig.get('organizeOnSave');
-    if (value === undefined) {throw new Error('organizeOnSave must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('organizeOnSave must be explicitly configured in tests');}
     return value;
   }
 
   organizeSortsByFirstSpecifier(_resource: Uri): boolean {
     const value = this.mockConfig.get('organizeSortsByFirstSpecifier');
-    if (value === undefined) {throw new Error('organizeSortsByFirstSpecifier must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('organizeSortsByFirstSpecifier must be explicitly configured in tests');}
     return value;
   }
 
   ignoredFromRemoval(_resource: Uri): string[] {
     const value = this.mockConfig.get('ignoredFromRemoval');
-    if (value === undefined) {throw new Error('ignoredFromRemoval must be explicitly configured in tests');}
-    return value;
+    if (!Array.isArray(value)) {throw new Error('ignoredFromRemoval must be explicitly configured in tests');}
+    // Type guard: verify all elements are strings
+    if (!value.every(v => typeof v === 'string')) {
+      throw new Error('ignoredFromRemoval must be an array of strings');
+    }
+    return value as string[];
   }
 
   legacyMode(_resource: Uri): boolean {
     const value = this.mockConfig.get('legacyMode');
-    if (value === undefined) {throw new Error('legacyMode must be explicitly configured in tests');}
+    if (typeof value !== 'boolean') {throw new Error('legacyMode must be explicitly configured in tests');}
     return value;
   }
 
@@ -144,7 +150,9 @@ class MockImportsConfig extends ImportsConfig {
     }
 
     const value = this.mockConfig.get('blankLinesAfterImports');
-    if (value === undefined) {throw new Error('blankLinesAfterImports must be explicitly configured in tests');}
+    if (value !== 'one' && value !== 'two' && value !== 'preserve') {
+      throw new Error('blankLinesAfterImports must be explicitly configured in tests');
+    }
     return value;
   }
 
@@ -158,54 +166,33 @@ class MockImportsConfig extends ImportsConfig {
     if (value === undefined) {
       return false; // Default: respect VS Code settings
     }
+    if (typeof value !== 'boolean') {
+      throw new Error('useOnlyExtensionSettings must be boolean');
+    }
     return value;
   }
 
   indentation(_resource: Uri): string {
     // Priority 1: Check if custom indentation is directly mocked
     const customIndentation = this.mockConfig.get('indentation');
-    if (customIndentation !== undefined) {
+    if (typeof customIndentation === 'string') {
       return customIndentation;
     }
 
-    // Priority 2: Master override - use only extension settings
-    if (this.useOnlyExtensionSettings(_resource)) {
-      return this.indentationFromExtensionConfig(_resource);
-    }
-
-    // Priority 3: Legacy mode - match old TypeScript Hero exactly
+    // Priority 2: Legacy mode ALWAYS uses spaces (ignores insertSpaces setting)
     if (this.legacyMode(_resource)) {
-      return this.indentationLegacyMode(_resource);
+      const tabSize = this.mockConfig.get('tabSize');
+      const finalTabSize = typeof tabSize === 'number' ? tabSize : 2;
+      return ' '.repeat(finalTabSize); // Legacy: ALWAYS spaces, never tabs
     }
 
-    // Priority 4: Modern mode - use mocked tabSize/insertSpaces
+    // Priority 3: Modern mode - respect insertSpaces setting
     const insertSpaces = this.mockConfig.get('insertSpaces');
     const tabSize = this.mockConfig.get('tabSize');
 
     // Use extension defaults if not provided
-    const finalInsertSpaces = insertSpaces !== undefined ? insertSpaces : true;
-    const finalTabSize = tabSize !== undefined ? tabSize : 2;
-
-    if (finalInsertSpaces === false) {
-      return '\t';
-    }
-    return ' '.repeat(finalTabSize);
-  }
-
-  private indentationLegacyMode(_resource: Uri): string {
-    // Legacy mode: ALWAYS spaces, default 2 spaces (VS Code default in test environment)
-    // Note: In test environment, we can't mock window.activeTextEditor, so we use config
-    const tabSize = this.mockConfig.get('tabSize');
-    const finalTabSize = tabSize !== undefined ? tabSize : 2; // Test environment default
-    return ' '.repeat(finalTabSize); // Legacy: ALWAYS spaces, never tabs
-  }
-
-  private indentationFromExtensionConfig(_resource: Uri): string {
-    const insertSpaces = this.mockConfig.get('insertSpaces');
-    const tabSize = this.mockConfig.get('tabSize');
-
-    const finalInsertSpaces = insertSpaces !== undefined ? insertSpaces : true;
-    const finalTabSize = tabSize !== undefined ? tabSize : 2;
+    const finalInsertSpaces = typeof insertSpaces === 'boolean' ? insertSpaces : true;
+    const finalTabSize = typeof tabSize === 'number' ? tabSize : 2;
 
     if (finalInsertSpaces === false) {
       return '\t';
@@ -218,7 +205,15 @@ class MockImportsConfig extends ImportsConfig {
     let importGroups: ImportGroup[] = [];
 
     try {
-      importGroups = groupSettings.map((setting: any) => ImportGroupSettingParser.parseSetting(setting));
+      // groupSettings should be string[] at this point
+      if (Array.isArray(groupSettings)) {
+        importGroups = groupSettings.map((setting: string | ImportGroup) => {
+          if (typeof setting === 'string') {
+            return ImportGroupSettingParser.parseSetting(setting);
+          }
+          return setting;
+        });
+      }
     } catch (e) {
       // Fall back to default on invalid config
       importGroups = ImportGroupSettingParser.default;
@@ -269,7 +264,7 @@ const DEFAULT_CONFIG = {
  */
 export async function organizeImportsNew(
   sourceCode: string,
-  configOverrides: any = {}
+  configOverrides: Partial<Record<string, NewConfigValue>> = {}
 ): Promise<string> {
   // Create REAL temp file (NOT mocked TextDocument!)
   const doc = await createTempDocument(sourceCode);
