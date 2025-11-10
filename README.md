@@ -180,15 +180,18 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior exactly. When enabled, legacy mode overrides certain settings to ensure 100% backward compatibility:
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior exactly. When enabled, legacy mode replicates ALL old behaviors (including bugs) for 100% backward compatibility:
 
 - **`blankLinesAfterImports`** — Always preserves existing blank lines (ignores configured value)
-- **`organizeSortsByFirstSpecifier`** — Disabled (always sorts by library name)
-- **`disableImportsSorting`** — Disabled (always sorts within groups)
-- **Merge timing** — Merges BEFORE removeTrailingIndex (replicates old bug)
+- **`organizeSortsByFirstSpecifier`** — **IGNORED** (always sorts by library name within groups) ⚠️ This is a bug in the old extension
+- **`disableImportsSorting`** — **IGNORED** (always sorts imports within groups) ⚠️ This is a bug in the old extension
+- **Merge timing** — Merges BEFORE removeTrailingIndex (old bug: `./lib/index` and `./lib` won't merge)
 - **Type-only imports** — Strips `import type` keywords (old TS <3.8 behavior)
+- **Indentation** — Always uses spaces (ignores `insertSpaces` setting)
 
-New users get `legacyMode: false` by default for modern best practices. You can toggle this setting anytime via the command palette or your configuration.
+**Why replicate bugs?** Migrated users depend on exact old output. Any change would create massive diffs across their codebase on first run, breaking trust.
+
+**Modern mode fixes these bugs:** New users get `legacyMode: false` by default for correct behavior. You can toggle this setting anytime via the command palette or your configuration.
 
 ### No Old Settings?
 
