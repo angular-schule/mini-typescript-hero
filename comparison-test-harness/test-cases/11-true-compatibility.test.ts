@@ -134,8 +134,8 @@ const y = Z;
     const oldResult1 = await organizeImportsOld(input, { legacyMode: true });
     const newResult1 = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must produce correct output');
-    assert.strictEqual(newResult1, expected, 'New extension run 1 must produce correct output');
+    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must match expected output');
+    assert.strictEqual(newResult1, expected, 'New extension run 1 must match expected output');
 
     // Run 2 - use output from run 1 as input
     const oldResult2 = await organizeImportsOld(oldResult1, { legacyMode: true });
@@ -165,8 +165,8 @@ export const Foo = () => <div>{A} {Z}</div>;
     const oldResult1 = await organizeImportsOld(input, { legacyMode: true });
     const newResult1 = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must produce correct output');
-    assert.strictEqual(newResult1, expected, 'New extension run 1 must produce correct output');
+    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must match expected output');
+    assert.strictEqual(newResult1, expected, 'New extension run 1 must match expected output');
 
     // Run 2
     const oldResult2 = await organizeImportsOld(oldResult1, { legacyMode: true });

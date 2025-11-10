@@ -33,8 +33,8 @@ const z: OnInit = null as any;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('002. All capitals specifiers (Component, OnInit)', async () => {
@@ -53,8 +53,8 @@ const z: OnInit = null as any;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('003. All lowercase specifiers (map, filter, tap)', async () => {
@@ -75,8 +75,8 @@ const z = tap;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('004. Mixed lower and upper start (inject, Component, map, OnInit)', async () => {
@@ -99,8 +99,8 @@ const z = map;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('005. Library name sorting (alphabetical)', async () => {
@@ -125,8 +125,8 @@ const w = z;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('006. Sort by first specifier (enabled)', async () => {
@@ -148,8 +148,8 @@ const y = zoo;
     const oldResult = await organizeImportsOld(input, { organizeSortsByFirstSpecifier: true });
     const newResult = await organizeImportsNew(input, { organizeSortsByFirstSpecifier: true });
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('007. String imports come first', async () => {
@@ -173,8 +173,8 @@ const y = map;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('008. Multiple string imports sorted', async () => {
@@ -195,8 +195,8 @@ import 'zebra';
     // old extension adds EOF blank line (ends with \n\n), new extension doesn't (ends with \n).
     // We normalize the old output for comparison since both behaviors are valid.
     const oldResultWithoutTrailingBlank = oldResult.replace(/\n\n$/, '\n');
-    assert.equal(oldResultWithoutTrailingBlank, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResultWithoutTrailingBlank, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('009. Specifiers with aliases', async () => {
@@ -217,8 +217,8 @@ const z: Init = null as any;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('010. Default + named imports', async () => {
@@ -239,8 +239,8 @@ const z = useEffect;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('011. Namespace imports', async () => {
@@ -261,8 +261,8 @@ const y = RxJS;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('012. Disable sorting', async () => {
@@ -283,8 +283,8 @@ const w = z;
     const oldResult = await organizeImportsOld(input, { disableImportsSorting: true });
     const newResult = await organizeImportsNew(input, { disableImportsSorting: true });
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('013. Case-insensitive library sorting', async () => {
@@ -309,8 +309,8 @@ const z = c;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('014. Numbers in specifier names', async () => {
@@ -333,8 +333,8 @@ const d = test10;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('015. Special characters in library names', async () => {
@@ -359,7 +359,7 @@ const z = c;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 });

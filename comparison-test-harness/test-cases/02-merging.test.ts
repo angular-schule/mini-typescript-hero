@@ -25,8 +25,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('017. Three imports from same module', async () => {
@@ -49,8 +49,8 @@ const z = C;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('018. Same library, default + named', async () => {
@@ -72,8 +72,8 @@ const z = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('019. Duplicate specifiers - graceful error handling', async () => {
@@ -130,8 +130,8 @@ const y = Lib2;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('021. String imports cannot merge', async () => {
@@ -151,8 +151,8 @@ import './lib';
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output');
+    assert.equal(oldResult, expectedOld, 'Old extension must match expected output');
+    assert.equal(newResult, expectedNew, 'New extension must match expected output');
   });
 
   test('022. Merging after removeTrailingIndex', async () => {
@@ -174,8 +174,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('023. Merging preserves used specifiers only', async () => {
@@ -195,8 +195,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('024. Merging sorts specifiers alphabetically', async () => {
@@ -219,8 +219,8 @@ const z = Z;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('025. Default + named with aliases', async () => {
@@ -240,8 +240,8 @@ const y = AliasA;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('026. Multiple modules with merging', async () => {
@@ -268,8 +268,8 @@ const d = B2;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('027. Mixed import types from same module', async () => {
@@ -294,8 +294,8 @@ const z = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('028. Real Angular example - merges @angular/core imports', async () => {
@@ -341,8 +341,8 @@ const user = UserDetail;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('029. Merging with type imports', async () => {
@@ -370,8 +370,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves type)');
+    assert.equal(oldResult, expectedOld, 'Old extension must match expected output');
+    assert.equal(newResult, expectedNew, 'New extension must match expected output (preserves type)');
   });
 
   test('030. Merging with multiple aliases', async () => {
@@ -391,7 +391,7 @@ const y = AliasB;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 });

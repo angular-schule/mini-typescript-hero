@@ -16,8 +16,8 @@ suite('Edge Cases', () => {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('072. File with no imports', async () => {
@@ -32,8 +32,8 @@ const y = 2;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('073. Only string imports', async () => {
@@ -53,8 +53,8 @@ import 'zone.js';
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output');
+    assert.equal(oldResult, expectedOld, 'Old extension must match expected output');
+    assert.equal(newResult, expectedNew, 'New extension must match expected output');
   });
 
   test('074. Only default imports', async () => {
@@ -75,8 +75,8 @@ const y = Lib2;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('075. Only namespace imports', async () => {
@@ -97,8 +97,8 @@ const y = Lib2;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('076. Long import line (multiline wrapping)', async () => {
@@ -159,8 +159,8 @@ const z = Utils;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('078. removeTrailingIndex enabled', async () => {
@@ -182,8 +182,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('079. removeTrailingIndex disabled', async () => {
@@ -207,8 +207,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('080. Dynamic import() not confused with static import', async () => {
@@ -227,8 +227,8 @@ const y = import('./dynamic');
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('081. import.meta not confused with imports', async () => {
@@ -247,8 +247,8 @@ const url = import.meta.url;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('082. Empty import specifiers', async () => {
@@ -292,8 +292,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('084. Template string with import keyword', async () => {
@@ -312,8 +312,8 @@ const str = \`import { B } from 'fake'\`;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('085. Triple-slash directive', async () => {
@@ -332,8 +332,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('086. Type-only import syntax', async () => {
@@ -363,8 +363,8 @@ let y: MyType;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves import type)');
+    assert.equal(oldResult, expectedOld, 'Old extension must match expected output');
+    assert.equal(newResult, expectedNew, 'New extension must match expected output (preserves import type)');
   });
 
   // NEW TESTS: Critical edge cases from unit suite
@@ -384,8 +384,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('118. use strict directive (single quotes)', async () => {
@@ -404,8 +404,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('119. use strict directive (double quotes)', async () => {
@@ -424,8 +424,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('120. Old TypeScript syntax: import = require()', async () => {
@@ -447,8 +447,8 @@ const y = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('121. Local shadowing (local class shadows import)', async () => {
@@ -474,8 +474,8 @@ const service = Injectable;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('122. Property access vs function calls', async () => {
@@ -497,8 +497,8 @@ const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('123. Comments between imports: Indentation preserved', async () => {
@@ -528,7 +528,7 @@ import { C } from './c';
 console.log(A, B, C);
 `;
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 });

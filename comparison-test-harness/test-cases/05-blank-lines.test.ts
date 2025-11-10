@@ -29,8 +29,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('059. Blank line before imports preserved', async () => {
@@ -52,8 +52,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('060. Blank lines between groups', async () => {
@@ -75,8 +75,8 @@ const y = MyService;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('061. Leading blank lines removed', async () => {
@@ -98,8 +98,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('062. File with only imports (no code after)', async () => {
@@ -120,8 +120,8 @@ const y = B;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('063. Shebang preserved', async () => {
@@ -140,8 +140,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('064. Use strict preserved', async () => {
@@ -160,8 +160,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('065. Copyright header preserved', async () => {
@@ -183,8 +183,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('066. Multiple blank lines collapsed (legacy behavior)', async () => {
@@ -208,8 +208,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('067. No blank before first import (no header)', async () => {
@@ -226,8 +226,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('068. Block comment preserved', async () => {
@@ -250,8 +250,8 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('069. Three import groups with blank lines', async () => {
@@ -276,8 +276,8 @@ const y = MyService;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('070. Blank line after header comment', async () => {
@@ -299,7 +299,7 @@ const x = A;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 });

@@ -58,8 +58,8 @@ export class BooksComponent implements OnInit {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('102. React functional component with hooks', async () => {
@@ -131,8 +131,8 @@ export function UserProfile({ userId }: { userId: string }) {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input, { legacyMode: false }); // Enable modern mode
 
-    assert.equal(oldResult, expectedOld, 'Old extension must produce correct output');
-    assert.equal(newResult, expectedNew, 'New extension must produce correct output (preserves import type)');
+    assert.equal(oldResult, expectedOld, 'Old extension must match expected output');
+    assert.equal(newResult, expectedNew, 'New extension must match expected output (preserves import type)');
   });
 
   test('103. NestJS controller', async () => {
@@ -188,8 +188,8 @@ export class BooksController {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('104. Vue 3 composition API', async () => {
@@ -240,8 +240,8 @@ export default defineComponent({
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('105. RxJS operators chain', async () => {
@@ -290,8 +290,8 @@ export class DataService {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('106. Express.js route handler', async () => {
@@ -351,8 +351,8 @@ export default router;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('107. Node.js module with built-ins', async () => {
@@ -402,8 +402,8 @@ export class FileProcessor {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('108. Monorepo with workspace packages', async () => {
@@ -461,8 +461,8 @@ export class AppComponent {
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('109. Mixed framework imports (edge case)', async () => {
@@ -493,8 +493,8 @@ const w = express;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
   test('110. Large file with many imports (performance)', async () => {
@@ -537,7 +537,7 @@ const l1 = Local1; const l2 = Local2; const l3 = Local3;
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.equal(oldResult, expected, 'Old extension must produce correct output');
-    assert.equal(newResult, expected, 'New extension must produce correct output');
+    assert.equal(oldResult, expected, 'Old extension must match expected output');
+    assert.equal(newResult, expected, 'New extension must match expected output');
   });
 });

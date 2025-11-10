@@ -180,18 +180,21 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero behavior exactly. When enabled, legacy mode replicates ALL old behaviors (including bugs) for 100% backward compatibility:
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero output format. When enabled, legacy mode replicates old behaviors (including bugs) for maximum backward compatibility:
 
 - **`blankLinesAfterImports`** — Always preserves existing blank lines (ignores configured value)
-- **`organizeSortsByFirstSpecifier`** — **IGNORED** (always sorts by library name within groups) ⚠️ This is a bug in the old extension
-- **`disableImportsSorting`** — **IGNORED** (always sorts imports within groups) ⚠️ This is a bug in the old extension
+- **`organizeSortsByFirstSpecifier`** — **SILENTLY IGNORED** (always sorts by library name within groups) ⚠️ Bug replication
+- **`disableImportsSorting`** — **SILENTLY IGNORED** (always sorts imports within groups) ⚠️ Bug replication
 - **Merge timing** — Merges BEFORE removeTrailingIndex (old bug: `./lib/index` and `./lib` won't merge)
 - **Type-only imports** — Strips `import type` keywords (old TS <3.8 behavior)
 - **Indentation** — Always uses spaces (ignores `insertSpaces` setting)
+- **Crash handling** — Gracefully handles cases that crashed old extension (silent fix)
 
-**Why replicate bugs?** Migrated users depend on exact old output. Any change would create massive diffs across their codebase on first run, breaking trust.
+**Why replicate bugs?** Migrated users depend on consistent output format. Any change would create massive diffs across their codebase on first run, breaking trust.
 
 **Modern mode fixes these bugs:** New users get `legacyMode: false` by default for correct behavior. You can toggle this setting anytime via the command palette or your configuration.
+
+> **⚠️ IMPORTANT**: When `legacyMode: true`, certain config settings are silently ignored (see above). The extension does NOT warn about this - it's intentional for backward compatibility. If you need these settings to work, set `legacyMode: false`.
 
 ### No Old Settings?
 
@@ -318,7 +321,7 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
   - Reads VS Code's resolved editor settings (usually **2 spaces** for TypeScript)
   - Falls back to **4 spaces** when no editor context is available
   - Always uses spaces (never tabs)
-  - Matches old TypeScript Hero behavior exactly
+  - Matches old TypeScript Hero output format
 
 **Note:** VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. The extension reads these resolved values, so EditorConfig integration works automatically.
 

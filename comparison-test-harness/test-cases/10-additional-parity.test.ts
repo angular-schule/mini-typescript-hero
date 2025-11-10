@@ -138,8 +138,8 @@ const y = Z;
     const oldResult1 = await organizeImportsOld(input, { legacyMode: true });
     const newResult1 = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must produce correct output');
-    assert.strictEqual(newResult1, expected, 'New extension run 1 must produce correct output');
+    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must match expected output');
+    assert.strictEqual(newResult1, expected, 'New extension run 1 must match expected output');
 
     // Run 2 - use output from run 1 as input
     const oldResult2 = await organizeImportsOld(oldResult1, { legacyMode: true });
@@ -169,8 +169,8 @@ export const Foo = () => <div>{A} {Z}</div>;
     const oldResult1 = await organizeImportsOld(input, { legacyMode: true });
     const newResult1 = await organizeImportsNew(input, { legacyMode: true });
 
-    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must produce correct output');
-    assert.strictEqual(newResult1, expected, 'New extension run 1 must produce correct output');
+    assert.strictEqual(oldResult1, expected, 'Old extension run 1 must match expected output');
+    assert.strictEqual(newResult1, expected, 'New extension run 1 must match expected output');
 
     // Run 2
     const oldResult2 = await organizeImportsOld(oldResult1, { legacyMode: true });
@@ -440,22 +440,22 @@ const x = A;
   });
 
   // ============================================================================
-  // A10: Duplicate default imports from same module - PERFECT PARITY
+  // A10: Duplicate default imports from same module - Edge Case
   // ============================================================================
 
   test('A10: Duplicate defaults from same module - both keep LAST default', async () => {
     // Scenario: Invalid TypeScript (multiple default imports from same module)
     // Both defaults are referenced in code, but TypeScript only allows one default per module
     //
-    // BEHAVIOR: Both extensions keep LAST default (PERFECT PARITY)
+    // NOTE: This is INVALID TypeScript - the compiler would error on this code.
+    // Import organizers don't validate TypeScript semantics - that's the compiler's job.
+    // We only organize existing imports, we don't validate them.
+    //
+    // BEHAVIOR: Both extensions keep LAST default import
     // - Old extension: Keeps LAST default (Default2)
-    // - New extension: Keeps LAST default (Default2) - matches old exactly
+    // - New extension: Keeps LAST default (Default2) - matches old extension
     //
-    // WHY: Both behaviors are equivalent since Default1 and Default2 both refer
-    // to the same default export from './lib'. The difference is just which local
-    // name we keep. Invalid TypeScript either way.
-    //
-    // We chose to match old behavior for 100% parity on this edge case.
+    // This is an edge case that matches observed behavior for consistency.
     const input = `import Default1 from './lib';
 import Default2 from './lib';
 
@@ -476,10 +476,10 @@ console.log(Default1, Default2);
     const oldResult = await organizeImportsOld(input, config);
     const newResult = await organizeImportsNew(input, config);
 
-    // Verify PERFECT PARITY - both produce identical output
+    // Verify both extensions produce same output (edge case behavior matching)
     assert.strictEqual(oldResult, expected, 'Old extension keeps LAST default (Default2)');
     assert.strictEqual(newResult, expected, 'New extension keeps LAST default (Default2)');
-    assert.strictEqual(oldResult, newResult, 'PERFECT PARITY: Both extensions produce identical output');
+    assert.strictEqual(oldResult, newResult, 'Both extensions produce identical output for this edge case');
 
     // Both merge to single import
     const oldLines = oldResult.split('\n').filter(l => l.startsWith('import'));

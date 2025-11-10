@@ -119,7 +119,7 @@ export class DemoComponent implements OnInit {
     assert.strictEqual(
       newResult,
       expectedOutput,
-      'NEW extension with legacy mode must produce correct output'
+      'NEW extension with legacy mode must match expected output'
     );
 
     // Additional verification: Check specific transformations
