@@ -12,7 +12,9 @@
       "Bash(npm run)",
       "Bash(npm run build)",
       "Bash(curl -s \"https://code.visualstudio.com/updates/\")",
-      "WebFetch(domain:code.visualstudio.com)"
+      "WebFetch(domain:code.visualstudio.com)",
+      "Bash(npm test -- --grep \"PROOF\")",
+      "Bash(cat /Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/.editorconfig)"
     ],
     "deny": [],
     "ask": []

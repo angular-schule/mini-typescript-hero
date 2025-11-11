@@ -101,7 +101,7 @@
             "\""
           ],
           "default": "'",
-          "description": "Defines if single or double quotes should be used. Fallback setting - respects .editorconfig 'quote_type', VSCode 'typescript.preferences.quoteStyle', and 'javascript.preferences.quoteStyle' first.",
+          "description": "Defines if single or double quotes should be used. Fallback setting - respects VSCode 'typescript.preferences.quoteStyle' and 'javascript.preferences.quoteStyle' first.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.multiLineWrapThreshold": {
@@ -277,7 +277,6 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "editorconfig": "3.0.1",
     "ts-morph": "^27.0.0"
   }
 }

@@ -5,7 +5,7 @@
  * The old extension ALWAYS sorts imports within groups by library name, completely
  * ignoring both disableImportsSorting and organizeSortsByFirstSpecifier settings.
  *
- * This is the "Level 2 sorting bug" mentioned in src/imports/import-manager.ts:948.
+ * This is the "Level 2 sorting bug" mentioned in src/imports/import-manager.ts
  *
  * EVIDENCE:
  * - Config names imply behavior (disableImportsSorting should disable ALL sorting)
@@ -168,5 +168,134 @@ const a = apple;
 
     assert.strictEqual(oldResult, expected, 'Old extension sorts specifiers (correct) and imports (bug)');
     assert.strictEqual(newResult, expected, 'New extension replicates behavior in legacy mode');
+  });
+});
+
+suite('Modern Mode - Fixes Sorting Bugs', () => {
+
+  test('MODERN: disableImportsSorting WORKS - preserves original order', async () => {
+    // SCENARIO: Same as BUG 1, but with legacyMode: false
+    // CONFIG: disableImportsSorting = true (should preserve order)
+    const input = `import { Zebra } from './zebra';
+import { Apple } from './apple';
+
+const z = Zebra;
+const a = Apple;
+`;
+
+    // Expected: Modern mode RESPECTS disableImportsSorting (preserves order)
+    const expected = `import { Zebra } from './zebra';
+import { Apple } from './apple';
+
+const z = Zebra;
+const a = Apple;
+`;
+
+    const config = {
+      legacyMode: false,  // ✅ Modern mode - FIXES bug!
+      disableImportsSorting: true,  // ✅ RESPECTED in modern mode
+      disableImportRemovalOnOrganize: true,
+      blankLinesAfterImports: 'one' as const
+    };
+
+    const newResult = await organizeImportsNew(input, config);
+
+    assert.strictEqual(newResult, expected, 'Modern mode respects disableImportsSorting');
+  });
+
+  test('MODERN: organizeSortsByFirstSpecifier WORKS - sorts by first specifier', async () => {
+    // SCENARIO: Same as BUG 2, but with legacyMode: false
+    // CONFIG: organizeSortsByFirstSpecifier = true (should sort by first specifier)
+    const input = `import { Zebra } from './aaa';
+import { Apple } from './zzz';
+
+const z = Zebra;
+const a = Apple;
+`;
+
+    // Expected: Modern mode sorts by FIRST SPECIFIER (Apple < Zebra), not library name
+    const expected = `import { Apple } from './zzz';
+import { Zebra } from './aaa';
+
+const z = Zebra;
+const a = Apple;
+`;
+
+    const config = {
+      legacyMode: false,  // ✅ Modern mode - FIXES bug!
+      organizeSortsByFirstSpecifier: true,  // ✅ RESPECTED in modern mode
+      disableImportsSorting: false,
+      disableImportRemovalOnOrganize: true,
+      blankLinesAfterImports: 'one' as const
+    };
+
+    const newResult = await organizeImportsNew(input, config);
+
+    assert.strictEqual(newResult, expected, 'Modern mode sorts by first specifier');
+  });
+
+  test('MODERN: Multiple imports with disableImportsSorting preserves order', async () => {
+    // SCENARIO: Same as BUG 3, but with legacyMode: false
+    // CONFIG: disableImportsSorting = true (should preserve order)
+    const input = `import { Zoo } from './zoo';
+import { Bar } from './bar';
+import { Apple } from './apple';
+
+const z = Zoo;
+const b = Bar;
+const a = Apple;
+`;
+
+    // Expected: Modern mode PRESERVES original order
+    const expected = `import { Zoo } from './zoo';
+import { Bar } from './bar';
+import { Apple } from './apple';
+
+const z = Zoo;
+const b = Bar;
+const a = Apple;
+`;
+
+    const config = {
+      legacyMode: false,  // ✅ Modern mode - FIXES bug!
+      disableImportsSorting: true,  // ✅ RESPECTED in modern mode
+      disableImportRemovalOnOrganize: true,
+      grouping: ['Plains', 'Modules', 'Workspace'],
+      blankLinesAfterImports: 'one' as const
+    };
+
+    const newResult = await organizeImportsNew(input, config);
+
+    assert.strictEqual(newResult, expected, 'Modern mode preserves order when disableImportsSorting is true');
+  });
+
+  test('MODERN: Specifier sorting still works independently from import sorting', async () => {
+    // SCENARIO: Same as BUG 4, but demonstrating correct modern behavior
+    // This is CORRECT in both modes - specifier sorting is independent
+    const input = `import { zoo, bar, apple } from './stuff';
+
+const z = zoo;
+const b = bar;
+const a = apple;
+`;
+
+    // Expected: Specifiers are sorted (correct), imports order is preserved (disableImportsSorting: true)
+    const expected = `import { apple, bar, zoo } from './stuff';
+
+const z = zoo;
+const b = bar;
+const a = apple;
+`;
+
+    const config = {
+      legacyMode: false,  // ✅ Modern mode
+      disableImportsSorting: true, // Affects import ORDER, NOT specifier sorting
+      disableImportRemovalOnOrganize: true,
+      blankLinesAfterImports: 'one' as const
+    };
+
+    const newResult = await organizeImportsNew(input, config);
+
+    assert.strictEqual(newResult, expected, 'Modern mode sorts specifiers correctly (independent from import sorting)');
   });
 });

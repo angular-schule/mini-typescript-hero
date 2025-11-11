@@ -1,22 +1,10 @@
-import { Uri, workspace, extensions, window } from 'vscode';
-import * as editorconfig from 'editorconfig';
+import { Uri, workspace, window } from 'vscode';
 
 import { ImportGroup, ImportGroupSetting, ImportGroupSettingParser, RemainImportGroup } from '../imports/import-grouping';
 
 const sectionKey = 'miniTypescriptHero.imports';
-const EDITORCONFIG_EXTENSION_ID = 'EditorConfig.EditorConfig';
 
 export class ImportsConfig {
-  /**
-   * Check if the official EditorConfig extension is installed and active.
-   * We only respect .editorconfig settings if this extension is present.
-   *
-   * Protected (not private) to allow mocking in tests.
-   */
-  protected isEditorConfigActive(): boolean {
-    const extension = extensions.getExtension(EDITORCONFIG_EXTENSION_ID);
-    return extension !== undefined;
-  }
 
   public insertSpaceBeforeAndAfterImportBraces(resource: Uri): boolean {
     return workspace
@@ -64,32 +52,18 @@ export class ImportsConfig {
 
   /**
    * Get quote style preference with priority order:
-   * 1. .editorconfig (highest - team standard, ONLY if EditorConfig extension is active)
-   * 2. VSCode TypeScript/JavaScript preferences
-   * 3. Our extension settings (lowest - fallback)
+   * 1. VSCode TypeScript/JavaScript preferences
+   * 2. Our extension settings (fallback)
    */
   public async stringQuoteStyle(resource: Uri): Promise<'"' | '\''> {
-    // If user wants strict control, skip all external sources
+    // If user wants strict control, skip VS Code settings
     if (this.useOnlyExtensionSettings(resource)) {
       return workspace
         .getConfiguration(sectionKey, resource)
         .get('stringQuoteStyle', `'`);
     }
 
-    // Priority 1: .editorconfig (HIGHEST - team standard)
-    // Only check if EditorConfig extension is installed and active
-    // Note: quote_type is a non-standard property (Prettier extension), so we parse manually
-    if (this.isEditorConfigActive()) {
-      try {
-        const config = await editorconfig.parse(resource.fsPath);
-        if (config.quote_type === 'single') {return `'`;}
-        if (config.quote_type === 'double') {return `"`;}
-      } catch (error) {
-        // Ignore errors (no .editorconfig file, parse error, etc.)
-      }
-    }
-
-    // Priority 2: VSCode TypeScript/JavaScript preferences
+    // Priority 1: VSCode TypeScript/JavaScript preferences
     const p = resource.path.toLowerCase();
     const isTS = p.endsWith('.ts') || p.endsWith('.tsx') ||
                  p.endsWith('.mts') || p.endsWith('.cts');
@@ -102,7 +76,7 @@ export class ImportsConfig {
     if (quoteStyle === 'single') {return `'`;}
     if (quoteStyle === 'double') {return `"`;}
 
-    // Priority 3: Our setting (LOWEST - fallback only)
+    // Priority 2: Our setting (fallback)
     return workspace
       .getConfiguration(sectionKey, resource)
       .get('stringQuoteStyle', `'`);

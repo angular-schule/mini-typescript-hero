@@ -142,6 +142,34 @@ If you have multiple import organizers enabled (VSCode built-in, old TypeScript 
 2. Type "Mini TS Hero: Check for configuration conflicts"
 3. The extension will show if any conflicts exist and offer to fix them automatically (where possible)
 
+### Comment Preservation
+
+Mini TypeScript Hero preserves comments in import blocks with the following behavior:
+
+**✅ Comments that ARE preserved:**
+- Leading comments attached to individual import statements
+- Trailing comments on the same line as an import statement
+- Comments between import statements (grouped with the following import)
+
+**❌ Comments that are NOT preserved:**
+- Comments INSIDE import braces (e.g., `import { Foo /* comment */ } from './lib'`)
+- Comments between specifiers in multiline imports
+- Import attributes comments (e.g., `with { /* comment */ type: 'json' }`)
+
+**Why not preserved?** This is NOT a parser limitation - the parsers provide comment ranges. We simply haven't implemented inline comment preservation due to significant complexity, tricky edge cases, and low benefit. This is shared behavior with the original TypeScript Hero extension. If this is a blocker for you, please [open an issue](https://github.com/angular-schule/mini-typescript-hero/issues) with your use case.
+
+**Example:**
+```typescript
+// This comment IS preserved (leading comment)
+import { Foo } from './foo'; // This IS preserved (trailing comment)
+
+// This comment IS preserved (between imports)
+import { Bar } from './bar';
+
+// This is NOT preserved (inside braces):
+import { Baz /* LOST */ } from './baz';
+```
+
 ### Toggle Legacy Mode
 
 Switch between modern best practices and original TypeScript Hero behavior:
@@ -180,7 +208,7 @@ Once your settings are migrated, you have two options:
 
 If the old TypeScript Hero extension is still active, you'll see a reminder in the migration notification suggesting you can disable it.
 
-**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero output format. When enabled, legacy mode replicates old behaviors (including bugs) for maximum backward compatibility:
+**Legacy Mode:** For migrated users, `legacyMode` is automatically set to `true` to match the original TypeScript Hero output format as closely as possible. When enabled, legacy mode matches these old behaviors (including bugs) for maximum backward compatibility:
 
 - **`blankLinesAfterImports`** — Always preserves existing blank lines (ignores configured value)
 - **`organizeSortsByFirstSpecifier`** — **SILENTLY IGNORED** (always sorts by library name within groups) ⚠️ Bug replication
@@ -190,7 +218,7 @@ If the old TypeScript Hero extension is still active, you'll see a reminder in t
 - **Indentation** — Always uses spaces (ignores `insertSpaces` setting)
 - **Crash handling** — Gracefully handles cases that crashed old extension (silent fix)
 
-**Why replicate bugs?** Migrated users depend on consistent output format. Any change would create massive diffs across their codebase on first run, breaking trust.
+**Why match old bugs?** Migrated users depend on consistent output format. Any change would create massive diffs across their codebase on first run, breaking trust. Legacy mode provides the closest match possible to the old extension's output, though some edge cases may differ due to the modern parser (ts-morph vs deprecated typescript-parser) and improved comment handling.
 
 **Modern mode fixes these bugs:** New users get `legacyMode: false` by default for correct behavior. You can toggle this setting anytime via the command palette or your configuration.
 
@@ -206,33 +234,36 @@ If you've never used TypeScript Hero before, the migration simply won't run — 
 
 **Mini TypeScript Hero respects your existing editor configuration!** Instead of requiring duplicate configuration, the extension follows this priority order:
 
-1. **`.editorconfig`** (highest priority - team standard)
-   - Only if the [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) is installed
-   - Respects `quote_type = single` or `quote_type = double`
+1. **VSCode TypeScript/JavaScript preferences** (highest priority - user/workspace settings)
+   - `typescript.preferences.quoteStyle` - Quote style for TypeScript files (default: `"auto"` = falls through to extension setting)
+   - `typescript.format.semicolons` - Semicolon behavior (default: `"ignore"` = falls through to extension setting)
+   - `javascript.preferences.quoteStyle` - Quote style for JavaScript files (default: `"auto"` = falls through to extension setting)
+   - `javascript.format.semicolons` - Semicolon behavior (default: `"ignore"` = falls through to extension setting)
+   - `editor.tabSize` - Indentation size for multiline imports (default: `4`, but in modern mode uses `2` if not explicitly configured by user)
+   - `editor.insertSpaces` - Use spaces vs tabs (default: `true`, always applied)
 
-2. **VSCode TypeScript/JavaScript preferences** (middle priority - user/workspace settings)
-   - `typescript.preferences.quoteStyle` - Quote style for TypeScript files
-   - `typescript.format.semicolons` - Semicolon behavior
-   - `javascript.preferences.quoteStyle` - Quote style for JavaScript files
-   - `javascript.format.semicolons` - Semicolon behavior
+2. **`miniTypescriptHero.imports.*` settings** (fallback)
+   - Used when VSCode preferences are set to `"auto"` or `"ignore"`, or when `useOnlyExtensionSettings: true`
 
-3. **`miniTypescriptHero.imports.*` settings** (lowest priority - fallback only)
-   - Used when `.editorconfig` and VSCode preferences are not configured
+**Why this order?** It matches how other formatters work, preventing configuration conflicts and ensuring consistency across your entire project.
 
-**Why this order?** It matches how other formatters (Prettier, ESLint) work, preventing configuration conflicts and ensuring consistency across your entire project.
+**Override:** Set `miniTypescriptHero.imports.useOnlyExtensionSettings: true` to ignore VS Code settings and use only extension-specific settings. Useful for enforcing consistent import formatting across all team members regardless of their editor configuration.
+
+**Note on EditorConfig:** For indentation (`tabSize` and `insertSpaces`), if you have the [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) installed, VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. Our extension reads these resolved VS Code values, so EditorConfig integration works automatically for indentation.
 
 #### Example Scenarios
 
-**Scenario 1: Using `.editorconfig` (recommended for teams)**
-```ini
-# .editorconfig
-[*.ts]
-quote_type = single
+**Scenario 1: Using VSCode settings (recommended)**
+```json
+{
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.format.semicolons": "insert"
+}
 ```
 
-Result: **Single quotes** (from `.editorconfig`, even if VSCode or extension settings say double quotes)
+Result: **Single quotes with semicolons** (from VSCode settings, applies to all TypeScript tools)
 
-**Scenario 2: Using VSCode settings (no `.editorconfig`)**
+**Scenario 2: VSCode settings override extension settings**
 ```json
 {
   "typescript.preferences.quoteStyle": "double",
@@ -242,7 +273,7 @@ Result: **Single quotes** (from `.editorconfig`, even if VSCode or extension set
 
 Result: **Double quotes** (from VSCode preferences, extension setting is ignored)
 
-**Scenario 3: Fallback to extension settings (nothing else configured)**
+**Scenario 3: Fallback to extension settings (when VSCode preferences not configured)**
 ```json
 {
   "miniTypescriptHero.imports.stringQuoteStyle": "'",
@@ -250,9 +281,9 @@ Result: **Double quotes** (from VSCode preferences, extension setting is ignored
 }
 ```
 
-Result: **Single quotes, no semicolons** (from extension settings)
+Result: **Single quotes, no semicolons** (from extension settings as fallback)
 
-💡 **Tip**: For team projects, use `.editorconfig` to enforce standards. For personal projects, use VSCode settings. The extension's settings are there as convenient fallbacks.
+💡 **Tip**: For team projects, configure VSCode workspace settings (`.vscode/settings.json`). For personal preferences, use user settings. The extension's settings are there as convenient fallbacks.
 
 ### Basic Settings
 
@@ -264,7 +295,7 @@ Result: **Single quotes, no semicolons** (from extension settings)
   // Blank lines after imports: "one" (default), "two", or "preserve"
   "miniTypescriptHero.imports.blankLinesAfterImports": "one",
 
-  // Quote style (fallback - respects .editorconfig and VSCode preferences first)
+  // Quote style (fallback - respects VSCode preferences first)
   // Use single quotes (') or double quotes (")
   "miniTypescriptHero.imports.stringQuoteStyle": "'",
 
@@ -350,7 +381,13 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
   "miniTypescriptHero.imports.multiLineWrapThreshold": 125,
 
   // Add trailing comma in multiline imports
-  "miniTypescriptHero.imports.multiLineTrailingComma": true
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+
+  // Ignore VS Code settings (use only extension settings)
+  // When true: Ignores VS Code editor.tabSize, editor.insertSpaces,
+  // typescript.preferences.quoteStyle, typescript.format.semicolons, etc.
+  // Use case: Enforce consistent import formatting across team regardless of editor config
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": false
 }
 ```
 
