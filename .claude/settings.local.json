@@ -17,7 +17,10 @@
       "Bash(cat /Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/.editorconfig)",
       "Bash(npm test -- --grep \"133\\. Side-effect import\")",
       "Bash(npm test -- --grep \"^Capture Outputs\")",
-      "Bash(npm test -- --grep \"should only register miniTypescriptHero command\")"
+      "Bash(npm test -- --grep \"should only register miniTypescriptHero command\")",
+      "Bash(gh run list --branch mini-typescript-hero-v4 --limit 3)",
+      "Bash(gh run view 19297904781 --log-failed)",
+      "Bash(npm test -- --grep \"18. Keep all imports when removal is disabled\")"
     ],
     "deny": [],
     "ask": []

@@ -534,21 +534,20 @@ export class ImportManager {
 
     // Filter unused imports (unless disabled)
     if (this.config.disableImportRemovalOnOrganize(this.document.uri)) {
-      // In legacy mode, TypeScript Hero ALWAYS sorted specifiers, even with removal disabled
-      // In modern mode, preserve imports exactly as-is (including unsorted specifiers)
-      if (this.config.legacyMode(this.document.uri)) {
-        // Legacy: Sort specifiers within each import
-        keep = this.imports.map(imp => {
-          if (imp instanceof NamedImport && imp.specifiers.length > 0) {
-            const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
-          }
-          return imp;
-        });
-      } else {
-        // Modern: Preserve everything as-is
-        keep = this.imports;
-      }
+      // Import removal disabled - keep all imports but still sort specifiers
+      // Specifier sorting is independent from import sorting (disableImportsSorting)
+      const isLegacy = this.config.legacyMode(this.document.uri);
+      keep = this.imports.map(imp => {
+        if (imp instanceof NamedImport && imp.specifiers.length > 0) {
+          // In legacy mode, strip isTypeOnly from individual specifiers
+          const specs = isLegacy
+            ? imp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
+            : imp.specifiers;
+          const sortedSpecifiers = [...specs].sort(specifierSort);
+          return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
+        }
+        return imp;
+      });
     } else {
       for (const imp of this.imports) {
         // Check if import is in the ignore list

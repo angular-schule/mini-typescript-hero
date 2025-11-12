@@ -74,8 +74,8 @@ import { createUser } from './types';
 const user: User = createUser('Test');
 `;
 
-    // Expected: Legacy mode merges into single regular import
-    const expected = `import { User, createUser } from './types';
+    // Expected: Legacy mode merges into single regular import (specifiers sorted alphabetically)
+    const expected = `import { createUser, User } from './types';
 
 const user: User = createUser('Test');
 `;
@@ -128,8 +128,8 @@ const user: User = createUser('Test');
 const user: User = createUser('Test');
 `;
 
-    // Expected: Legacy mode strips specifier-level 'type'
-    const expected = `import { User, createUser } from './types';
+    // Expected: Legacy mode strips specifier-level 'type' (specifiers sorted alphabetically)
+    const expected = `import { createUser, User } from './types';
 
 const user: User = createUser('Test');
 `;
@@ -153,8 +153,8 @@ const user: User = createUser('Test');
 const user: User = createUser('Test');
 `;
 
-    // Expected: Modern mode preserves specifier-level 'type'
-    const expected = `import { type User, createUser } from './types';
+    // Expected: Modern mode preserves specifier-level 'type' (specifiers sorted alphabetically)
+    const expected = `import { createUser, type User } from './types';
 
 const user: User = createUser('Test');
 `;
