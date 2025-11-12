@@ -20,14 +20,14 @@ suite('Sorting', () => {
 
 const x = Component;
 const y = inject;
-const z: OnInit = null as any;
+const z: OnInit = { ngOnInit: () => {} };
 `;
 
     const expected = `import { Component, inject, OnInit } from '@angular/core';
 
 const x = Component;
 const y = inject;
-const z: OnInit = null as any;
+const z: OnInit = { ngOnInit: () => {} };
 `;
 
     const oldResult = await organizeImportsOld(input);
@@ -41,13 +41,13 @@ const z: OnInit = null as any;
     const input = `import { OnInit, Component } from '@angular/core';
 
 const x = Component;
-const z: OnInit = null as any;
+const z: OnInit = { ngOnInit: () => {} };
 `;
 
     const expected = `import { Component, OnInit } from '@angular/core';
 
 const x = Component;
-const z: OnInit = null as any;
+const z: OnInit = { ngOnInit: () => {} };
 `;
 
     const oldResult = await organizeImportsOld(input);
@@ -204,14 +204,14 @@ import 'zebra';
 
 const x = Cmp;
 const y = inj;
-const z: Init = null as any;
+const z: Init = { ngOnInit: () => {} };
 `;
 
     const expected = `import { Component as Cmp, inject as inj, OnInit as Init } from '@angular/core';
 
 const x = Cmp;
 const y = inj;
-const z: Init = null as any;
+const z: Init = { ngOnInit: () => {} };
 `;
 
     const oldResult = await organizeImportsOld(input);

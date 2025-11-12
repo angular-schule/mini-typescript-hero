@@ -85,12 +85,19 @@ polyfill();
 `;
 
     // Side-effect imports and normal imports must never merge.
-    // Actual behavior to be verified against old extension.
+    // Side-effect imports are grouped separately (Plains group) and come first.
+    const expected = `import './polyfills';
+
+import { polyfill } from './polyfills';
+
+polyfill();
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    // Both extensions should produce the same output
-    assert.strictEqual(newResult, oldResult, 'New extension matches old extension behavior for side-effect imports');
+    assert.strictEqual(oldResult, expected, 'Old extension keeps side-effect and named imports separate');
+    assert.strictEqual(newResult, expected, 'New extension keeps side-effect and named imports separate');
   });
 
   test('134. Multiple side-effect imports ordering', async () => {
@@ -102,10 +109,22 @@ import './styles.css';
 config.init();
 `;
 
+    // Side-effect imports (Plains group) come first, sorted alphabetically.
+    // Normal imports (Workspace group) come after with blank line separator.
+    const expected = `import './polyfills/dom';
+import './polyfills/fetch';
+import './styles.css';
+
+import { config } from './config';
+
+config.init();
+`;
+
     const oldResult = await organizeImportsOld(input);
     const newResult = await organizeImportsNew(input);
 
-    assert.strictEqual(newResult, oldResult, 'New extension matches old extension side-effect ordering');
+    assert.strictEqual(oldResult, expected, 'Old extension orders side-effect imports first, then named imports');
+    assert.strictEqual(newResult, expected, 'New extension orders side-effect imports first, then named imports');
   });
 
   // ============================================================================
@@ -213,23 +232,28 @@ import utils from './utils';
 const x = utils.foo(Utils.bar());
 `;
 
-    // Old extension may crash with "libraryAlreadyImported.specifiers is not iterable"
-    // Try old extension, if it crashes, skip comparison
-    let oldResult: string | null = null;
-    try {
-      oldResult = await organizeImportsOld(input);
-    } catch (error) {
-      // Old extension crashes, only test new extension
-      const newResult = await organizeImportsNew(input);
-      // Verify new extension at least produces valid output
-      assert.ok(newResult.includes('import utils from'), 'New extension handles default + namespace');
-      assert.ok(newResult.includes('import * as Utils from'), 'New extension handles default + namespace');
-      return;
-    }
+    // Old extension crashes with "libraryAlreadyImported.specifiers is not iterable"
+    // New extension gracefully handles this case (bug fix - keeps imports separate).
+    const expected = `import * as Utils from './utils';
+import utils from './utils';
 
-    // If old extension didn't crash, compare outputs
+const x = utils.foo(Utils.bar());
+`;
+
+    // Old extension crashes - we test that it does crash (documents known bug)
+    let oldCrashed = false;
+    try {
+      await organizeImportsOld(input);
+    } catch (error) {
+      oldCrashed = true;
+      assert.ok(error instanceof Error && error.message.includes('libraryAlreadyImported.specifiers is not iterable'),
+        'Old extension crashes with expected error message');
+    }
+    assert.ok(oldCrashed, 'Old extension crashes on default + namespace combination');
+
+    // New extension handles gracefully
     const newResult = await organizeImportsNew(input);
-    assert.strictEqual(newResult, oldResult, 'New extension matches old extension for default + namespace');
+    assert.strictEqual(newResult, expected, 'New extension handles default + namespace gracefully (keeps separate)');
   });
 
   // ============================================================================
@@ -264,19 +288,38 @@ import { b } from '@company/utils';
 const x = a + b;
 `;
 
+    // Both extensions remove /index and keep imports separate (no merging).
+    // After removing /index, both imports have same path but merging is disabled.
+    // They stay separate and are sorted alphabetically by specifier.
+    const expected = `import { b } from '@company/utils';
+import { a } from '@company/utils';
+
+const x = a + b;
+`;
+
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
     const newResult = await organizeImportsNew(input, {
       mergeImportsFromSameModule: false,
       disableImportRemovalOnOrganize: true
     });
 
-    // Both extensions should remove /index and keep imports separate (no merging)
-    assert.strictEqual(newResult, oldResult, 'New extension matches old extension for /index with merging disabled');
+    assert.strictEqual(oldResult, expected, 'Old extension removes /index and keeps imports separate');
+    assert.strictEqual(newResult, expected, 'New extension removes /index and keeps imports separate');
   });
 
   test('143. Scoped package: /index timing in legacy mode', async () => {
     const input = `import { a } from '@company/utils/index';
 import { b } from '@company/utils';
+
+const x = a + b;
+`;
+
+    // Legacy mode replicates old extension's merge timing bug:
+    // Merging happens BEFORE removeTrailingIndex, so these paths don't match and stay separate.
+    // After that, removeTrailingIndex runs and both become '@company/utils'.
+    // Result: Two separate imports with same path, sorted alphabetically by specifier.
+    const expected = `import { b } from '@company/utils';
+import { a } from '@company/utils';
 
 const x = a + b;
 `;
@@ -287,8 +330,8 @@ const x = a + b;
       disableImportRemovalOnOrganize: true
     });
 
-    // Legacy mode: merge timing affects whether /index and no /index are treated as same module
-    assert.strictEqual(newResult, oldResult, 'New extension matches old extension /index timing in legacy mode');
+    assert.strictEqual(oldResult, expected, 'Old extension merge timing creates duplicate imports after /index removal');
+    assert.strictEqual(newResult, expected, 'New extension in legacy mode replicates merge timing bug');
   });
 
   // ============================================================================

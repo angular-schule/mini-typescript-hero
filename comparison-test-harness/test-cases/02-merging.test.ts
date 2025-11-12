@@ -349,21 +349,21 @@ const user = UserDetail;
     const input = `import { type A } from './lib';
 import { B } from './lib';
 
-const x: A = {} as any;
+const x: A = { value: 1 };
 const y = B;
 `;
 
     // ACTUAL: Old extension does NOT preserve `type` keyword - strips it
     const expectedOld = `import { A, B } from './lib';
 
-const x: A = {} as any;
+const x: A = { value: 1 };
 const y = B;
 `;
 
     // NEW: Modern extension preserves `type` keyword for individual specifiers (TS 4.5+)
     const expectedNew = `import { type A, B } from './lib';
 
-const x: A = {} as any;
+const x: A = { value: 1 };
 const y = B;
 `;
 

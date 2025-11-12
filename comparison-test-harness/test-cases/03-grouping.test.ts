@@ -389,7 +389,7 @@ import { Observable } from 'rxjs';
 import { MyService } from '../services/my-service';
 
 const a = Component;
-const b: OnInit = null as any;
+const b: OnInit = { ngOnInit: () => {} };
 const c = HttpClient;
 const d = Observable;
 const e = map;
@@ -409,7 +409,7 @@ import { MyService } from '../services/my-service';
 import { MyComponent } from './components/my-component';
 
 const a = Component;
-const b: OnInit = null as any;
+const b: OnInit = { ngOnInit: () => {} };
 const c = HttpClient;
 const d = Observable;
 const e = map;

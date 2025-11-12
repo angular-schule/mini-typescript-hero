@@ -18,12 +18,20 @@ suite('PROOF: When does VS Code return "auto"?', () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auto-behavior-test-'));
   });
 
-  teardown(() => {
+  teardown(async () => {
+    // Clean up temp directory
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
     } catch (error) {
       // Ignore cleanup errors
     }
+
+    // Reset all VS Code settings to defaults to prevent pollution
+    const tsConfig = workspace.getConfiguration('typescript.preferences');
+    await tsConfig.update('quoteStyle', undefined, true);
+
+    const tsFormatConfig = workspace.getConfiguration('typescript.format');
+    await tsFormatConfig.update('semicolons', undefined, true);
   });
 
   test('PROOF: Empty file with quoteStyle="auto"', () => {
@@ -70,10 +78,10 @@ suite('PROOF: When does VS Code return "auto"?', () => {
     fs.writeFileSync(testFile.fsPath, '');
 
     // Explicitly set to single
-    const config = workspace.getConfiguration('typescript.preferences', testFile);
-    await config.update('quoteStyle', 'single', true);
+    await workspace.getConfiguration('typescript.preferences', testFile).update('quoteStyle', 'single', true);
 
-    const value = config.get('quoteStyle');
+    // Get a FRESH config object to read the value
+    const value = workspace.getConfiguration('typescript.preferences', testFile).get('quoteStyle');
 
     // eslint-disable-next-line no-console
     console.log('Explicitly set to single - quoteStyle:', value);
@@ -85,10 +93,10 @@ suite('PROOF: When does VS Code return "auto"?', () => {
     fs.writeFileSync(testFile.fsPath, '');
 
     // Explicitly set to double
-    const config = workspace.getConfiguration('typescript.preferences', testFile);
-    await config.update('quoteStyle', 'double', true);
+    await workspace.getConfiguration('typescript.preferences', testFile).update('quoteStyle', 'double', true);
 
-    const value = config.get('quoteStyle');
+    // Get a FRESH config object to read the value
+    const value = workspace.getConfiguration('typescript.preferences', testFile).get('quoteStyle');
 
     // eslint-disable-next-line no-console
     console.log('Explicitly set to double - quoteStyle:', value);
@@ -112,10 +120,10 @@ suite('PROOF: When does VS Code return "auto"?', () => {
     const testFile = Uri.file(path.join(tempDir, 'semi-insert.ts'));
     fs.writeFileSync(testFile.fsPath, '');
 
-    const config = workspace.getConfiguration('typescript.format', testFile);
-    await config.update('semicolons', 'insert', true);
+    await workspace.getConfiguration('typescript.format', testFile).update('semicolons', 'insert', true);
 
-    const value = config.get('semicolons');
+    // Get a FRESH config object to read the value
+    const value = workspace.getConfiguration('typescript.format', testFile).get('semicolons');
 
     // eslint-disable-next-line no-console
     console.log('Explicitly set to insert - semicolons:', value);
@@ -126,10 +134,10 @@ suite('PROOF: When does VS Code return "auto"?', () => {
     const testFile = Uri.file(path.join(tempDir, 'semi-remove.ts'));
     fs.writeFileSync(testFile.fsPath, '');
 
-    const config = workspace.getConfiguration('typescript.format', testFile);
-    await config.update('semicolons', 'remove', true);
+    await workspace.getConfiguration('typescript.format', testFile).update('semicolons', 'remove', true);
 
-    const value = config.get('semicolons');
+    // Get a FRESH config object to read the value
+    const value = workspace.getConfiguration('typescript.format', testFile).get('semicolons');
 
     // eslint-disable-next-line no-console
     console.log('Explicitly set to remove - semicolons:', value);

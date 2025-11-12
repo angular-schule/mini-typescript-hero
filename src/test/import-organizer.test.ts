@@ -18,7 +18,7 @@
  */
 
 import * as assert from 'assert';
-import { commands, OutputChannel, Uri } from 'vscode';
+import { commands, OutputChannel, Uri, extensions } from 'vscode';
 import { ImportOrganizer } from '../imports/import-organizer';
 import { ImportsConfig } from '../configuration';
 import { createTempDocument, deleteTempDocument } from './test-helpers';
@@ -246,14 +246,19 @@ suite('ImportOrganizer Tests', () => {
       // Note: Commands are registered during extension activation (in extension.ts),
       // not during test setup. This test validates the ACTUAL registered commands.
 
-      // Create a fresh organizer and activate it to register commands
-      const testLogger = new MockOutputChannel();
-      const testConfig = new MockImportsConfig();
-      const testOrganizer = new ImportOrganizer(testConfig, testLogger);
-      testOrganizer.activate();
+      // IMPORTANT: Extension activates on "onLanguage" events (TypeScript/JavaScript files).
+      // We must open a TS file to trigger extension activation and command registration.
+      const doc = await createTempDocument('', 'ts');
 
       try {
+        // Wait for extension to activate (opening TS file triggers activation)
+        const extension = extensions.getExtension('angular-schule.mini-typescript-hero');
+        if (extension && !extension.isActive) {
+          await extension.activate();
+        }
+
         // Query actual VSCode command registry to check runtime behavior
+        // The extension has now been activated and commands registered globally
         const allCommands = await commands.getCommands(true);
 
         // Should register our command
@@ -268,7 +273,7 @@ suite('ImportOrganizer Tests', () => {
           'Should NOT register typescriptHero.imports.organize alias (be polite!)'
         );
       } finally {
-        testOrganizer.dispose();
+        await deleteTempDocument(doc);
       }
     });
   });
