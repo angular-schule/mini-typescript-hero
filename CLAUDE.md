@@ -370,13 +370,14 @@ All settings are under `miniTypescriptHero.imports.*`:
 ### 3. Smart Settings Migration
 **What**: Automatically migrates old TypeScript Hero settings to new extension
 **How**: `src/configuration/settings-migration.ts` runs on activation
-**Preserves**: 100% backward compatibility - users don't notice the change
+**Preserves**: Seamless migration - users don't notice the change, settings transfer automatically
 
-### 4. Legacy Mode for Complete Backward Compatibility
+### 4. Legacy Mode for Backward Compatibility
 **Why**: Old extension has specific behaviors (blank lines, within-group sorting, no merging) that users depend on
-**How**: `legacyMode: true` replicates ALL old behaviors exactly
+**How**: `legacyMode: true` matches old behaviors for output format consistency (with documented exceptions for crashes and edge cases)
 **For**: Migrated users get `legacyMode: true` automatically
 **New Users**: Get `legacyMode: false` by default for modern best practices (1 blank line, correct sorting, import merging)
+**Note**: See README for specific behaviors replicated and exceptions
 
 ---
 
