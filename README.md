@@ -321,7 +321,7 @@ Control spacing after imports with `blankLinesAfterImports`:
 - **`"two"`** — Always exactly 2 blank lines (for teams preferring more visual separation)
 - **`"preserve"`** — Keep existing blank lines (0, 1, 2, 3+) as they are
 
-**Note:** This setting is ignored when `legacyMode: true` (which is automatically set for migrated users). Legacy mode preserves blank lines to match original TypeScript Hero behavior.
+**Note:** When `legacyMode: true` (automatically set for migrated users), this setting is partially overridden for files with headers or leading blank lines. Legacy mode replicates TypeScript Hero's quirks: files with headers get 2 blank lines after imports, and files with leading blanks accumulate extra blank lines. For simple files without headers or leading blanks, the configured mode is still respected.
 
 📖 **Detailed documentation:** [README-how-we-handle-blank-lines.md](README-how-we-handle-blank-lines.md)
 

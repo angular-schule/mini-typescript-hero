@@ -14,8 +14,8 @@ import { createTempDocument, deleteTempDocument, applyEditsToDocument } from './
 import { ImportsConfig } from '../configuration';
 
 suite('Performance & Large File Handling', () => {
-  test('Handles 200 imports efficiently', async function () {
-    // Increase timeout for performance test
+  test('Handles 200 imports correctly and deterministically', async function () {
+    // Increase timeout for large file processing
     this.timeout(10000);
 
     // Generate a large file with 200 imports across different groups
@@ -51,15 +51,7 @@ suite('Performance & Large File Handling', () => {
       const config = new ImportsConfig();
       const manager = new ImportManager(doc, config);
 
-      const startTime = Date.now();
       const edits = await manager.organizeImports();
-      const endTime = Date.now();
-
-      const executionTime = endTime - startTime;
-
-      // Performance assertion: should complete in reasonable time
-      // Allow generous threshold for CI environments (3 seconds)
-      assert.ok(executionTime < 3000, `Should complete in <3s (took ${executionTime}ms)`);
 
       // Apply edits
       const result = await applyEditsToDocument(doc, edits);

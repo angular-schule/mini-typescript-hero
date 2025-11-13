@@ -1,26 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run compile)",
-      "Bash(npm test)",
-      "WebSearch",
-      "Bash(npm run compile-tests)",
-      "SlashCommand(/git-quick)",
-      "WebFetch(domain:github.com)",
-      "Bash(npm run check-types)",
-      "Bash(npm run lint)",
-      "Bash(npm run)",
-      "Bash(npm run build)",
-      "Bash(curl -s \"https://code.visualstudio.com/updates/\")",
-      "WebFetch(domain:code.visualstudio.com)",
-      "Bash(npm test -- --grep \"PROOF\")",
-      "Bash(cat /Users/johanneshoppe/Work/angular-schule/mini-typescript-hero/.editorconfig)",
-      "Bash(npm test -- --grep \"133\\. Side-effect import\")",
-      "Bash(npm test -- --grep \"^Capture Outputs\")",
-      "Bash(npm test -- --grep \"should only register miniTypescriptHero command\")",
-      "Bash(gh run list --branch mini-typescript-hero-v4 --limit 3)",
-      "Bash(gh run view 19297904781 --log-failed)",
-      "Bash(npm test -- --grep \"18. Keep all imports when removal is disabled\")"
+      "Bash(npx tsc --noEmit case01-basic-unused-imports.ts case02-import-grouping.ts case03-type-only-imports.ts case05-re-exports.ts case10-config-showcase.ts lib.ts test-multiline-bug.ts)",
+      "Bash(npx tsc --noEmit manual-test-cases/case01-basic-unused-imports.ts manual-test-cases/case02-import-grouping.ts manual-test-cases/case03-type-only-imports.ts manual-test-cases/case05-re-exports.ts manual-test-cases/case10-config-showcase.ts manual-test-cases/lib.ts manual-test-cases/test-multiline-bug.ts)"
     ],
     "deny": [],
     "ask": []

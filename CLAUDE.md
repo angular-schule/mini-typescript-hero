@@ -299,7 +299,7 @@ All settings are under `miniTypescriptHero.imports.*`:
 12. `mergeImportsFromSameModule` (boolean) - **NEW!** Merge duplicate imports
 
 ### Blank Lines
-13. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Ignored when legacyMode is enabled)
+13. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Partially overridden in legacyMode for files with headers or leading blanks; otherwise respected)
 
 ### Behavior & Compatibility
 14. `organizeOnSave` (boolean) - Automatically organize imports when saving files

@@ -166,15 +166,15 @@ declare const y: UserService;
       const input = `import { Component } from '@angular/core';
 import { OnInit } from '@angular/core';
 
-const x: Component = null as any;
-const y: OnInit = null as any;
+const x: Component = {};
+const y: OnInit = {};
 `;
 
       // VS Code DOES add spaces after commas in merged imports
       const expected = `import { Component, OnInit } from '@angular/core';
 
-const x: Component = null as any;
-const y: OnInit = null as any;
+const x: Component = {};
+const y: OnInit = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -185,19 +185,19 @@ const y: OnInit = null as any;
       const input = `import { A, B } from './lib';
 import { C, D } from './lib';
 
-const a: A = null as any;
-const b: B = null as any;
-const c: C = null as any;
-const d: D = null as any;
+const a: A = {};
+const b: B = {};
+const c: C = {};
+const d: D = {};
 `;
 
       // VS Code DOES add spaces after commas in merged imports
       const expected = `import { A, B, C, D } from './lib';
 
-const a: A = null as any;
-const b: B = null as any;
-const c: C = null as any;
-const d: D = null as any;
+const a: A = {};
+const b: B = {};
+const c: C = {};
+const d: D = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -210,12 +210,12 @@ const d: D = null as any;
       const input = `import { Component, OnInit } from '@angular/core';
 import { UnusedService } from './unused';
 
-const x: Component = null as any;
+const x: Component = {};
 `;
 
       const expected = `import { Component } from '@angular/core';
 
-const x: Component = null as any;
+const x: Component = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -228,18 +228,18 @@ const x: Component = null as any;
 import { ImportsConfig } from './configuration/imports-config';
 import { ImportManager } from './imports/import-manager';
 
-const a: ImportsConfig = null as any;
-const b: ImportManager = null as any;
-const c: ImportOrganizer = null as any;
+const a: ImportsConfig = {};
+const b: ImportManager = {};
+const c: ImportOrganizer = {};
 `;
 
       const expected = `import { ImportsConfig } from './configuration/imports-config';
 import { ImportManager } from './imports/import-manager';
 import { ImportOrganizer } from './imports/import-organizer';
 
-const a: ImportsConfig = null as any;
-const b: ImportManager = null as any;
-const c: ImportOrganizer = null as any;
+const a: ImportsConfig = {};
+const b: ImportManager = {};
+const c: ImportOrganizer = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -256,10 +256,10 @@ import { Component } from '@angular/core';
 import { BookService } from './services/book';
 import { Router } from '@angular/router';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const u: UserService = null as any;
-const b: BookService = null as any;
+const x: Component = {};
+const y: Router = {};
+const u: UserService = {};
+const b: BookService = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -270,10 +270,10 @@ import { Router } from '@angular/router';
 import { BookService } from './services/book';
 import { UserService } from './services/user';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const u: UserService = null as any;
-const b: BookService = null as any;
+const x: Component = {};
+const y: Router = {};
+const u: UserService = {};
+const b: BookService = {};
 `;
 
       assert.strictEqual(result, expected, 'VS Code should sort all imports together without auto-grouping');
@@ -303,8 +303,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 
-const x: Component = null as any;
-const y: Router = null as any;
+const x: Component = {};
+const y: Router = {};
 const m = map;
 const s = switchMap;
 `;
@@ -317,8 +317,8 @@ const s = switchMap;
 import { Router } from '@angular/router';
 import { map, switchMap } from 'rxjs/operators';
 
-const x: Component = null as any;
-const y: Router = null as any;
+const x: Component = {};
+const y: Router = {};
 const m = map;
 const s = switchMap;
 `;
@@ -341,15 +341,15 @@ const s = switchMap;
       const input = `import { UserService } from './services/user/index';
 import { BookService } from './services/book/index';
 
-const x: UserService = null as any;
-const y: BookService = null as any;
+const x: UserService = {};
+const y: BookService = {};
 `;
 
       const expected = `import { BookService } from './services/book/index';
 import { UserService } from './services/user/index';
 
-const x: UserService = null as any;
-const y: BookService = null as any;
+const x: UserService = {};
+const y: BookService = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -363,8 +363,8 @@ const y: BookService = null as any;
       const input = `import { Zebra } from 'a-package';
 import { Apple } from 'z-package';
 
-const x: Zebra = null as any;
-const y: Apple = null as any;
+const x: Zebra = {};
+const y: Apple = {};
 `;
 
       // VS Code sorts by module path (a-package, z-package)
@@ -372,8 +372,8 @@ const y: Apple = null as any;
       const expected = `import { Zebra } from 'a-package';
 import { Apple } from 'z-package';
 
-const x: Zebra = null as any;
-const y: Apple = null as any;
+const x: Zebra = {};
+const y: Apple = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -393,10 +393,10 @@ import { Router } from '@angular/router';
 import { PaymentService } from './services/payment';
 import { UserService } from './services/user';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const z: PaymentService = null as any;
-const w: UserService = null as any;
+const x: Component = {};
+const y: Router = {};
+const z: PaymentService = {};
+const w: UserService = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -408,10 +408,10 @@ import { Router } from '@angular/router';
 import { PaymentService } from './services/payment';
 import { UserService } from './services/user';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const z: PaymentService = null as any;
-const w: UserService = null as any;
+const x: Component = {};
+const y: Router = {};
+const z: PaymentService = {};
+const w: UserService = {};
 `;
 
       assert.strictEqual(result, expected, 'VS Code should preserve comment between imports');
@@ -438,12 +438,12 @@ import { Router } from '@angular/router';
 import { AuthService } from './services/auth';
 import { HttpClient } from '@angular/common/http';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const z: HttpClient = null as any;
-const a: UserService = null as any;
-const b: BookService = null as any;
-const c: AuthService = null as any;
+const x: Component = {};
+const y: Router = {};
+const z: HttpClient = {};
+const a: UserService = {};
+const b: BookService = {};
+const c: AuthService = {};
 `;
 
       const expected = `import { HttpClient } from '@angular/common/http';
@@ -453,12 +453,12 @@ import { AuthService } from './services/auth';
 import { BookService } from './services/book';
 import { UserService } from './services/user';
 
-const x: Component = null as any;
-const y: Router = null as any;
-const z: HttpClient = null as any;
-const a: UserService = null as any;
-const b: BookService = null as any;
-const c: AuthService = null as any;
+const x: Component = {};
+const y: Router = {};
+const z: HttpClient = {};
+const a: UserService = {};
+const b: BookService = {};
+const c: AuthService = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -491,8 +491,8 @@ import 'zone.js';
 import './styles.css';
 import { Router } from '@angular/router';
 
-const x: Component = null as any;
-const y: Router = null as any;
+const x: Component = {};
+const y: Router = {};
 `;
 
       const result = await organizeImportsViaVSCode(input);
@@ -503,8 +503,8 @@ import { Router } from '@angular/router';
 import 'zone.js';
 import './styles.css';
 
-const x: Component = null as any;
-const y: Router = null as any;
+const x: Component = {};
+const y: Router = {};
 `;
 
       assert.strictEqual(result, expected, 'VS Code should sort side-effect imports AFTER named imports');

@@ -454,7 +454,7 @@ const y = map;
 
 const x = Component;
 const y = inject;
-const z: OnInit = null as any;
+const z: OnInit = {};
 `;
     const doc = await createTempDocument(content);
     try {
@@ -1035,8 +1035,8 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { MyHelper } from './helper';
 
-const comp: Component = null as any;
-const obs: Observable<any> = null as any;
+const comp: Component = {};
+const obs: Observable<unknown> = {};
 map(x => x);
 MyHelper;
 `;
@@ -1238,7 +1238,7 @@ console.log('side effects');
     // TS 3.8+: import type Foo from 'lib' (default type import)
     const content = `import type MyClass from './types';
 
-const x: typeof MyClass = null as any;
+const x: typeof MyClass = {};
 `;
     const doc = await createTempDocument(content);
     try {
@@ -1520,8 +1520,8 @@ console.log(A, B);
     const content = `import type { TypeA } from './types';
 import type { TypeB } from './types';
 
-const a: TypeA = null as any;
-const b: TypeB = null as any;
+const a: TypeA = {};
+const b: TypeB = {};
 `;
     const doc = await createTempDocument(content);
     try {
