@@ -1,8 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc --noEmit case01-basic-unused-imports.ts case02-import-grouping.ts case03-type-only-imports.ts case05-re-exports.ts case10-config-showcase.ts lib.ts test-multiline-bug.ts)",
-      "Bash(npx tsc --noEmit manual-test-cases/case01-basic-unused-imports.ts manual-test-cases/case02-import-grouping.ts manual-test-cases/case03-type-only-imports.ts manual-test-cases/case05-re-exports.ts manual-test-cases/case10-config-showcase.ts manual-test-cases/lib.ts manual-test-cases/test-multiline-bug.ts)"
+      "Bash(npm run compile)",
+      "Bash(npm run compile-tests)",
+      "Bash(npm test)",
+      "Bash(npm run check-types)",
+      "Bash(npm run lint)",
+      "Bash(npm run)",
+      "Bash(npx tsc --noEmit manual-test-cases/*.ts)",
+      "Bash(npx tsc --noUnusedLocals --noEmit manual-test-cases/*.ts)",
+      "SlashCommand(/git-quick)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:stackoverflow.com)"
     ],
     "deny": [],
     "ask": []

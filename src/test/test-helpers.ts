@@ -33,22 +33,50 @@ export async function createTempDocument(content: string, extension: string = 't
  * Clean up temporary file after test completes
  *
  * Always call this in a finally block to ensure cleanup even if test fails.
- * This properly closes the document in VSCode AND deletes the file to prevent listener leaks.
+ * This AGGRESSIVELY closes all editors and deletes the file to prevent listener leaks.
+ *
+ * CRITICAL: VSCode accumulates internal listeners (onDidChange, onDidChangeReadonly, etc.)
+ * for each document model. We MUST close all editors to force VSCode to release these listeners.
+ * Simply deleting the file is NOT sufficient - VSCode keeps the document model in memory.
  *
  * @param doc - The TextDocument created by createTempDocument()
  */
 export async function deleteTempDocument(doc: TextDocument): Promise<void> {
   try {
-    // Close the document in VSCode to release listeners
-    // Use workbench.action.closeAllEditors to close all open editors/documents
-    // This is more reliable than trying to close individual documents
+    // Set up a promise that resolves when the document is actually closed OR after reasonable timeout
+    // onDidCloseTextDocument doesn't always fire for temp files that were never shown in editors,
+    // so we need a timeout to prevent hanging. But we TRY to await the real event first.
+    const docClosedPromise = new Promise<void>((resolve) => {
+      const disposable = workspace.onDidCloseTextDocument((closedDoc) => {
+        if (closedDoc.uri.toString() === doc.uri.toString()) {
+          disposable.dispose(); // Clean up our listener immediately
+          resolve();
+        }
+      });
+
+      // Timeout after 100ms if event doesn't fire
+      // This is NOT arbitrary - it's long enough for the event to fire if it will,
+      // but short enough to not slow down tests when the event doesn't fire
+      setTimeout(() => {
+        disposable.dispose();
+        resolve();
+      }, 100);
+    });
+
+    // STEP 1: Close ALL editors to force VSCode to release document models and their listeners
+    // This is necessary because VSCode keeps documents in memory even after file deletion
     await commands.executeCommand('workbench.action.closeAllEditors');
 
-    // Delete the physical file
-    fs.unlinkSync(doc.uri.fsPath);
+    // STEP 2: Delete the physical file
+    if (fs.existsSync(doc.uri.fsPath)) {
+      fs.unlinkSync(doc.uri.fsPath);
+    }
+
+    // STEP 3: Wait for VSCode to actually close the document (or timeout)
+    await docClosedPromise;
   } catch (e) {
     // Ignore errors - best effort cleanup
-    // Document might already be closed or file might not exist
+    // Commands might fail or file might not exist
   }
 }
 
