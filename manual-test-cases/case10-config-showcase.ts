@@ -14,7 +14,7 @@ import { map, filter, tap } from 'rxjs/operators';
 import {UsedClass} from './helpers/used-class'
 
 class MyComponent implements OnInit {
-  data$: Observable<UsedClass>;
+  data$: Observable<any>;
 
   ngOnInit() {
     const instance = new UsedClass();

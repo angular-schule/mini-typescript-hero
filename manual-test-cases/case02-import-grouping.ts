@@ -13,8 +13,8 @@ class MyComponent implements OnInit {
   private used: UsedClass;
 
   ngOnInit(): void {
-    map((x: number) => x);
-    filter((x: number) => x > 0);
+    map((x: any) => x);
+    filter((x: any) => x > 0);
     helper();
   }
 }

@@ -13,7 +13,8 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:code.visualstudio.com)",
-      "WebFetch(domain:stackoverflow.com)"
+      "WebFetch(domain:stackoverflow.com)",
+      "Bash(npx tsc --noEmit --noUnusedLocals case01-basic-unused-imports.ts case02-import-grouping.ts case03-type-only-imports.ts case05-re-exports.ts case10-config-showcase.ts test-multiline-bug.ts)"
     ],
     "deny": [],
     "ask": []
