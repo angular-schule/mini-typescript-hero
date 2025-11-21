@@ -280,7 +280,7 @@ const b = B;
    * NOT on other unrelated settings
    */
   suite('Invariant: Merge Timing Independence', () => {
-    test('Modern mode: removeTrailingIndex FIRST, then merge', async () => {
+    test('Modern mode: removeTrailingIndex with merging disabled creates separate imports', async () => {
       const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -298,9 +298,12 @@ const b = B;
 
         const result = await applyEditsToDocument(doc, edits);
 
-        // Modern: ./lib/index → ./lib, then BOTH merge into one import
+        // Modern mode with merging disabled:
+        // removeTrailingIndex: true → removes /index (always)
+        // mergeImportsFromSameModule: false → doesn't merge (always)
+        // Result: Two separate imports from './lib'
         const importCount = (result.match(/import/g) || []).length;
-        assert.strictEqual(importCount, 1, 'Should have exactly 1 import (both merged after /index removal)');
+        assert.strictEqual(importCount, 2, 'Should have 2 separate imports when merging is disabled');
         assert.ok(result.includes('./lib'), 'Should have ./lib');
         assert.ok(!result.includes('./lib/index'), 'Should NOT have ./lib/index');
       } finally {
@@ -308,7 +311,7 @@ const b = B;
       }
     });
 
-    test('Legacy mode: deduplicates /index collisions even when merging disabled', async () => {
+    test('Legacy mode: removeTrailingIndex with merging disabled creates separate imports', async () => {
       const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -327,13 +330,12 @@ const b = B;
         const result = await applyEditsToDocument(doc, edits);
 
         // Legacy mode with merging disabled.
-        // /index removal happens AFTER the (skipped) merge step.
-        // Our dedup logic prevents duplicate imports like:
-        //   import { A } from './lib';
-        //   import { B } from './lib';
-        // Expected: exactly 1 import with merged specifiers.
+        // removeTrailingIndex: true → removes /index (always)
+        // mergeImportsFromSameModule: false → doesn't merge (always)
+        // Result: Two separate imports from './lib'
         const importCount = (result.match(/import/g) || []).length;
-        assert.strictEqual(importCount, 1, 'Should deduplicate imports that collided due to /index removal');
+        assert.strictEqual(importCount, 2, 'Should keep imports separate when merging is disabled');
+        assert.ok(result.includes("from './lib'"), 'Should have imports from ./lib');
       } finally {
         await deleteTempDocument(doc);
       }

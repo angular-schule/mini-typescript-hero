@@ -466,21 +466,6 @@ import { Component, OnInit } from '@angular/core';  // OnInit kept
 - New users get merging enabled (modern best practice)
 - Migrated users preserve their original behavior
 
-#### Trailing `/index` Removal and Deduplication
-
-When `removeTrailingIndex` is enabled and `mergeImportsFromSameModule` is disabled, the extension still deduplicates imports that become identical only due to `/index` removal:
-
-```typescript
-// Before organize:
-import { A } from './lib/index';
-import { B } from './lib';
-
-// After organize (both settings):
-import { A, B } from './lib';  // Deduplicated to prevent duplicate imports
-```
-
-This special case deduplication applies in both modern and legacy mode to avoid creating duplicate import statements. It only affects imports that collide specifically because of `/index` removal.
-
 ### Import Grouping
 
 Group your imports into logical sections with blank lines between groups:
