@@ -218,7 +218,7 @@ The extension checks settings in this order and uses the first explicit value it
 |---------|---------------------|-------------------------------|-------|
 | **Quote Style** | `typescript.preferences.quoteStyle`<br>`javascript.preferences.quoteStyle` | `miniTypescriptHero.imports.stringQuoteStyle` | VS Code default: `"auto"`<br>Extension default: `'` (single) |
 | **Semicolons** | `typescript.format.semicolons`<br>`javascript.format.semicolons` | `miniTypescriptHero.imports.insertSemicolons` | VS Code default: `"ignore"`<br>Extension default: `true` |
-| **Indentation** | `editor.tabSize`<br>`editor.insertSpaces` | `miniTypescriptHero.imports.tabSize`<br>`miniTypescriptHero.imports.insertSpaces` | VS Code default: `4` spaces<br>Modern mode default: `2` spaces<br>Legacy mode default: `4` spaces |
+| **Indentation** | `editor.tabSize`<br>`editor.insertSpaces` | `miniTypescriptHero.imports.tabSize`<br>`miniTypescriptHero.imports.insertSpaces`<br>**(Only when `useOnlyExtensionSettings: true`)** | VS Code **always has values** (default: `4` spaces)<br>Modern mode: uses `2` spaces when VS Code is at default<br>Extension settings ignored unless override enabled |
 
 #### What Do "auto" and "ignore" Mean?
 
@@ -313,8 +313,9 @@ Result: **Single quotes, no semicolons** (from extension settings, VS Code setti
   "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
 
   // Remove trailing /index from import paths
-  // Note: When enabled with mergeImportsFromSameModule, imports from
-  // './lib/index' and './lib' will be normalized to './lib' and then merged
+  // Note: In modern mode, when enabled with mergeImportsFromSameModule, imports from
+  // './lib/index' and './lib' will be normalized to './lib' and then merged.
+  // In legacy mode, merge timing is different (see Legacy Mode section below).
   "miniTypescriptHero.imports.removeTrailingIndex": true
 }
 ```
@@ -351,10 +352,13 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
 
 ```json
 {
-  // Modern mode (default): Respects VS Code editor.tabSize and editor.insertSpaces
-  // Default: 2 spaces (if no explicit tabSize configured)
+  // NOTE: These extension settings (tabSize, insertSpaces) are ONLY used when
+  // useOnlyExtensionSettings is true. Otherwise, VS Code editor settings are
+  // always used (VS Code defaults: 4 spaces, insertSpaces=true)
+
   "miniTypescriptHero.imports.tabSize": 2,
   "miniTypescriptHero.imports.insertSpaces": true,
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": false,  // Set to true to use extension settings
 
   // Legacy mode: Always uses spaces, default 4 (matches old TypeScript Hero)
   // Reads editor.tabSize automatically
@@ -365,8 +369,9 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
 **Default Indentation Behavior:**
 
 - **Modern mode** (`legacyMode: false`):
-  - Default: **2 spaces** (only when `editor.tabSize` is not explicitly configured)
-  - If you've explicitly set `editor.tabSize`, that value is used instead
+  - VS Code **always has `editor.tabSize`** (default: 4 spaces)
+  - Modern mode uses **2 spaces** when VS Code is at its default value (4)
+  - If you've explicitly set `editor.tabSize` to a different value, that value is used instead
   - Supports both spaces and tabs via `editor.insertSpaces`
   - Example: `import {\n  Foo,\n  Bar\n} from './lib';`
 

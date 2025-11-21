@@ -163,20 +163,20 @@
         "miniTypescriptHero.imports.legacyMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable full legacy mode for 100% compatibility with old TypeScript Hero extension. When true: replicates ALL old behaviors (within-group sorting bug, preserve blank lines, merge-before-removeTrailingIndex timing, type-only merge). When false: modern best practices (correct sorting, 1 blank line, correct merge timing, type-only separation). Migrated users get 'true' automatically.",
+          "description": "Enable full legacy mode for formatting compatibility with old TypeScript Hero extension (with documented exceptions for crashes and edge cases). When true: replicates old formatting behaviors (within-group sorting bug, preserve blank lines, merge-before-removeTrailingIndex timing, type-only merge). When false: modern best practices (correct sorting, 1 blank line, correct merge timing, type-only separation). Migrated users get 'true' automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.tabSize": {
           "type": "number",
           "minimum": 1,
           "default": 2,
-          "markdownDescription": "The number of spaces a tab is equal to when formatting multiline imports. Fallback setting - respects VS Code `editor.tabSize` first.\n\n**Priority:** VS Code `editor.tabSize` → this setting\n\n**Note:** VS Code automatically reads `editor.tabSize` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
+          "markdownDescription": "**Only used when `useOnlyExtensionSettings` is true.** Otherwise, VS Code `editor.tabSize` is always used.\n\n**VS Code always has a value** for `editor.tabSize` (default: 4 spaces). Modern mode overrides this to 2 spaces when VS Code is at its default value.\n\n**Note:** VS Code automatically reads `editor.tabSize` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.insertSpaces": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Insert spaces when formatting multiline imports. When false, uses tabs. Fallback setting - respects VS Code `editor.insertSpaces` first.\n\n**Priority:** VS Code `editor.insertSpaces` → this setting\n\n**Note:** VS Code automatically reads `editor.insertSpaces` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
+          "markdownDescription": "**Only used when `useOnlyExtensionSettings` is true.** Otherwise, VS Code `editor.insertSpaces` is always used.\n\n**VS Code always has a value** for `editor.insertSpaces` (default: true).\n\n**Note:** VS Code automatically reads `editor.insertSpaces` from `.editorconfig` files (if EditorConfig extension is installed). We read the final resolved value, so EditorConfig integration works automatically.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.useOnlyExtensionSettings": {

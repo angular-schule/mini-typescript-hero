@@ -239,9 +239,9 @@ export class ImportsConfig {
   }
 
   /**
-   * Enable full legacy mode for 100% compatibility with old TypeScript Hero extension.
+   * Enable full legacy mode for formatting compatibility with old TypeScript Hero extension.
    *
-   * When true, enables ALL legacy behaviors:
+   * When true, enables old formatting behaviors:
    * - Within-group sorting: Always sorts by library name (ignores disableImportsSorting/organizeSortsByFirstSpecifier)
    * - Blank lines: Uses 'preserve' mode (keeps existing blank lines from source)
    * - Merge timing: When mergeImportsFromSameModule is true, merges BEFORE removeTrailingIndex (matches old bug where './lib/index' and './lib' stay separate)
@@ -254,7 +254,7 @@ export class ImportsConfig {
    * - Type-only separation: Keeps 'import type' keywords and prevents merging type-only with value imports (TS 3.8+ semantics)
    *
    * Default: false (new users get modern behavior)
-   * Migrated users: Automatically set to true for 100% backward compatibility
+   * Migrated users: Automatically set to true for formatting backward compatibility
    */
   public legacyMode(resource: Uri): boolean {
     return workspace

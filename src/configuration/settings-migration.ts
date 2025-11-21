@@ -113,10 +113,10 @@ async function performMigration(): Promise<number> {
     }
   }
 
-  // For migrated users: Enable legacyMode for 100% backward compatibility
+  // For migrated users: Enable legacyMode for formatting backward compatibility
   // Write legacyMode to the SAME scope(s) where old settings were found
   if (migratedCount > 0) {
-    // Simply enable legacyMode: true to replicate ALL old behaviors:
+    // Simply enable legacyMode: true to replicate old formatting behaviors:
     // - Within-group sorting bug (always sorts by library name, ignores disableImportsSorting/organizeSortsByFirstSpecifier)
     // - Blank line preservation (uses 'preserve' mode, keeps existing blank lines from source)
     // - Merge timing: When mergeImportsFromSameModule is true, merges BEFORE removeTrailingIndex (matches old bug)
