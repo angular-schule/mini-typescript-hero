@@ -319,7 +319,7 @@ const b = B;
       const doc = await createTempDocument(input, 'ts');
 
       try {
-        const config = new TestConfig({ disableImportsSorting: false, disableImportRemovalOnOrganize: true, legacyMode: false, mergeImportsFromSameModule: false });
+        const config = new TestConfig({ disableImportsSorting: false, disableImportRemovalOnOrganize: true, legacyMode: true, mergeImportsFromSameModule: false });
 
         const manager = new ImportManager(doc, config);
         const edits = await manager.organizeImports();

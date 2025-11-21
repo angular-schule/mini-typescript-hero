@@ -787,7 +787,28 @@ export class ImportManager {
     // In legacy mode, we replicate the old extension's bug where /index removal happens after merging
     // This means './lib/index' and './lib' won't merge because they're different at merge time
     if (this.config.removeTrailingIndex(this.document.uri) && this.config.legacyMode(this.document.uri)) {
+      // Track which imports will be affected by /index removal BEFORE changing them
+      // This allows us to deduplicate ONLY the imports that became duplicates due to /index removal
+      const affectedLibraries = new Set<string>();
+      for (const imp of keep) {
+        if (imp.libraryName.endsWith('/index')) {
+          const withoutIndex = imp.libraryName.replace(/\/index$/, '');
+          // Check if another import exists with the same name (without /index)
+          const hasDuplicate = keep.some(other =>
+            other !== imp && other.libraryName === withoutIndex
+          );
+          if (hasDuplicate) {
+            affectedLibraries.add(withoutIndex);
+          }
+        }
+      }
+
       keep = this.removeTrailingIndexFromImports(keep);
+
+      // If merging is DISABLED but /index removal created duplicates, deduplicate those specific imports
+      if (!this.config.mergeImportsFromSameModule(this.document.uri) && affectedLibraries.size > 0) {
+        keep = this.deduplicateImportsSelective(keep, affectedLibraries);
+      }
     }
 
     // Group imports
