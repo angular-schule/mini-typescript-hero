@@ -12,7 +12,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Blank Lines', () => {
-  test('058. One blank line after imports (default for old)', async () => {
+  test('058. Two blank lines after imports preserved (legacy mode)', async () => {
     const input = `import { A } from './lib';
 
 

@@ -13,7 +13,7 @@ import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Legacy Mode Indentation (Old Extension Parity)', () => {
 
-  test('L1: Uses 4 spaces by default (VS Code default)', async () => {
+  test('L1: Uses 2 spaces by default (VS Code default for TypeScript)', async () => {
     const input = `import { VeryLongComponentName, AnotherLongName, ThirdLongName, FourthName, FifthName } from 'library';
 
 const x = VeryLongComponentName;

@@ -14,7 +14,7 @@
  * - OutputChannel: Mocked for capturing log output
  *
  * Note: The actual import organization logic is thoroughly tested in
- * import-manager.test.ts (101 tests) and blank-lines.test.ts (37 tests).
+ * import-manager.test.ts and blank-lines.test.ts with comprehensive test suites.
  */
 
 import * as assert from 'assert';
