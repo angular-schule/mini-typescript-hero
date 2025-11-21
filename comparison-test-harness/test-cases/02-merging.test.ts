@@ -92,7 +92,8 @@ const z = C;
     // ACTUAL BEHAVIOR (verified by running the test):
     // - Both extensions successfully organize the imports
     // - They merge the two imports into one: `import { A, A, B, C } from './lib';`
-    // - The duplicate 'A' is PRESERVED (neither extension deduplicates specifiers)
+    // - The duplicate 'A' is PRESERVED (neither extension deduplicates specifiers within a statement)
+    // - Note: Modern mode merges imports from same module; legacy mode has merge timing quirks
     // - TypeScript compiler would error on the duplicate identifier when type-checking
     //
     // This test verifies graceful handling - no crashes, consistent output between extensions

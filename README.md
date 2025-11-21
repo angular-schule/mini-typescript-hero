@@ -466,6 +466,42 @@ import { Component, OnInit } from '@angular/core';  // OnInit kept
 - New users get merging enabled (modern best practice)
 - Migrated users preserve their original behavior
 
+#### Disable Sorting
+
+**`disableImportsSorting`** (default: `false`) preserves the original order of imports in your file:
+
+**Default (false): Sorts alphabetically**
+```typescript
+import { z } from './z';  // Reordered to: a, z
+import { a } from './a';
+```
+
+**When enabled (true): Keeps original order**
+```typescript
+import { z } from './z';  // Stays: z, a (as written)
+import { a } from './a';
+```
+
+> **Note:** Specifiers within each import are still sorted alphabetically (e.g., `import { b, a }` becomes `import { a, b }`). This setting has no effect when `legacyMode: true`.
+
+#### Sort Order Within Groups
+
+**`organizeSortsByFirstSpecifier`** (default: `false`) controls how imports are sorted within each group:
+
+**Default (false): Sort by module path**
+```typescript
+import { Zebra } from './a-module';  // './a-module' comes before './z-module'
+import { Apple } from './z-module';
+```
+
+**When enabled (true): Sort by first imported name**
+```typescript
+import { Apple } from './z-module';  // 'Apple' comes before 'Zebra'
+import { Zebra } from './a-module';
+```
+
+> **Note:** This is an advanced setting inherited from the original TypeScript Hero extension. Most users should keep the default (sort by module path) for consistency with VS Code's built-in "Organize Imports" command. This setting has no effect when `disableImportsSorting: true` or `legacyMode: true`.
+
 ### Import Grouping
 
 Group your imports into logical sections with blank lines between groups:
