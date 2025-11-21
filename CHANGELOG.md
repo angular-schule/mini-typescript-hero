@@ -21,7 +21,7 @@
   - Ignored imports (never removed)
   - Disable sorting option
   - Disable removal option
-- **Configuration Priority Order** - Respects `.editorconfig` and VSCode settings before extension settings
+- **Configuration Priority Order** - Respects VS Code settings (which may come from `.editorconfig` via the EditorConfig extension) before extension settings
 - **Commands:**
   - `Mini TS Hero: Organize imports` - Sort and remove unused imports (the main command)
   - `Mini TS Hero: Check for configuration conflicts` - Detect if multiple tools would organize imports

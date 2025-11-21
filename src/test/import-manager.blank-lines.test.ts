@@ -13,7 +13,7 @@ import { ConfigOverrides, ConfigKey } from './test-types';
  * - Mode: "one", "two", "preserve", "legacy"
  * - Scenario: header detection, leading blanks, blank lines before/after imports
  *
- * Test IDs correspond to the specification in README-how-we-handle-blank-lines.md
+ * Test IDs correspond to the legacy blank line behavior documented in README.md (Legacy Mode section)
  */
 
 // Mock config for testing

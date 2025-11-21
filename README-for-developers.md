@@ -201,8 +201,14 @@ mini-typescript-hero/
 - **Direct instantiation** instead of InversifyJS DI container
 - **OutputChannel** logging instead of winston
 - **esbuild** bundling instead of tsc alone
-- **Strict TypeScript** with no `any` types
+- **Extension runtime code in `src/`** uses strict TypeScript and avoids `any`. Test and demo files may use `any` when it improves readability or mirrors legacy behavior.
 - **Regex groups processed first** for proper precedence
+
+### TypeScript Configuration
+
+- **Extension runtime** (`src/`): Compiled with `strict: true`, `noUnusedLocals: true`
+- **Comparison test harness** (`comparison-test-harness/`): Uses relaxed `tsconfig.json` with `strict: false` so we can compile the original TypeScript Hero code without rewriting it
+- **Manual test cases**: Simple demonstration files, may use `any` for clarity
 
 ## Debugging
 
@@ -254,7 +260,7 @@ mini-typescript-hero/
 
 ### Code Style
 
-- Strict TypeScript (no `any` types)
+- Extension runtime code in `src/` uses strict TypeScript and avoids `any`. Test and demo files may use `any` when it improves readability or mirrors legacy behavior.
 - Clear, descriptive variable names
 - Document complex logic with comments
 - Follow existing patterns in codebase

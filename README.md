@@ -6,7 +6,7 @@
 
 **Sorts and organizes TypeScript/JavaScript imports** — A lightweight, modern VSCode extension that automatically manages your import statements.
 
-This extension is a modernized extraction of the "Organize Imports" feature from the original [TypeScript Hero](https://github.com/buehler/typescript-hero) extension, rebuilt with 2025 best practices.
+This extension is a modernized extraction of the "Organize Imports" feature from the original [TypeScript Hero](https://github.com/buehler/typescript-hero) extension, rebuilt with modern best practices.
 
 **📖 Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
 
@@ -21,6 +21,7 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - 🎯 **Multi-line wrapping** at configurable character threshold
 - 🗂️ **Remove `/index`** from paths (shorten `./lib/index` to `./lib`)
 - 💾 **Organize on save** (optional)
+- 🎨 **Import attributes/assertions** — Preserves modern syntax like `with { type: 'json' }`
 - 🌍 **Works with TypeScript, JavaScript, TSX, and JSX**
 
 ## Example
@@ -58,7 +59,7 @@ import { UserDetail } from './components/user-detail';
 - Unused `UnusedService` removed automatically
 - Everything sorted alphabetically
 - Consistent quotes and semicolons
-- Exactly 1 blank line after imports (configurable)
+- 1 blank line after imports (configurable)
 
 ## Why Use This Instead of VS Code's Built-in?
 
@@ -109,7 +110,7 @@ VS Code sorts everything alphabetically as one flat list. External and internal 
 
 Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-1. **Mini TS Hero: Organize imports** — Sort and remove unused imports
+1. **Mini TS Hero: Organize imports (sort and remove unused)**
    - Keyboard shortcut: `Ctrl+Alt+O` (`Cmd+Alt+O` on macOS)
 2. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
 3. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
@@ -133,6 +134,8 @@ Enable automatic import organization on file save:
   "miniTypescriptHero.imports.organizeOnSave": true
 }
 ```
+
+> **💡 Tip:** If you enable `organizeOnSave`, consider disabling VS Code's built-in organize imports action to avoid conflicts. Use the "Check for configuration conflicts" command to detect overlapping settings.
 
 ### Check for Conflicts
 
@@ -251,7 +254,7 @@ Set `miniTypescriptHero.imports.useOnlyExtensionSettings: true` to skip Priority
 
 **Use case:** Enforce consistent import formatting across all team members regardless of their personal VS Code configuration.
 
-**Note on EditorConfig:** For indentation (`tabSize` and `insertSpaces`), if you have the [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) installed, VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. Our extension reads these resolved VS Code values, so EditorConfig integration works automatically for indentation (but NOT for quotes - use VS Code settings for quotes).
+**Note on EditorConfig:** For indentation (`tabSize` and `insertSpaces`), if you have the [EditorConfig extension](https://marketplace.visualstudio.com/items?itemName=EditorConfig.EditorConfig) installed, VS Code automatically applies `.editorconfig` settings to its own `editor.tabSize` and `editor.insertSpaces` settings. Our extension reads these resolved VS Code values, so EditorConfig integration works automatically for indentation (but NOT for quotes - use VS Code settings for quotes).
 
 #### Example Scenarios
 
@@ -275,15 +278,16 @@ Result: **Single quotes with semicolons** (from VSCode settings, applies to all 
 
 Result: **Double quotes** (from VSCode preferences, extension setting is ignored)
 
-**Scenario 3: Fallback to extension settings (when VSCode preferences not configured)**
+**Scenario 3: Use only extension settings (skip VSCode preferences)**
 ```json
 {
   "miniTypescriptHero.imports.stringQuoteStyle": "'",
-  "miniTypescriptHero.imports.insertSemicolons": false
+  "miniTypescriptHero.imports.insertSemicolons": false,
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": true
 }
 ```
 
-Result: **Single quotes, no semicolons** (from extension settings as fallback)
+Result: **Single quotes, no semicolons** (from extension settings, VS Code settings skipped)
 
 💡 **Tip**: For team projects, configure VSCode workspace settings (`.vscode/settings.json`). For personal preferences, use user settings. The extension's settings are there as convenient fallbacks.
 
@@ -321,9 +325,23 @@ Control spacing after imports with `blankLinesAfterImports`:
 - **`"two"`** — Always exactly 2 blank lines (for teams preferring more visual separation)
 - **`"preserve"`** — Keep existing blank lines (0, 1, 2, 3+) as they are
 
-**Note:** When `legacyMode: true` (automatically set for migrated users), this setting is partially overridden for files with headers or leading blank lines. Legacy mode replicates TypeScript Hero's quirks: files with headers get 2 blank lines after imports, and files with leading blanks accumulate extra blank lines. For simple files without headers or leading blanks, the configured mode is still respected.
+**Note:** When `legacyMode: true` (automatically set for migrated users), this setting is overridden and legacy mode uses `"preserve"` behavior to match the old TypeScript Hero extension. Legacy mode preserves existing blank lines from the source file and replicates the old extension's quirks around headers and leading blank lines. The old extension had unpredictable blank line behavior (sometimes accumulating extra lines, sometimes adding 2 lines after headers) which legacy mode replicates for output consistency. For consistent spacing, new users should use modern mode (`legacyMode: false`) which respects the configured blank line setting exactly.
 
-📖 **Detailed documentation:** [README-how-we-handle-blank-lines.md](README-how-we-handle-blank-lines.md)
+**Implementation detail:** Internally, legacy mode forces `blankLinesAfterImports` to `"preserve"` and then applies the old TypeScript Hero quirks for headers and leading blanks. This makes it easier to correlate README documentation with the actual implementation in `ImportsConfig` and `ImportManager`.
+
+**Example:**
+
+Input file:
+```typescript
+import { A } from './a';
+
+
+const x = 1; // 2 blank lines before code
+```
+
+**With `blankLinesAfterImports: "one"`:** Always exactly 1 blank line
+**With `blankLinesAfterImports: "preserve"`:** Keeps the 2 blank lines from source
+**With `legacyMode: true`:** Uses 'preserve' behavior automatically (ignores configured value)
 
 ### Multiline Import Indentation
 
@@ -345,18 +363,18 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
 **Default Indentation Behavior:**
 
 - **Modern mode** (`legacyMode: false`):
-  - Default: **2 spaces** (common TypeScript/JavaScript convention)
+  - Default: **2 spaces** (only when `editor.tabSize` is not explicitly configured)
+  - If you've explicitly set `editor.tabSize`, that value is used instead
   - Supports both spaces and tabs via `editor.insertSpaces`
-  - Respects `editor.tabSize` if explicitly configured
   - Example: `import {\n  Foo,\n  Bar\n} from './lib';`
 
 - **Legacy mode** (`legacyMode: true`):
-  - Reads VS Code's resolved editor settings (usually **2 spaces** for TypeScript)
+  - Reads VS Code's resolved editor settings (VS Code defaults to **4 spaces**, but many TypeScript projects use 2)
   - Falls back to **4 spaces** when no editor context is available
   - Always uses spaces (never tabs)
   - Matches old TypeScript Hero output format
 
-**Note:** VS Code automatically applies `.editorconfig` settings to `editor.tabSize` and `editor.insertSpaces`. The extension reads these resolved values, so EditorConfig integration works automatically.
+**Note:** EditorConfig integration works automatically for indentation (see Configuration Priority section above for details).
 
 ### Advanced Settings
 
@@ -375,10 +393,14 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
   "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
 
   // Libraries that should never be removed (even if unused)
-  // Uses exact string matching - no wildcards or sub-paths
-  // Example: "react" matches "react" but NOT "react-dom" or "react/jsx-runtime"
   "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],
+}
+```
 
+> **⚠️ NOTE:** `ignoredFromRemoval` uses exact string matching without wildcards. For example, `"react"` matches only `"react"`, not `"react-dom"` or `"react/jsx-runtime"`. Each library must be listed individually.
+
+```json
+{
   // Character threshold for multiline imports
   "miniTypescriptHero.imports.multiLineWrapThreshold": 125,
 

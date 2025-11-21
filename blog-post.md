@@ -4,7 +4,7 @@
 
 ---
 
-I use TypeScript Hero every single day. Multiple times per hour, actually. One keyboard shortcut (`Ctrl+Alt+O`) and my messy imports transform into a perfectly organized, alphabetically sorted list. Unused imports? Gone. Proper grouping? Done. Consistent formatting? Check.
+I use TypeScript Hero every single day. Multiple times per hour, actually. One keyboard shortcut (`Ctrl+Alt+O`) and my messy imports transform into a well organized, alphabetically sorted list. Unused imports? Gone. Proper grouping? Done. Consistent formatting? Check.
 
 Then one day, VSCode hit me with a warning I couldn't ignore: **"This extension is deprecated as it is no longer being maintained."**
 My heart sank. Not another one.
@@ -36,9 +36,9 @@ import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
 ```
 
-Angular libraries grouped together and automatically merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. Exactly one blank line after imports. Beautiful.
+Angular libraries grouped together and automatically merged into one import. RxJS separate. Then local imports. Unused imports removed. Everything sorted. Consistent quotes and semicolons. One blank line after imports.
 
-**I literally can't imagine working without this.**
+**This really helps keep the code clean.**
 
 ## The Mission
 
@@ -64,7 +64,7 @@ His response was incredibly kind and supportive. He gave me his blessing, shared
 ❌ **Remove `/index` from paths** — Keeps `./lib/index` as-is instead of cleaning to `./lib`
 ❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
 
-**The real-world impact:** Imagine you add a new Angular import. With VS Code, you need to manually place it in the right location and ensure blank lines are correct. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically goes to the Angular group with proper spacing. Configure once, benefit forever.
+**In practice:** When you add a new Angular import, VS Code requires you to manually maintain blank line separators between import groups. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically places imports in the correct groups with proper spacing. Configure once, organize forever.
 
 ## What Changed Under the Hood
 
@@ -86,19 +86,20 @@ For a tool I rely on daily, that was a ticking time bomb.
 **Key improvements:**
 - **Smart blank line handling**: Choose how many blank lines you want after imports. The new default is 1 blank line (standard from ESLint), but you can configure it to 2 lines, preserve existing spacing, or use the old TypeScript Hero behavior. Honestly, I always felt that 1 line would be better than the old behavior where blank lines would sometimes "move" around unpredictably. Now everyone can decide what preference they have!
 - **Configurable import merging**: The extension can combine multiple imports from the same module (like two `@angular/core` imports) into one clean statement. This is now a configurable option, and migrated users automatically get their original behavior preserved while new users benefit from modern best practices.
+- **Modern TypeScript support**: Full support for TypeScript 3.8+ `import type` syntax and import attributes (`with { type: 'json' }`), preserving semantic import behavior for better type safety and tree-shaking. Legacy mode available for compatibility with older TypeScript versions.
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.
 
-## Seamless Migration
+## Migration
 
-If you're already using TypeScript Hero, switching is painless:
+If you're already using TypeScript Hero, switching is straightforward:
 
 1. Install Mini TypeScript Hero from the marketplace
 2. Open VSCode
 3. Your settings automatically migrate (one-time, on first startup)
 4. Done.
 
-All your custom configurations transfer automatically — quote style, semicolons, import grouping rules, blank line handling, everything. The extension preserves your output format by automatically enabling `legacyMode: true` for migrated users, which matches the old TypeScript Hero behavior for all core features (with graceful handling of edge cases that previously caused crashes). You can switch to the new defaults anytime you want cleaner, more consistent spacing. You can even keep both extensions installed if you want, but I highly recommend deactivating the old hero because both will fight for the same shortcut. Speaking of which: the keyboard shortcut works exactly the same, `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
+All your custom configurations transfer automatically — quote style, semicolons, import grouping rules, blank line handling, everything. The extension preserves your output format by automatically enabling `legacyMode: true` for migrated users, which matches the old TypeScript Hero behavior as closely as possible, including replicating certain quirks to ensure consistent output. You can switch to the new defaults anytime you want cleaner, more consistent behavior. You can even keep both extensions installed if you want, but I highly recommend deactivating the old hero because both will fight for the same shortcut. Speaking of which: the keyboard shortcut works exactly the same, `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS).
 
 ## A Quick Thank You
 
@@ -127,6 +128,6 @@ Ready to organize your imports with a single keystroke?
 
 ---
 
-**TL;DR:** TypeScript Hero isn't dead. It's been rescued and modernized for 2025 as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and professional import organization that matches your team's style guide.
+**TL;DR:** TypeScript Hero isn't dead. It's been rescued and modernized as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and import organization that can match your team's style guide.
 
 Happy coding! ✨

@@ -231,10 +231,12 @@ class MockImportsConfig extends ImportsConfig {
 /**
  * Default configuration that matches the old TypeScript Hero extension's defaults
  *
- * Simply enable legacyMode: true to replicate ALL old behaviors:
+ * Simply enable legacyMode: true to replicate all FORMATTING behaviors:
  * - Within-group sorting bug (always sorts by library name)
  * - Blank line preservation (keeps existing blank lines)
  * - Wrong merge order (merges BEFORE removeTrailingIndex)
+ *
+ * Note: Crash bugs from old extension are intentionally fixed (not replicated).
  */
 const DEFAULT_CONFIG = {
   insertSpaceBeforeAndAfterImportBraces: true,
@@ -249,7 +251,7 @@ const DEFAULT_CONFIG = {
   organizeOnSave: false,
   organizeSortsByFirstSpecifier: false,
   ignoredFromRemoval: ['react'],
-  legacyMode: true,  // 🎯 SINGLE FLAG to replicate ALL old behaviors!
+  legacyMode: true,  // 🎯 SINGLE FLAG to replicate all old FORMATTING behaviors (crash bugs fixed)
   blankLinesAfterImports: 'one',  // Ignored when legacyMode=true
   grouping: ['Plains', 'Modules', 'Workspace'],
 };
