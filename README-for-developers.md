@@ -15,6 +15,7 @@ This will:
 3. Run linter (`npm run lint`)
 4. Execute all tests in VSCode test environment
 
+**Note:** These are integration tests that run in a real VS Code environment with the full TypeScript/JavaScript language server. Tests use real file I/O (temp files in `os.tmpdir()`), real VS Code APIs (`workspace.openTextDocument`, `workspace.applyEdit`), and real ts-morph parsing. This makes them slower than unit tests but ensures accurate testing of the actual user experience.
 
 - Tests run on: Ubuntu, macOS, Windows (via GitHub Actions)
 - Main extension tests location: `src/test/`

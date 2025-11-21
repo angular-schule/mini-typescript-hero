@@ -195,6 +195,8 @@ mini-typescript-hero/                     ← Project root
 - Settings migration from old TypeScript Hero
 - **Both** shared functionality (old+new) AND new-only features
 
+**Test Nature**: These are **integration tests** that run in a real VS Code environment with the full TS/JS language server. They use real file I/O, real VS Code APIs, and real TypeScript parsing. This makes them slower but ensures they test the extension as users experience it.
+
 **Test Pattern** (Now Using REAL VSCode APIs):
 ```typescript
 // Create REAL temp file and open with VSCode
@@ -373,11 +375,11 @@ All settings are under `miniTypescriptHero.imports.*`:
 **Preserves**: Seamless migration - users don't notice the change, settings transfer automatically
 
 ### 4. Legacy Mode for Backward Compatibility
-**Why**: Old extension has specific behaviors (blank lines, within-group sorting, no merging) that users depend on
-**How**: `legacyMode: true` matches old behaviors for output format consistency (with documented exceptions for crashes and edge cases)
+**Why**: Old extension has specific behaviors (blank lines, within-group sorting, merge timing bug) that users depend on
+**How**: `legacyMode: true` replicates old formatting behaviors and merge timing quirks for output consistency (with documented exceptions for crashes and edge cases)
 **For**: Migrated users get `legacyMode: true` automatically
-**New Users**: Get `legacyMode: false` by default for modern best practices (1 blank line, correct sorting, import merging)
-**Note**: See README for specific behaviors replicated and exceptions
+**New Users**: Get `legacyMode: false` by default for modern best practices (1 blank line, correct sorting, proper merge timing)
+**Note**: See README for specific behaviors replicated and exceptions. Both old and new extensions merge imports by default; legacy mode preserves the old merge-before-removeTrailingIndex timing that can create duplicates.
 
 ---
 

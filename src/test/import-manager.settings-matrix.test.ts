@@ -308,7 +308,7 @@ const b = B;
       }
     });
 
-    test('Legacy mode: merge BEFORE removeTrailingIndex (bug replication)', async () => {
+    test('Legacy mode: deduplicates /index collisions even when merging disabled', async () => {
       const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -326,11 +326,14 @@ const b = B;
 
         const result = await applyEditsToDocument(doc, edits);
 
-        // Legacy: try to merge first (./lib/index ≠ ./lib, so NO merge), THEN remove /index
-        // Result: two separate imports (./lib and ./lib), which then collapse
-        // This is the old bug we intentionally replicate
+        // Legacy mode with merging disabled.
+        // /index removal happens AFTER the (skipped) merge step.
+        // Our dedup logic prevents duplicate imports like:
+        //   import { A } from './lib';
+        //   import { B } from './lib';
+        // Expected: exactly 1 import with merged specifiers.
         const importCount = (result.match(/import/g) || []).length;
-        assert.strictEqual(importCount, 1, 'Eventually collapses to 1 import after /index removal');
+        assert.strictEqual(importCount, 1, 'Should deduplicate imports that collided due to /index removal');
       } finally {
         await deleteTempDocument(doc);
       }

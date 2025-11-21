@@ -313,6 +313,8 @@ Result: **Single quotes, no semicolons** (from extension settings, VS Code setti
   "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
 
   // Remove trailing /index from import paths
+  // Note: When enabled with mergeImportsFromSameModule, imports from
+  // './lib/index' and './lib' will be normalized to './lib' and then merged
   "miniTypescriptHero.imports.removeTrailingIndex": true
 }
 ```
@@ -399,6 +401,23 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
 
 > **⚠️ NOTE:** `ignoredFromRemoval` uses exact string matching without wildcards. For example, `"react"` matches only `"react"`, not `"react-dom"` or `"react/jsx-runtime"`. Each library must be listed individually.
 
+**Example: Multiple React packages**
+
+If you want to preserve all React-related imports:
+
+```json
+{
+  "miniTypescriptHero.imports.ignoredFromRemoval": [
+    "react",
+    "react-dom",
+    "react/jsx-runtime",
+    "react/jsx-dev-runtime"
+  ]
+}
+```
+
+This is useful in React projects where some imports (like `react/jsx-runtime`) are used implicitly by JSX compilation and the extension might incorrectly flag them as unused.
+
 ```json
 {
   // Character threshold for multiline imports
@@ -446,6 +465,21 @@ import { Component, OnInit } from '@angular/core';  // OnInit kept
 - You can disable merging while removing unused ones
 - New users get merging enabled (modern best practice)
 - Migrated users preserve their original behavior
+
+#### Trailing `/index` Removal and Deduplication
+
+When `removeTrailingIndex` is enabled and `mergeImportsFromSameModule` is disabled, the extension still deduplicates imports that become identical only due to `/index` removal:
+
+```typescript
+// Before organize:
+import { A } from './lib/index';
+import { B } from './lib';
+
+// After organize (both settings):
+import { A, B } from './lib';  // Deduplicated to prevent duplicate imports
+```
+
+This special case deduplication applies in both modern and legacy mode to avoid creating duplicate import statements. It only affects imports that collide specifically because of `/index` removal.
 
 ### Import Grouping
 
@@ -529,6 +563,43 @@ import { helper } from '../utils';
 
 **Order matters!** Regex groups are processed **before** keyword groups, so they can "capture" imports before the broader `Modules` group matches everything.
 
+**Example: Grouping Path Aliases**
+
+Many projects use TypeScript path aliases (configured in `tsconfig.json`) like `@app/*`, `@shared/*`, or `@core/*`. You can group these separately from other node_modules imports:
+
+```json
+{
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",
+    "/^@angular/",    // Angular framework imports
+    "/^@app\\//",      // Your app-specific path aliases (@app/*)
+    "Modules",         // Other node_modules libraries
+    "Workspace"        // Relative imports (./*)
+  ]
+}
+```
+
+**Result:**
+```typescript
+// Group 1: Plains
+import 'zone.js';
+
+// Group 2: Angular framework
+import { Component } from '@angular/core';
+
+// Group 3: App aliases (@app/*)
+import { AppConfig } from '@app/config';
+import { UserService } from '@app/services/user';
+
+// Group 4: Other modules
+import { Observable } from 'rxjs';
+
+// Group 5: Local files
+import { helper } from './utils';
+```
+
+**Note:** The regex pattern `/^@app\\//` uses `\\/` to match the literal forward slash after `@app`. This ensures only imports starting with `@app/` are matched, not imports like `@app-something`.
+
 #### Custom Sort Order
 
 Control ascending or descending sort per group:
@@ -584,6 +655,8 @@ import { Bar /* inline comment */ } from './bar';
 ```
 
 This matches the behavior of the original TypeScript Hero extension. Inline comment preservation adds significant complexity for limited real-world benefit. If you rely on inline comments within imports, please [share your use case](https://github.com/angular-schule/mini-typescript-hero/issues).
+
+**💡 Best Practice:** If a comment is critical to understanding your code, put it above the import statement or on its own line, not embedded directly inside the import braces. This ensures your comments are preserved during import organization.
 
 ### Legacy Mode Notes
 

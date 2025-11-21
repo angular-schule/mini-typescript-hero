@@ -127,13 +127,13 @@
         "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": {
           "type": "boolean",
           "default": false,
-          "description": "Defines if the imports are organized by first specifier/alias instead of module path. Note: Ignored when legacyMode is enabled (legacy mode always sorts by library name).",
+          "description": "Defines if the imports are organized by first specifier/alias instead of module path. NOTE: This setting has no effect when legacyMode is true (legacy mode always sorts by library name).",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.disableImportsSorting": {
           "type": "boolean",
           "default": false,
-          "description": "Defines if sorting is disable during organize imports. Note: Ignored when legacyMode is enabled (legacy mode always sorts within groups).",
+          "description": "Defines if sorting is disabled during organize imports. NOTE: This setting has no effect when legacyMode is true (legacy mode always sorts within groups).",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.disableImportRemovalOnOrganize": {
@@ -192,7 +192,7 @@
             "preserve"
           ],
           "default": "one",
-          "description": "Number of blank lines after the last import before code starts. 'one' = exactly 1 (Google/ESLint/Prettier standard), 'two' = exactly 2, 'preserve' = keep existing blank lines. Note: Ignored when legacyMode is enabled.",
+          "description": "Number of blank lines after the last import before code starts. 'one' = exactly 1 (Google/ESLint/Prettier standard), 'two' = exactly 2, 'preserve' = keep existing blank lines. NOTE: This setting has no effect when legacyMode is true (legacy mode always uses 'preserve' behavior).",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.grouping": {

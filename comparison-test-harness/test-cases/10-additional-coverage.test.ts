@@ -281,18 +281,23 @@ const x = helper(config);
     assert.strictEqual(newResult, expected, 'New extension removes /index from scoped packages');
   });
 
-  test('142. Scoped package: /index and no /index with merging disabled', async () => {
+  test('142. Scoped package: /index and no /index with merging disabled - BEHAVIORAL DIFFERENCE', async () => {
     const input = `import { a } from '@company/utils/index';
 import { b } from '@company/utils';
 
 const x = a + b;
 `;
 
-    // Both extensions remove /index and keep imports separate (no merging).
-    // After removing /index, both imports have same path but merging is disabled.
-    // They stay separate and are sorted alphabetically by specifier.
-    const expected = `import { b } from '@company/utils';
+    // BEHAVIORAL DIFFERENCE between old and new extension:
+    // Old: Removes /index, creates duplicates, keeps them separate (sorted by specifier)
+    // New: Removes /index, deduplicates collisions even when merging is disabled (bug fix)
+    const expectedOld = `import { b } from '@company/utils';
 import { a } from '@company/utils';
+
+const x = a + b;
+`;
+
+    const expectedNew = `import { a, b } from '@company/utils';
 
 const x = a + b;
 `;
@@ -303,8 +308,8 @@ const x = a + b;
       disableImportRemovalOnOrganize: true
     });
 
-    assert.strictEqual(oldResult, expected, 'Old extension removes /index and keeps imports separate');
-    assert.strictEqual(newResult, expected, 'New extension removes /index and keeps imports separate');
+    assert.strictEqual(oldResult, expectedOld, 'Old extension removes /index and keeps duplicates separate');
+    assert.strictEqual(newResult, expectedNew, 'New extension deduplicates imports after /index removal (improvement)');
   });
 
   test('143. Scoped package: /index timing in legacy mode', async () => {
