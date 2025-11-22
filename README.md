@@ -8,15 +8,15 @@
 
 This extension is a modernized extraction of the "Organize Imports" feature from the original [TypeScript Hero](https://github.com/buehler/typescript-hero) extension, rebuilt with modern best practices.
 
-**📖 Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
+**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
 
 ## Features
 
-- ✨ **Sort imports** alphabetically (by module path or first specifier)
-- 🧹 **Remove unused imports** automatically
-- 🔀 **Merge duplicate imports** from the same module
-- 📦 **Custom grouping patterns** with regex (e.g., group all `/@angular/` imports together)
-- 💾 **Organize on save** (optional)
+- **Sort imports** alphabetically (by module path or first specifier)
+- **Remove unused imports** automatically
+- **Merge duplicate imports** from the same module
+- **Custom grouping patterns** with regex (e.g., group all `/@angular/` imports together)
+- **Organize on save** (optional)
 - Blank line control between groups (1 line, 2 lines, or preserve existing)
 - Formatting control — quotes (`'` vs `"`), semicolons, spaces in braces, trailing commas
 - Multi-line wrapping at configurable character threshold
@@ -52,7 +52,7 @@ import { UserDetail } from './components/user-detail';
 
 ```
 
-✨ **What happened:**
+**What happened:**
 - Angular imports merged into one import
 - RxJS operators in separate group
 - Local imports grouped together with blank line separator
@@ -93,7 +93,7 @@ Enable automatic import organization when saving files:
 }
 ```
 
-> **💡 Tip:** If you enable `organizeOnSave`, disable VS Code's built-in `source.organizeImports` to avoid conflicts. Use the "Check for configuration conflicts" command to detect issues.
+> **Tip:** If you enable `organizeOnSave`, disable VS Code's built-in `source.organizeImports` to avoid conflicts. Use the "Check for configuration conflicts" command to detect issues.
 
 ## Why Use This Instead of VS Code's Built-in?
 
@@ -141,7 +141,7 @@ Your settings auto-migrate on first use. Legacy mode enabled automatically for c
 **For migrated users:** `legacyMode: true` matches the old TypeScript Hero output (including some quirks).
 **For new users:** `legacyMode: false` gives modern best practices.
 
-📚 **Full migration details:** See [MIGRATION.md](MIGRATION.md)
+**Full migration details:** See [MIGRATION.md](MIGRATION.md)
 
 ## Using with Prettier and ESLint
 
@@ -258,7 +258,7 @@ The extension preserves most comments in your import blocks:
 **Not preserved:**
 - Comments inside import braces (e.g., `import { Foo /* comment */ } from './lib'`)
 
-**💡 Best Practice:** Put critical comments above the import statement, not embedded inside the braces.
+**Best Practice:** Put critical comments above the import statement, not embedded inside the braces.
 
 ### Legacy Mode
 
@@ -282,10 +282,10 @@ Original work Copyright (c) Christoph Bühler
 
 ## Documentation
 
-- 📖 [Configuration Reference](CONFIGURATION.md) — Complete settings documentation
-- 🔄 [Migration Guide](MIGRATION.md) — Migrating from TypeScript Hero
-- 🐛 [Report Issues](https://github.com/angular-schule/mini-typescript-hero/issues)
-- 💡 [Request Features](https://github.com/angular-schule/mini-typescript-hero/issues)
+- [Configuration Reference](CONFIGURATION.md) — Complete settings documentation
+- [Migration Guide](MIGRATION.md) — Migrating from TypeScript Hero
+- [Report Issues](https://github.com/angular-schule/mini-typescript-hero/issues)
+- [Request Features](https://github.com/angular-schule/mini-typescript-hero/issues)
 
 ## Links
 

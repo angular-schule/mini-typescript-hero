@@ -2,7 +2,7 @@
 
 Complete reference for all Mini TypeScript Hero configuration options.
 
-> **💡 The defaults are already great!** Most users just need organize-on-save and they're done. See the [README](README.md#quick-start) for the fastest path.
+> **The defaults are already great!** Most users just need organize-on-save and they're done. See the [README](README.md#quick-start) for the fastest path.
 >
 > **Want to customize everything?** Keep reading for complete presets with ALL options exposed.
 
@@ -397,7 +397,7 @@ Result: **Double quotes** (from VSCode preferences, extension setting is ignored
 
 Result: **Single quotes, no semicolons** (from extension settings, VS Code settings skipped)
 
-💡 **Tip**: For team projects, configure VSCode workspace settings (`.vscode/settings.json`). For personal preferences, use user settings. The extension's settings are there as convenient fallbacks.
+**Tip**: For team projects, configure VSCode workspace settings (`.vscode/settings.json`). For personal preferences, use user settings. The extension's settings are there as convenient fallbacks.
 
 ---
 
