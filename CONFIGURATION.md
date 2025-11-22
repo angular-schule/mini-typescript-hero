@@ -69,7 +69,7 @@ Full configuration for Angular CLI / Nx Angular projects showing all available o
   // ========================================
   // Mini TypeScript Hero - Advanced
   // ========================================
-  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],  // (default)
+  "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
   "miniTypescriptHero.imports.useOnlyExtensionSettings": false,  // (default)
 
   // ========================================
@@ -94,6 +94,7 @@ Full configuration for Angular CLI / Nx Angular projects showing all available o
 - **`blankLinesAfterImports: "one"`** — Exactly 1 blank line after imports (ESLint standard)
 - **`removeTrailingIndex: true`** — Cleans `./foo/index` → `./foo`
 - **Custom grouping** — Angular first, then app aliases, then other modules, then local files
+- **Empty `ignoredFromRemoval`** — Overrides default `["react"]`, nothing gets ignored
 
 ---
 
@@ -204,7 +205,7 @@ Full configuration for Express, NestJS, or plain TypeScript/JavaScript backends.
   // ========================================
   // Mini TypeScript Hero - Advanced
   // ========================================
-  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],  // (default, usually not needed for Node)
+  "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
 
   // ========================================
   // Mini TypeScript Hero - Import Grouping
@@ -220,7 +221,7 @@ Full configuration for Express, NestJS, or plain TypeScript/JavaScript backends.
 **Node-specific settings:**
 - **Simple grouping** — Just 3 groups: side-effects, modules, local files
 - **Single quotes** — Common backend convention
-- **Default ignoredFromRemoval** — Usually doesn't need React
+- **Empty `ignoredFromRemoval`** — Overrides default `["react"]`, nothing gets ignored
 
 ---
 
@@ -270,7 +271,7 @@ Full configuration for Nx, Turborepo, Yarn/pnpm workspaces with enforced team-wi
   // ========================================
   // Mini TypeScript Hero - Advanced
   // ========================================
-  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],
+  "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
 
   // ========================================
   // Mini TypeScript Hero - Import Grouping
