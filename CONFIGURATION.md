@@ -758,6 +758,6 @@ Mini TypeScript Hero respects your editor's indentation settings for multiline i
 
 ## See Also
 
-- [Configuration Cookbook](README.md#configuration-cookbook) - Ready-to-use presets for Angular, React, Node, and Monorepo projects
+- [Configuration Cookbook](#full-configuration-cookbook) - Ready-to-use presets for Angular, React, Node, and Monorepo projects
 - [Migration Guide](MIGRATION.md) - Migrating from TypeScript Hero
 - [Main README](README.md) - Getting started and usage guide

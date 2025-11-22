@@ -233,7 +233,7 @@ Mini TypeScript Hero: Extension activated successfully
 
 ### Manual Test Cases
 
-The repository includes [10 test cases](https://github.com/angular-schule/mini-typescript-hero/tree/master/manual-test-cases) covering various scenarios (unused imports, grouping, type-only imports, JSX/TSX, etc.). Use these to test configurations or create reproducible bug reports.
+The repository includes [10 test cases](https://github.com/angular-schule/mini-typescript-hero/tree/HEAD/manual-test-cases) covering various scenarios (unused imports, grouping, type-only imports, JSX/TSX, etc.). Use these to test configurations or create reproducible bug reports.
 
 ## Requirements
 

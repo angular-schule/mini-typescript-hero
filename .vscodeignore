@@ -22,11 +22,13 @@ esbuild.js
 comparison-test-harness/**
 manual-test-cases/**
 
-# Documentation (internal) - exclude all .md and .txt files EXCEPT README.md and CHANGELOG.md
+# Documentation - exclude all .md and .txt files EXCEPT user-facing docs
 **/*.md
 **/*.txt
 !README.md
 !CHANGELOG.md
+!MIGRATION.md
+!CONFIGURATION.md
 !LICENSE
 !LICENSE.txt
 
