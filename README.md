@@ -61,163 +61,17 @@ import { UserDetail } from './components/user-detail';
 - Consistent quotes and semicolons
 - 1 blank line after imports (configurable)
 
-## Configuration Cookbook
-
-**Just want to get started?** Copy-paste a complete configuration for your stack:
-
-### Angular workspace
-
-Good defaults for Angular CLI / Nx Angular projects with `@app/*` aliases and RxJS.
-
-```json
-{
-  // Style (VS Code TypeScript / JavaScript)
-  "typescript.preferences.quoteStyle": "single",
-  "typescript.format.semicolons": "insert",
-  "javascript.preferences.quoteStyle": "single",
-  "javascript.format.semicolons": "insert",
-
-  // Mini TypeScript Hero - core behavior
-  "miniTypescriptHero.imports.legacyMode": false,
-  "miniTypescriptHero.imports.organizeOnSave": true,
-  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
-  "miniTypescriptHero.imports.removeTrailingIndex": true,
-  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
-
-  // Multiline imports
-  "miniTypescriptHero.imports.multiLineWrapThreshold": 125,
-  "miniTypescriptHero.imports.multiLineTrailingComma": true,
-
-  // Grouping: Angular first, then app aliases, then other modules, then workspace
-  "miniTypescriptHero.imports.grouping": [
-    "Plains",
-    "/^@angular/",
-    "/^@app\\//",
-    "Modules",
-    "Workspace"
-  ]
-}
-```
-
-**What you get:**
-* Angular imports first, then your `@app/*` aliases
-* One blank line between imports and code
-* `/index` cleaned from local paths
-* Imports merged and sorted within groups
-
----
-
-### React app (React / Next.js / CRA / Vite)
-
-Preset tuned for React projects with Prettier-style double quotes and semicolons.
-
-```json
-{
-  // Style (match common React + Prettier defaults)
-  "typescript.preferences.quoteStyle": "double",
-  "typescript.format.semicolons": "insert",
-  "javascript.preferences.quoteStyle": "double",
-  "javascript.format.semicolons": "insert",
-
-  // Mini TypeScript Hero - core behavior
-  "miniTypescriptHero.imports.legacyMode": false,
-  "miniTypescriptHero.imports.organizeOnSave": true,
-  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
-  "miniTypescriptHero.imports.removeTrailingIndex": true,
-  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
-
-  // Multiline imports
-  "miniTypescriptHero.imports.multiLineWrapThreshold": 120,
-  "miniTypescriptHero.imports.multiLineTrailingComma": true,
-
-  // Grouping: React first, then other modules, then local code
-  "miniTypescriptHero.imports.grouping": [
-    "Plains",
-    "/^react/",
-    "Modules",
-    "Workspace"
-  ]
-}
-```
-
-**What you get:**
-* React ecosystem imports grouped together at the top
-* Prettier-compatible formatting
-* Automatic merge and cleanup of unused imports
-
----
-
-### Node backend / library
-
-Preset for Node services and libraries (Express, NestJS, plain TS/JS backends).
-
-```json
-{
-  // Style (common backend defaults)
-  "typescript.preferences.quoteStyle": "single",
-  "typescript.format.semicolons": "insert",
-
-  // Mini TypeScript Hero - core behavior
-  "miniTypescriptHero.imports.legacyMode": false,
-  "miniTypescriptHero.imports.organizeOnSave": true,
-  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
-  "miniTypescriptHero.imports.removeTrailingIndex": true,
-
-  // Grouping: simple but effective
-  "miniTypescriptHero.imports.grouping": [
-    "Plains",
-    "Modules",
-    "Workspace"
-  ]
-}
-```
-
----
-
-### Monorepo (Nx, Turborepo, Yarn/pnpm workspaces)
-
-Preset for monorepos with internal packages under a shared scope like `@myorg/*`.
-
-```json
-{
-  // Enforce repo-wide style from extension only
-  "miniTypescriptHero.imports.useOnlyExtensionSettings": true,
-
-  // Style owned by Mini TS Hero (not by VS Code)
-  "miniTypescriptHero.imports.stringQuoteStyle": "'",
-  "miniTypescriptHero.imports.insertSemicolons": true,
-  "miniTypescriptHero.imports.tabSize": 2,
-
-  // Core behavior
-  "miniTypescriptHero.imports.legacyMode": false,
-  "miniTypescriptHero.imports.organizeOnSave": true,
-  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
-
-  // Group monorepo packages separately
-  "miniTypescriptHero.imports.grouping": [
-    "Plains",
-    "/^@myorg\\//",
-    "Modules",
-    "Workspace"
-  ]
-}
-```
-
-**How to adapt:** Replace `@myorg` with your actual scope (e.g., `@acme`).
-
----
-
-📚 **Need more control?** See the [Configuration Reference](CONFIGURATION.md) for all available settings.
-
 ## Quick Start
 
+**The defaults are already great!** Just install and you're ready to go:
+
 1. **Install** the extension from the VS Code Marketplace
-2. **Choose a preset** from the [Configuration Cookbook](#configuration-cookbook) above
-3. **Paste into `.vscode/settings.json`** in your workspace
-4. **Open a TypeScript/JavaScript file**
-5. **Press `Ctrl+Alt+O`** (or `Cmd+Alt+O` on macOS) to organize imports
+2. **Open a TypeScript/JavaScript file**
+3. **Press `Ctrl+Alt+O`** (or `Cmd+Alt+O` on macOS) to organize imports
 
 That's it! Your imports are now organized.
+
+**Want to customize?** See the [Configuration Cookbook](CONFIGURATION.md#full-configuration-cookbook) for ready-to-use presets (Angular, React, Node, Monorepo).
 
 ## Usage
 
@@ -353,7 +207,7 @@ Mini TS Hero respects your VS Code settings by default:
 - Semicolons from `typescript.format.semicolons`
 - Indentation from `editor.tabSize` and `editor.insertSpaces`
 
-To reduce friction with Prettier, match your VS Code settings to your Prettier config. See the [Monorepo preset](#monorepo-nx-turborepo-yarnpnpm-workspaces) for enforcing consistent formatting across the team using `useOnlyExtensionSettings`.
+To reduce friction with Prettier, match your VS Code settings to your Prettier config. See the [Monorepo preset](CONFIGURATION.md#monorepo-complete) for enforcing consistent formatting across the team using `useOnlyExtensionSettings`.
 
 ## Debugging & Troubleshooting
 

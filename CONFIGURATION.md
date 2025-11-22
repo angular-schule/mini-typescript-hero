@@ -2,17 +2,314 @@
 
 Complete reference for all Mini TypeScript Hero configuration options.
 
-> **Quick start?** See the [Configuration Cookbook](README.md#configuration-cookbook) in the README for ready-to-use presets.
+> **💡 The defaults are already great!** Most users just need organize-on-save and they're done. See the [README](README.md#quick-start) for the fastest path.
+>
+> **Want to customize everything?** Keep reading for complete presets with ALL options exposed.
 
 ---
 
 ## Table of Contents
 
+- [Full Configuration Cookbook](#full-configuration-cookbook)
 - [Configuration Priority (Smart Defaults)](#configuration-priority-smart-defaults)
 - [Basic Settings](#basic-settings)
 - [Advanced Settings](#advanced-settings)
 - [Import Grouping](#import-grouping)
 - [Multiline Import Indentation](#multiline-import-indentation)
+
+---
+
+## Full Configuration Cookbook
+
+These presets show **every available setting** so you can see what's configurable. Most settings use smart defaults, but here's how to customize everything.
+
+> **Note:** Settings marked `// (default)` can be omitted - they're shown here for completeness.
+
+### Angular Workspace (Complete)
+
+Full configuration for Angular CLI / Nx Angular projects showing all available options.
+
+```json
+{
+  // ========================================
+  // VS Code TypeScript/JavaScript Settings
+  // ========================================
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "insert",
+
+  // ========================================
+  // Mini TypeScript Hero - Behavior
+  // ========================================
+  "miniTypescriptHero.imports.legacyMode": false,  // (default for new users)
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.disableImportsSorting": false,  // (default)
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,  // (default)
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,  // (default)
+  "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,  // (default)
+
+  // ========================================
+  // Mini TypeScript Hero - Formatting
+  // ========================================
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",  // (default)
+  "miniTypescriptHero.imports.removeTrailingIndex": true,  // (default)
+  "miniTypescriptHero.imports.stringQuoteStyle": "'",  // (default, but VS Code setting takes priority)
+  "miniTypescriptHero.imports.insertSemicolons": true,  // (default, but VS Code setting takes priority)
+  "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,  // (default)
+
+  // ========================================
+  // Mini TypeScript Hero - Multiline Imports
+  // ========================================
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 125,  // (default: 125)
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,  // (default)
+  "miniTypescriptHero.imports.tabSize": 2,  // Used when useOnlyExtensionSettings=true
+  "miniTypescriptHero.imports.insertSpaces": true,  // (default)
+
+  // ========================================
+  // Mini TypeScript Hero - Advanced
+  // ========================================
+  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],  // (default)
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": false,  // (default)
+
+  // ========================================
+  // Mini TypeScript Hero - Import Grouping
+  // ========================================
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",          // Side-effect imports: import 'zone.js'
+    "/^@angular/",     // Angular framework imports
+    "/^@app\\//",      // Your app path aliases (@app/*)
+    "Modules",         // Other node_modules libraries
+    "Workspace"        // Relative imports (./, ../)
+  ]
+}
+```
+
+**What each setting does:**
+- **`legacyMode: false`** — Modern behavior (type-only imports preserved, predictable blank lines)
+- **`organizeOnSave: true`** — Automatically organize imports when saving files
+- **`disableImportsSorting: false`** — Sorts imports alphabetically (recommended)
+- **`disableImportRemovalOnOrganize: false`** — Removes unused imports (recommended)
+- **`mergeImportsFromSameModule: true`** — Combines duplicate imports from same module
+- **`blankLinesAfterImports: "one"`** — Exactly 1 blank line after imports (ESLint standard)
+- **`removeTrailingIndex: true`** — Cleans `./foo/index` → `./foo`
+- **Custom grouping** — Angular first, then app aliases, then other modules, then local files
+
+---
+
+### React App (Complete)
+
+Full configuration for React/Next.js/CRA/Vite with Prettier-style formatting.
+
+```json
+{
+  // ========================================
+  // VS Code TypeScript/JavaScript Settings
+  // ========================================
+  "typescript.preferences.quoteStyle": "double",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "double",
+  "javascript.format.semicolons": "insert",
+
+  // ========================================
+  // Mini TypeScript Hero - Behavior
+  // ========================================
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Formatting
+  // ========================================
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+  "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Multiline Imports
+  // ========================================
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 120,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Advanced
+  // ========================================
+  "miniTypescriptHero.imports.ignoredFromRemoval": [
+    "react",           // (default - React is never removed)
+    "react-dom",       // Add if using React DOM
+    "react/jsx-runtime"  // Add if using new JSX transform
+  ],
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": false,
+
+  // ========================================
+  // Mini TypeScript Hero - Import Grouping
+  // ========================================
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",
+    "/^react/",        // React ecosystem: react, react-dom, react-router
+    "Modules",         // Other npm packages
+    "Workspace"        // Local files
+  ]
+}
+```
+
+**React-specific settings:**
+- **Double quotes** — Matches Prettier default for React projects
+- **`ignoredFromRemoval`** — React imports often appear unused but are needed for JSX
+- **React grouping** — React imports together at the top
+
+---
+
+### Node Backend / Library (Complete)
+
+Full configuration for Express, NestJS, or plain TypeScript/JavaScript backends.
+
+```json
+{
+  // ========================================
+  // VS Code TypeScript/JavaScript Settings
+  // ========================================
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "insert",
+
+  // ========================================
+  // Mini TypeScript Hero - Behavior
+  // ========================================
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Formatting
+  // ========================================
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+  "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Multiline Imports
+  // ========================================
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 120,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+  "miniTypescriptHero.imports.tabSize": 2,
+
+  // ========================================
+  // Mini TypeScript Hero - Advanced
+  // ========================================
+  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],  // (default, usually not needed for Node)
+
+  // ========================================
+  // Mini TypeScript Hero - Import Grouping
+  // ========================================
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",          // Side-effect imports: import 'dotenv/config'
+    "Modules",         // All npm packages (node:fs, express, etc.)
+    "Workspace"        // Local files
+  ]
+}
+```
+
+**Node-specific settings:**
+- **Simple grouping** — Just 3 groups: side-effects, modules, local files
+- **Single quotes** — Common backend convention
+- **Default ignoredFromRemoval** — Usually doesn't need React
+
+---
+
+### Monorepo (Complete)
+
+Full configuration for Nx, Turborepo, Yarn/pnpm workspaces with enforced team-wide formatting.
+
+```json
+{
+  // ========================================
+  // Mini TypeScript Hero - OVERRIDE MODE
+  // ========================================
+  // This mode ignores VS Code settings and uses extension settings only
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Formatting (OWNED BY EXTENSION)
+  // ========================================
+  "miniTypescriptHero.imports.stringQuoteStyle": "'",
+  "miniTypescriptHero.imports.insertSemicolons": true,
+  "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Behavior
+  // ========================================
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+  "miniTypescriptHero.imports.organizeSortsByFirstSpecifier": false,
+
+  // ========================================
+  // Mini TypeScript Hero - Formatting
+  // ========================================
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Multiline Imports
+  // ========================================
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 125,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+
+  // ========================================
+  // Mini TypeScript Hero - Advanced
+  // ========================================
+  "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],
+
+  // ========================================
+  // Mini TypeScript Hero - Import Grouping
+  // ========================================
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",
+    "/^@myorg\\//",    // All internal packages: @myorg/core, @myorg/ui, etc.
+    "/^@myorg-/",      // Old-style packages: @myorg-core, @myorg-ui (optional)
+    "Modules",         // Third-party npm packages
+    "Workspace"        // Relative imports
+  ]
+}
+```
+
+**Monorepo-specific settings:**
+- **`useOnlyExtensionSettings: true`** — Enforces consistent formatting regardless of personal VS Code settings
+- **Explicit formatting** — All formatting controlled by extension, not VS Code preferences
+- **Custom scoping** — Groups `@myorg/*` packages separately from third-party modules
+
+**How to adapt:**
+- Replace `@myorg` with your actual scope (`@acme`, `@company`, etc.)
+- Add more regex groups for sub-scopes if needed: `/^@myorg\/apps\//`, `/^@myorg\/libs\//`
+
+---
+
+## Summary: Defaults vs. Customization
+
+**The defaults are already great!** Most settings have sensible defaults:
+- ✅ Merging enabled
+- ✅ Removal enabled
+- ✅ Sorting enabled
+- ✅ 1 blank line after imports
+- ✅ `/index` removal enabled
+- ✅ Smart quotes and semicolons (respects VS Code settings)
+
+**Only customize if:**
+- You want specific framework grouping (Angular, React, etc.)
+- You need team-wide formatting enforcement (monorepos)
+- You have existing ESLint/Prettier conflicts to resolve
 
 ---
 
