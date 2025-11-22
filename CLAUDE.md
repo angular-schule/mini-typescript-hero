@@ -438,6 +438,27 @@ vsce package
 
 
 
+## Recent Updates
+
+### 2025-11-22: Documentation Restructure (Phase 0 Complete)
+
+**Major Changes:**
+- Split documentation from single README (1,176 lines) into 3 focused files:
+  - README.md (294 lines): Quick start, features, Prettier/ESLint, debugging
+  - CONFIGURATION.md (900+ lines): Complete reference + cookbook with 4 presets
+  - MIGRATION.md (81 lines): TypeScript Hero migration guide
+- Moved Configuration Cookbook to CONFIGURATION.md (not in README as originally planned)
+- Philosophy: "Defaults are great" for new users, deep customization available separately
+
+**Behavior Verification:**
+- Legacy mode `/index` removal behavior matches old extension exactly
+- Both extensions produce duplicate imports when removeTrailingIndex + merging disabled
+- No code changes needed - already perfectly compatible
+
+**Note:** This update supersedes any references to "cookbook in README" throughout this file.
+
+---
+
 ## How to create an audit file
 
 Of our own code
