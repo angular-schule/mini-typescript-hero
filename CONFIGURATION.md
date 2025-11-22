@@ -423,9 +423,12 @@ Result: **Single quotes, no semicolons** (from extension settings, VS Code setti
   "miniTypescriptHero.imports.insertSpaceBeforeAndAfterImportBraces": true,
 
   // Remove trailing /index from import paths
-  // Note: In modern mode, when enabled with mergeImportsFromSameModule, imports from
-  // './lib/index' and './lib' will be normalized to './lib' and then merged.
-  // In legacy mode, merge timing is different (see Migration Guide for details).
+  // Note: Each setting does exactly what it says:
+  //   - removeTrailingIndex: true → ALWAYS removes /index from paths
+  //   - mergeImportsFromSameModule: false → NEVER merges imports
+  // Result: './lib/index' and './lib' both become './lib' but remain as separate imports.
+  // This is valid TypeScript and respects both settings.
+  // To merge them, enable mergeImportsFromSameModule: true.
   "miniTypescriptHero.imports.removeTrailingIndex": true
 }
 ```

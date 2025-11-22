@@ -34,6 +34,16 @@ Phase 0 was originally planned to add cookbook, Prettier/ESLint, and Debugging s
 
 This approach provides better organization than the original plan.
 
+**Additional Updates** (2025-11-22):
+- Split documentation from single README (1,176 lines) into 3 focused files:
+  - README.md (294 lines): Quick start, features, Prettier/ESLint, debugging
+  - CONFIGURATION.md (900+ lines): Complete reference + cookbook with 4 presets
+  - MIGRATION.md (81 lines): TypeScript Hero migration guide
+- Philosophy: "Defaults are great" for new users, deep customization available separately
+- Verified legacy mode `/index` removal behavior matches old extension exactly
+- Both extensions produce duplicate imports when removeTrailingIndex + merging disabled (intentional design)
+- No code changes needed - already perfectly compatible
+
 ---
 
 ## Session: 2025-11-22 - Phase 0 Complete: Documentation Restructure
