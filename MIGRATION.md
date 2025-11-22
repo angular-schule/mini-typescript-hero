@@ -6,11 +6,11 @@
 
 All import-related settings from `typescriptHero.imports.*` are automatically copied to `miniTypescriptHero.imports.*`:
 
-- ✅ All formatting settings (quotes, semicolons, spaces, etc.)
-- ✅ Organize on save preference
-- ✅ Sorting and removal settings
-- ✅ Ignored libraries configuration
-- ✅ Custom import grouping rules
+- All formatting settings (quotes, semicolons, spaces, etc.)
+- Organize on save preference
+- Sorting and removal settings
+- Ignored libraries configuration
+- Custom import grouping rules
 
 ## Migration Behavior
 

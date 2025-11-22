@@ -58,7 +58,7 @@ async function checkForConflicts(
 
   // If forced check and no conflicts, show success message
   if (forceCheck && conflicts.length === 0) {
-    window.showInformationMessage('Mini TypeScript Hero: No conflicts detected! ✅');
+    window.showInformationMessage('Mini TypeScript Hero: No conflicts detected!');
     outputChannel.appendLine('Mini TypeScript Hero: Conflict check completed - no conflicts found');
     return;
   }
