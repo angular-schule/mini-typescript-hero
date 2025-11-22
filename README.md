@@ -207,7 +207,7 @@ Mini TS Hero respects your VS Code settings by default:
 - Semicolons from `typescript.format.semicolons`
 - Indentation from `editor.tabSize` and `editor.insertSpaces`
 
-To reduce friction with Prettier, match your VS Code settings to your Prettier config. See the [Monorepo preset](CONFIGURATION.md#monorepo-complete) for enforcing consistent formatting across the team using `useOnlyExtensionSettings`.
+To reduce friction with Prettier, match your VS Code settings to your Prettier config. For team projects, see the [Monorepo preset](CONFIGURATION.md#monorepo-complete) which shows how to use `useOnlyExtensionSettings` to enforce consistent formatting.
 
 ## Debugging & Troubleshooting
 

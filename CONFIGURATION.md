@@ -227,7 +227,7 @@ Full configuration for Express, NestJS, or plain TypeScript/JavaScript backends.
 
 ### Monorepo (Complete)
 
-Full configuration for Nx, Turborepo, Yarn/pnpm workspaces with enforced team-wide formatting.
+Full configuration for Nx, Turborepo, Yarn/pnpm workspaces.
 
 ```json
 {
@@ -309,7 +309,7 @@ Full configuration for Nx, Turborepo, Yarn/pnpm workspaces with enforced team-wi
 
 **Only customize if:**
 - You want specific framework grouping (Angular, React, etc.)
-- You need team-wide formatting enforcement (monorepos)
+- You need team-wide formatting enforcement
 - You have existing ESLint/Prettier conflicts to resolve
 
 ---
