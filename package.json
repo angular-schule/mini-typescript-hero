@@ -1,7 +1,7 @@
 {
   "name": "mini-typescript-hero",
   "displayName": "Mini TypeScript Hero",
-  "description": "Sorts and organizes TypeScript/JavaScript imports",
+  "description": "Sorts and organizes TypeScript/JavaScript imports — Keep your codebase clean with custom import grouping, automatic cleanup, and smart formatting. Small hero. Big cleanup!",
   "version": "4.0.0-rc.0",
   "publisher": "angular-schule",
   "icon": "icon.png",

@@ -2,7 +2,7 @@
   <img src="logo.png" alt="Mini TypeScript Hero Logo" width="200">
 </div>
 
-# Mini TypeScript Hero
+# Mini TypeScript Hero – Small hero. Big cleanup!
 
 **Sorts and organizes TypeScript/JavaScript imports** — A lightweight, modern VSCode extension that automatically manages your import statements.
 
@@ -103,6 +103,17 @@ import { UserDetail } from './components/user-detail';
 ```
 
 VS Code sorts everything alphabetically as one flat list. External and internal imports mixed together. To separate them, you'd need to manually type a blank line between `rxjs/operators` and `./components/book-list` and maintain it yourself every time you add new imports.
+
+## 🚀 Quick Start
+
+**Just want to get started?** Jump to the [Configuration Cookbook](#configuration-cookbook) for ready-to-use presets:
+
+- 🅰️ **Angular/Nx** — Groups `@angular/*`, `rxjs`, and `@app/*` imports
+- ⚛️ **React/Next.js** — React-first with Prettier-compatible formatting
+- 🟢 **Node/Backend** — Clean separation for Express, NestJS, and libraries
+- 📦 **Monorepo** — Shared scope grouping for Nx, Turborepo, or pnpm workspaces
+
+Each preset is a complete `.vscode/settings.json` configuration you can copy-paste and start using immediately.
 
 ## Usage
 
@@ -639,6 +650,453 @@ Control ascending or descending sort per group:
   ]
 }
 ```
+
+## Configuration Cookbook
+
+Sometimes you just want a working preset you can drop into `.vscode/settings.json` and move on.
+This section gives you opinionated presets for common project types.
+
+> All examples use **modern mode** (`legacyMode: false`) and assume you want Mini TS Hero to own import organization.
+
+---
+
+### Angular workspace
+
+Good defaults for Angular CLI / Nx Angular projects with `@app/*` aliases and RxJS.
+
+Paste into `.vscode/settings.json` in your Angular workspace:
+
+```json
+{
+  // Style (VS Code TypeScript / JavaScript)
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "insert",
+
+  // Mini TypeScript Hero - core behavior
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",   // 1 blank line between imports and code
+  "miniTypescriptHero.imports.removeTrailingIndex": true,       // ./foo/index -> ./foo
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+
+  // Multiline imports
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 125,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+
+  // Indentation for multiline imports (matches standard Angular style)
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // Grouping: Angular first, then app aliases, then other modules, then workspace
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",          // import 'zone.js';
+    "/^@angular/",     // Angular framework imports
+    "/^@app\\//",       // Your app path aliases (@app/*)
+    "Modules",         // Other node_modules libraries
+    "Workspace"        // Relative imports (./*)
+  ]
+}
+```
+
+**What you get:**
+
+* Angular imports first, then your `@app/*` aliases
+* One blank line between imports and code
+* `/index` cleaned from local paths
+* Imports merged and sorted within groups
+* Safe defaults for most Angular projects
+
+---
+
+### React app (React / Next.js / CRA / Vite)
+
+Preset tuned for React projects with Prettier-style double quotes and semicolons.
+
+```json
+{
+  // Style (match common React + Prettier defaults)
+  "typescript.preferences.quoteStyle": "double",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "double",
+  "javascript.format.semicolons": "insert",
+
+  // Mini TypeScript Hero - core behavior
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+
+  // Multiline imports
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 120,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+
+  // Indentation
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // Grouping: React first, then other modules, then local code
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",
+    "/^react/",     // react, react-dom, react-router, etc.
+    "Modules",
+    "Workspace"
+  ]
+
+  // Note: By default, Mini TS Hero never removes "react" even if unused:
+  // "miniTypescriptHero.imports.ignoredFromRemoval": ["react"]
+}
+```
+
+**What you get:**
+
+* React ecosystem imports grouped together at the top
+* Import style that plays nicely with common Prettier defaults
+* Automatic merge and cleanup of unused imports
+
+---
+
+### Node backend / library
+
+Preset for Node services and libraries (Express, NestJS, plain TS/JS backends).
+
+```json
+{
+  // Style (common backend defaults)
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.format.semicolons": "insert",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "insert",
+
+  // Mini TypeScript Hero - core behavior
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+
+  // Multiline imports
+  "miniTypescriptHero.imports.multiLineWrapThreshold": 120,
+  "miniTypescriptHero.imports.multiLineTrailingComma": true,
+
+  // Indentation
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // Grouping: simple but effective
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",     // e.g. import 'dotenv/config';
+    "Modules",    // node:fs, express, lodash, etc.
+    "Workspace"   // ./src/..., ../shared/...
+  ]
+}
+```
+
+**What you get:**
+
+* Clean separation of core modules / npm packages / local files
+* Good defaults for backend projects with minimal tweaking
+
+---
+
+### Monorepo (Nx, Turborepo, Yarn workspaces, pnpm workspaces)
+
+Preset for monorepos with internal packages under a shared scope like `@myorg/*`.
+This one assumes you want the **same import style for everyone in the repo**, regardless of personal editor settings.
+
+```json
+{
+  // Enforce a repo-wide style from the extension only
+  "miniTypescriptHero.imports.useOnlyExtensionSettings": true,
+
+  // Style owned by Mini TS Hero (not by VS Code)
+  "miniTypescriptHero.imports.stringQuoteStyle": "'",
+  "miniTypescriptHero.imports.insertSemicolons": true,
+  "miniTypescriptHero.imports.tabSize": 2,
+  "miniTypescriptHero.imports.insertSpaces": true,
+
+  // Core behavior
+  "miniTypescriptHero.imports.legacyMode": false,
+  "miniTypescriptHero.imports.organizeOnSave": true,
+  "miniTypescriptHero.imports.blankLinesAfterImports": "one",
+  "miniTypescriptHero.imports.removeTrailingIndex": true,
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": true,
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+  "miniTypescriptHero.imports.disableImportsSorting": false,
+
+  // Group monorepo packages separately from third-party modules and local files
+  "miniTypescriptHero.imports.grouping": [
+    "Plains",
+    "/^@myorg\\//",     // All internal packages (apps/libs) under @myorg/*
+    "/^@myorg-/",       // Optional: old-style packages like @myorg-core, @myorg-ui
+    "Modules",          // Other node_modules
+    "Workspace"         // Relative paths (./, ../)
+  ]
+}
+```
+
+**How to adapt:**
+
+* Replace `@myorg` with your actual scope (for example `@acme`).
+* Add more regex groups for special internal areas if needed, for example:
+
+  * `/^@myorg-apps\\//` for app entry points
+  * `/^@myorg-libs\\//` for shared libraries
+
+This preset is ideal when you want **one canonical import style** across all packages in the monorepo.
+
+---
+
+If none of these exactly match your project, pick the closest preset and tweak:
+
+* `grouping` for your framework and aliases
+* `stringQuoteStyle` / `insertSemicolons` to match your formatter
+* `multiLineWrapThreshold` and `multiLineTrailingComma` for your wrapping rules
+
+## Using with Prettier and ESLint
+
+Mini TypeScript Hero focuses on **import organization**:
+
+- Sort imports
+- Merge imports from the same module
+- Remove unused imports
+
+Formatters (Prettier) and linters (ESLint) still own everything else.
+They work together as long as **only one tool is responsible for sorting imports**.
+
+---
+
+### Recommended setup: Mini TS Hero + Prettier + ESLint
+
+On save, a typical modern setup looks like this:
+
+1. Mini TS Hero organizes imports.
+2. ESLint fixes rule violations.
+3. Prettier formats the final code.
+
+Example `settings.json`:
+
+```json
+{
+  // Mini TypeScript Hero: organize imports on save
+  "miniTypescriptHero.imports.organizeOnSave": true,
+
+  // Prettier as default formatter
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+
+  // ESLint fix on save (optional but common)
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.organizeImports": false  // IMPORTANT: disable VS Code built-in import organizer
+  }
+}
+```
+
+**Why disable `source.organizeImports`?**
+
+* VS Code built-in `source.organizeImports` also sorts imports.
+* If both Mini TS Hero and VS Code built-in organize imports on save, your imports can be rearranged multiple times.
+* Mini TS Hero already covers the built-in behavior plus grouping and advanced options, so it should be the only import organizer.
+
+> To check and fix this automatically, run the command
+> **"Mini TS Hero: Check for configuration conflicts"** from the Command Palette.
+> It will detect if the built-in organizer or the old TypeScript Hero extension are still active and offer to fix conflicts.
+
+---
+
+### Avoid multiple tools sorting imports
+
+Only **one** of the following should reorder imports:
+
+* Mini TypeScript Hero
+* VS Code built-in `editor.codeActionsOnSave: { "source.organizeImports": true }`
+* ESLint rules that change import order:
+
+  * `sort-imports`
+  * `import/order`
+* Prettier plugins that sort imports:
+
+  * `@trivago/prettier-plugin-sort-imports`
+  * `prettier-plugin-organize-imports`
+  * Any other plugin that explicitly rearranges imports
+
+If two or more of these are enabled, you can see:
+
+* Imports jumping around on each save.
+* Large, noisy diffs where each tool reorders slightly differently.
+
+---
+
+### Option A (recommended): Let Mini TS Hero own import order
+
+In this setup:
+
+* Mini TS Hero is the **only** tool that reorders imports.
+* ESLint and Prettier are still free to format and lint.
+
+**1. ESLint config (`.eslintrc.*`)**
+
+Turn off import-sorting rules:
+
+```js
+// .eslintrc.js (example)
+module.exports = {
+  // ...
+  rules: {
+    // Let Mini TS Hero sort imports instead of ESLint
+    "sort-imports": "off",
+    "import/order": "off",
+
+    // Other rules are fine
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+  }
+};
+```
+
+**2. VS Code settings**
+
+Make sure only Mini TS Hero organizes imports:
+
+```json
+{
+  "miniTypescriptHero.imports.organizeOnSave": true,
+
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.organizeImports": false
+  }
+}
+```
+
+**3. Run conflict check**
+
+After enabling `organizeOnSave`, run:
+
+1. `Ctrl+Shift+P` / `Cmd+Shift+P`
+2. "Mini TS Hero: Check for configuration conflicts"
+
+This ensures:
+
+* VS Code built-in `source.organizeImports` is not fighting with Mini TS Hero.
+* The old TypeScript Hero extension is not still active.
+
+---
+
+### Option B: Use ESLint/Prettier for sorting, Mini TS Hero only for removal
+
+If your team already has a strong ESLint or Prettier import-sorting setup and you do **not** want to change it, you can:
+
+* Let ESLint/Prettier control the **order** of imports.
+* Use Mini TS Hero mainly for **unused import removal**.
+
+In that case:
+
+**1. Keep your ESLint import rules on**, and adjust Mini TS Hero:
+
+```json
+{
+  // Do NOT let Mini TS Hero reorder entire import list
+  "miniTypescriptHero.imports.disableImportsSorting": true,
+
+  // Keep removal of unused imports
+  "miniTypescriptHero.imports.disableImportRemovalOnOrganize": false,
+
+  // Optional: avoid merging to keep lines close to what ESLint expects
+  "miniTypescriptHero.imports.mergeImportsFromSameModule": false
+}
+```
+
+**Trade-offs:**
+
+* Mini TS Hero will still visit and clean up imports, but it will not reorder them globally.
+* ESLint or the Prettier plugin remains the single source of truth for import order.
+* You may lose some of the advanced grouping features from Mini TS Hero, because grouping effectively requires reordering.
+
+If you see thrashing or constant diffs, go back to **Option A** and let Mini TS Hero own the import order.
+
+---
+
+### Prettier style vs Mini TS Hero style
+
+Mini TS Hero tries to respect your existing VS Code / language settings by default:
+
+* Quote style from `typescript.preferences.quoteStyle` and `javascript.preferences.quoteStyle`
+* Semicolons from `typescript.format.semicolons` and `javascript.format.semicolons`
+* Indentation from `editor.tabSize` and `editor.insertSpaces` (or from extension settings when `useOnlyExtensionSettings: true`)
+
+To reduce friction with Prettier:
+
+* Configure VS Code TS/JS preferences to match your Prettier config, **or**
+* Turn on `miniTypescriptHero.imports.useOnlyExtensionSettings` and set the extension style to match your Prettier rules (see Monorepo preset in the Configuration Cookbook).
+
+As long as only **one tool is responsible for import ordering** and their formatting styles are aligned, Mini TS Hero, Prettier, and ESLint can happily coexist in the same project.
+
+## Debugging & Troubleshooting
+
+If something isn't working as expected, the extension's Output channel provides detailed logging to help diagnose issues.
+
+### Opening the Output Panel
+
+1. **Open the VS Code Output panel:**
+   - Windows/Linux: `Ctrl+` ` (backtick) → Select "Output" tab
+   - macOS: `Cmd+` ` (backtick) → Select "Output" tab
+   - OR: Menu → View → Output
+
+2. **Select "Mini TypeScript Hero" from the channel dropdown**
+   - Located in the top-right of the Output panel
+   - Shows all extension logging in real-time
+
+### What Gets Logged
+
+The extension logs these events to help diagnose issues:
+
+**Startup Events:**
+- Extension activation/deactivation
+- Settings migration from old TypeScript Hero
+- Conflict detection (other import organizers)
+
+**Per-File Events:**
+- Each file organized (filename logged)
+- Success/failure of edits applied
+- Any errors during processing
+
+**Configuration Events:**
+- Settings changes via toggle commands
+- Legacy mode enable/disable
+
+### Example Log Output
+
+When organizing imports on file save, you'll see:
+
+```
+[ImportOrganizer] Activating
+Mini TypeScript Hero: Activating extension
+Mini TypeScript Hero: Extension activated successfully
+[ImportOrganizer] Organizing imports for /path/to/file.ts
+[ImportOrganizer] Imports organized successfully
+```
+
+If an error occurs:
+
+```
+[ImportOrganizer] Error organizing imports for /path/to/file.ts
+Error: Unexpected token...
+    at ImportManager.organizeImports (...)
+    at ...
+```
+
+### Manual Test Cases
+
+The repository includes [10 test cases](https://github.com/angular-schule/mini-typescript-hero/tree/master/manual-test-cases) covering various scenarios (unused imports, grouping, type-only imports, JSX/TSX, etc.). Use these to test configurations or create reproducible bug reports.
 
 ## Requirements
 
