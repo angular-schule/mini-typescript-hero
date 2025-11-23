@@ -16,7 +16,27 @@ import * as fs from 'fs';
 import { workspace, WorkspaceFolder, OutputChannel } from 'vscode';
 import { BatchOrganizer } from '../../commands/batch-organizer';
 import { ImportsConfig } from '../../configuration';
-import { createTempWorkspace, deleteTempWorkspace, TempFileSpec } from '../test-helpers';
+import { createTempWorkspace, deleteTempWorkspace, TempFileSpec, TempWorkspace } from '../test-helpers';
+
+/**
+ * Helper to properly clean up a workspace from VS Code before deleting files
+ */
+async function cleanupWorkspace(ws: TempWorkspace): Promise<void> {
+  // Step 1: Remove from VS Code workspace folders FIRST
+  const index = workspace.workspaceFolders?.findIndex(f => f.uri.fsPath === ws.rootUri.fsPath);
+  if (index !== undefined && index >= 0) {
+    await workspace.updateWorkspaceFolders(index, 1);
+  }
+
+  // Step 2: Wait for VS Code to process the removal
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  // Step 3: Now delete the temp directory
+  await deleteTempWorkspace(ws);
+
+  // Step 4: Wait for cleanup to complete
+  await new Promise(resolve => setTimeout(resolve, 200));
+}
 
 /**
  * Mock OutputChannel ONLY for capturing logs
@@ -49,12 +69,22 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
   let organizer: BatchOrganizer;
   let originalWorkspaceFolders: readonly WorkspaceFolder[] | undefined;
 
+  // CRITICAL: Clear ALL workspace folders before ANY tests run
+  // This removes lingering folders from previous test runs
+  suiteSetup(async () => {
+    const currentCount = workspace.workspaceFolders?.length || 0;
+    if (currentCount > 0) {
+      await workspace.updateWorkspaceFolders(0, currentCount);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  });
+
   setup(async () => {
     logger = new MockOutputChannel();
     config = new ImportsConfig();
     organizer = new BatchOrganizer(config, logger);
 
-    // Save original workspace folders
+    // Save original workspace folders (should be empty after suiteSetup)
     originalWorkspaceFolders = workspace.workspaceFolders;
   });
 
@@ -139,14 +169,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       assert.ok(after1.indexOf("from './a'") < after1.indexOf("from './b'"), 'File1: A should come before B after organization');
       assert.ok(after2.indexOf("from './x'") < after2.indexOf("from './z'"), 'File2: X should come before Z after organization');
     } finally {
-      // Remove from workspace BEFORE deleting files
-      const index = workspace.workspaceFolders?.findIndex(f => f.uri.fsPath === tempWs.rootUri.fsPath);
-      if (index !== undefined && index >= 0) {
-        await workspace.updateWorkspaceFolders(index, 1);
-      }
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 
@@ -185,7 +208,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       assert.ok(!after.includes("from './unused'"), 'Should have removed unused import');
       assert.ok(after.includes("from './a'"), 'Should keep used import');
     } finally {
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 
@@ -232,7 +255,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
         assert.ok(content.includes('import'), `File ${fileUri.fsPath} should have imports`);
       }
     } finally {
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 
@@ -278,7 +301,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       assert.ok(after2.indexOf("from './c'") < after2.indexOf("from './d'"));
       assert.ok(after3.indexOf("from './e'") < after3.indexOf("from './f'"));
     } finally {
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 
@@ -326,7 +349,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // Invalid file should still exist (not deleted)
       assert.ok(fs.existsSync(tempWs.fileUris[1].fsPath), 'Invalid file should still exist');
     } finally {
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 
@@ -367,7 +390,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       assert.ok(after1.indexOf("from './a'") < after1.indexOf("from './b'"), 'File1: A should come before B');
       assert.ok(after2.indexOf("from './x'") < after2.indexOf("from './z'"), 'File2: X should come before Z');
     } finally {
-      await deleteTempWorkspace(tempWs);
+      await cleanupWorkspace(tempWs);
     }
   });
 });

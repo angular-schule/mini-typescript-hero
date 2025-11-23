@@ -256,6 +256,16 @@ export class BatchOrganizer {
       if (success) {
         processed = editCount;
         this.logger.appendLine(`[BatchOrganizer] Successfully applied edits to ${processed} files`);
+
+        // CRITICAL: Save all modified documents to disk!
+        // workspace.applyEdit() only modifies in-memory documents, doesn't save!
+        for (const [fileUriStr] of workspaceEdit.entries()) {
+          const doc = workspace.textDocuments.find(d => d.uri.toString() === fileUriStr.toString());
+          if (doc && !doc.isUntitled && doc.isDirty) {
+            await doc.save();
+          }
+        }
+        this.logger.appendLine(`[BatchOrganizer] Saved ${processed} files to disk`);
       } else {
         window.showErrorMessage('Mini TypeScript Hero: Failed to apply some edits');
         this.logger.appendLine('[BatchOrganizer] Failed to apply edits');
