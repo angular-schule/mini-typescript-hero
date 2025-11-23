@@ -1,6 +1,7 @@
-import { ExtensionContext, OutputChannel, window, extensions, commands, workspace, ConfigurationTarget } from 'vscode';
+import { ExtensionContext, OutputChannel, window, extensions, commands, workspace, ConfigurationTarget, Uri } from 'vscode';
 
 import { ImportsConfig, migrateSettings } from './configuration';
+import { BatchOrganizer } from './commands/batch-organizer';
 import { ImportOrganizer } from './imports/import-organizer';
 
 let outputChannel: OutputChannel;
@@ -325,6 +326,32 @@ export async function activate(context: ExtensionContext): Promise<void> {
       }
     });
     context.subscriptions.push(toggleLegacyModeCommand);
+
+    // Create batch organizer for workspace/folder operations
+    const batchOrganizer = new BatchOrganizer(config, outputChannel);
+
+    // Register command: Organize imports in workspace
+    const organizeWorkspaceCommand = commands.registerCommand('miniTypescriptHero.imports.organizeWorkspace', async () => {
+      outputChannel.appendLine('Mini TypeScript Hero: Running organize imports in workspace');
+      await batchOrganizer.organizeWorkspace();
+    });
+    context.subscriptions.push(organizeWorkspaceCommand);
+
+    // Register command: Organize imports in folder
+    const organizeFolderCommand = commands.registerCommand('miniTypescriptHero.imports.organizeFolder', async (clickedFolder?: Uri) => {
+      if (!clickedFolder) {
+        // Fallback: use workspace root if called from command palette
+        if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
+          window.showWarningMessage('Mini TypeScript Hero: No workspace folder open');
+          return;
+        }
+        clickedFolder = workspace.workspaceFolders[0].uri;
+      }
+
+      outputChannel.appendLine(`Mini TypeScript Hero: Running organize imports in folder: ${clickedFolder.fsPath}`);
+      await batchOrganizer.organizeFolder(clickedFolder);
+    });
+    context.subscriptions.push(organizeFolderCommand);
 
     // Create and activate import organizer
     organizer = new ImportOrganizer(config, outputChannel);

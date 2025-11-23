@@ -53,6 +53,16 @@
         "title": "Mini TS Hero: Organize imports (sort and remove unused)"
       },
       {
+        "command": "miniTypescriptHero.imports.organizeWorkspace",
+        "title": "Mini TS Hero: Organize imports in workspace",
+        "description": "Organize imports in all TypeScript and JavaScript files (.ts, .tsx, .js, .jsx) in the workspace"
+      },
+      {
+        "command": "miniTypescriptHero.imports.organizeFolder",
+        "title": "Mini TS Hero: Organize imports in folder",
+        "description": "Organize imports in all TypeScript and JavaScript files (.ts, .tsx, .js, .jsx) in the selected folder"
+      },
+      {
         "command": "miniTypescriptHero.checkConflicts",
         "title": "Mini TS Hero: Check for configuration conflicts"
       },
@@ -61,6 +71,15 @@
         "title": "Mini TS Hero: Toggle legacy mode"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "miniTypescriptHero.imports.organizeFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "1_modification"
+        }
+      ]
+    },
     "keybindings": [
       {
         "command": "miniTypescriptHero.imports.organize",
