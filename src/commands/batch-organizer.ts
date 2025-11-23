@@ -142,7 +142,10 @@ export class BatchOrganizer {
 
     // Calculate relative path from workspace root to folder
     const relativePath = folderUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
-    const include = `${relativePath}/**/*.{ts,tsx,js,jsx}`;
+    // Handle case where folder IS the workspace root (relative path is empty)
+    const include = relativePath
+      ? `${relativePath}/**/*.{ts,tsx,js,jsx}`
+      : '**/*.{ts,tsx,js,jsx}';
     const exclude = this.getExcludePattern();
 
     this.logger.appendLine(`[BatchOrganizer] Searching folder: ${include}`);

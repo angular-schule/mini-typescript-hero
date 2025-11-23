@@ -104,3 +104,87 @@ export async function applyEditsToDocument(doc: TextDocument, edits: TextEdit[])
 
   return doc.getText();
 }
+
+/**
+ * File structure definition for creating test workspaces
+ */
+export interface TempFileSpec {
+  /** Relative path from workspace root (e.g., 'src/index.ts', 'lib/utils.js') */
+  path: string;
+  /** File content */
+  content: string;
+}
+
+/**
+ * Temporary workspace handle for cleanup
+ */
+export interface TempWorkspace {
+  /** Root directory of the workspace */
+  rootUri: Uri;
+  /** All file URIs that were created */
+  fileUris: Uri[];
+}
+
+/**
+ * Create a REAL temporary workspace with a complete folder structure
+ *
+ * This creates an actual directory structure in os.tmpdir() and uses VSCode's
+ * real workspace APIs. No mocking - tests run against real file system operations.
+ *
+ * @param files - Array of file specifications with paths and content
+ * @returns Workspace handle for cleanup
+ */
+export function createTempWorkspace(files: TempFileSpec[]): TempWorkspace {
+  const tempDir = os.tmpdir();
+  const workspaceRoot = path.join(tempDir, `test-workspace-${Date.now()}-${Math.random()}`);
+
+  // Create root directory
+  fs.mkdirSync(workspaceRoot, { recursive: true });
+
+  const fileUris: Uri[] = [];
+
+  // Create all files with their directory structures
+  for (const file of files) {
+    const filePath = path.join(workspaceRoot, file.path);
+    const fileDir = path.dirname(filePath);
+
+    // Create parent directories if needed
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir, { recursive: true });
+    }
+
+    // Write file content
+    fs.writeFileSync(filePath, file.content, 'utf-8');
+    fileUris.push(Uri.file(filePath));
+  }
+
+  return {
+    rootUri: Uri.file(workspaceRoot),
+    fileUris,
+  };
+}
+
+/**
+ * Clean up temporary workspace and all its files
+ *
+ * Recursively deletes the entire workspace directory.
+ * Call this in a finally block to ensure cleanup even if test fails.
+ *
+ * @param workspace - The workspace handle from createTempWorkspace()
+ */
+export async function deleteTempWorkspace(workspace: TempWorkspace): Promise<void> {
+  try {
+    // Close all editors first (VSCode keeps documents in memory)
+    await commands.executeCommand('workbench.action.closeAllEditors');
+
+    // Wait a bit for editors to fully close
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Recursively delete the workspace directory
+    if (fs.existsSync(workspace.rootUri.fsPath)) {
+      fs.rmSync(workspace.rootUri.fsPath, { recursive: true, force: true });
+    }
+  } catch (e) {
+    // Ignore errors - best effort cleanup
+  }
+}
