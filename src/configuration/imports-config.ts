@@ -239,6 +239,16 @@ export class ImportsConfig {
   }
 
   /**
+   * Get additional exclude patterns for files to skip during import organization.
+   * These patterns are added to the built-in defaults.
+   */
+  public excludePatterns(resource: Uri): string[] {
+    return workspace
+      .getConfiguration(sectionKey, resource)
+      .get('excludePatterns', []);
+  }
+
+  /**
    * Enable full legacy mode for formatting compatibility with old TypeScript Hero extension.
    *
    * When true, enables old formatting behaviors:

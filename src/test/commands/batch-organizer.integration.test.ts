@@ -393,4 +393,108 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       await cleanupWorkspace(tempWs);
     }
   });
+
+  test('organizeFolder() should respect built-in excludePatterns (node_modules, dist)', async function() {
+    this.timeout(15000);
+
+    const files: TempFileSpec[] = [
+      {
+        path: 'src/app.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'node_modules/lib/index.ts',
+        content: `import { Z } from './z';\nimport { Y } from './y';\nconsole.log(Y, Z);`,
+      },
+      {
+        path: 'dist/output.ts',
+        content: `import { D } from './d';\nimport { C } from './c';\nconsole.log(C, D);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // CALL THE REAL METHOD!
+      await organizer.organizeFolder(tempWs.rootUri);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify src/app.ts was organized
+      const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.ok(appContent.indexOf("from './a'") < appContent.indexOf("from './b'"), 'src/app.ts should be organized');
+
+      // Verify node_modules and dist files were NOT modified
+      const nodeModulesContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      const distContent = fs.readFileSync(tempWs.fileUris[2].fsPath, 'utf-8');
+
+      // They should remain unsorted (Z before Y, D before C)
+      assert.ok(nodeModulesContent.indexOf("from './z'") < nodeModulesContent.indexOf("from './y'"), 'node_modules file should NOT be organized');
+      assert.ok(distContent.indexOf("from './d'") < distContent.indexOf("from './c'"), 'dist file should NOT be organized');
+    } finally {
+      await cleanupWorkspace(tempWs);
+    }
+  });
+
+  test('organizeFolder() should respect user excludePatterns', async function() {
+    this.timeout(15000);
+
+    const files: TempFileSpec[] = [
+      {
+        path: 'src/app.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'generated/schema.ts',
+        content: `import { Z } from './z';\nimport { Y } from './y';\nconsole.log(Y, Z);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      // Configure custom exclude pattern (use Global scope for tests)
+      // Note: Workspace-folder scope doesn't work in test environments with temp workspaces
+      await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .update('excludePatterns', ['**/generated/**'], 1); // ConfigurationTarget.Global
+
+      // Wait for config to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify config was set
+      const verifyConfig = workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .get<string[]>('excludePatterns', []);
+      assert.deepStrictEqual(verifyConfig, ['**/generated/**'], 'Config should be set');
+
+      // CALL THE REAL METHOD!
+      await organizer.organizeFolder(tempWs.rootUri);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify src/app.ts was organized
+      const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.ok(appContent.indexOf("from './a'") < appContent.indexOf("from './b'"), 'src/app.ts should be organized');
+
+      // Verify generated file was NOT modified (excluded by user pattern)
+      const generatedContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      assert.ok(generatedContent.indexOf("from './z'") < generatedContent.indexOf("from './y'"), 'generated file should NOT be organized (excluded)');
+    } finally {
+      // Clean up config (use Global scope to match the set operation)
+      await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .update('excludePatterns', undefined, 1); // ConfigurationTarget.Global
+      await cleanupWorkspace(tempWs);
+    }
+  });
 });

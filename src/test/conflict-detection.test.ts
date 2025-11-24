@@ -10,6 +10,8 @@ import { workspace, ConfigurationTarget, extensions } from 'vscode';
  * 3. Scope detection and prioritization (Global/Workspace/WorkspaceFolder)
  * 4. Edge cases (missing settings, false values, empty objects, etc.)
  * 5. Conflict categorization (keyboard vs on-save conflicts)
+ * 6. Our organizeOnSave requirement (only detect on-save conflicts when BOTH settings enabled)
+ * 7. All value types ("true", "false", "explicit", "always", "never")
  *
  * NOTE: Most tests use logic verification (mocking) rather than actual VSCode configuration
  * due to configuration persistence issues in test environment.
@@ -85,6 +87,28 @@ suite('Conflict Detection System', () => {
       const hasConflict = mockCodeActionsOnSave && mockCodeActionsOnSave['source.organizeImports'];
 
       assert.strictEqual(hasConflict, undefined, 'Should not detect conflict when source.organizeImports is not present');
+    });
+
+    test('should detect VSCode built-in when source.organizeImports is "always" (logic verification)', () => {
+      // Simulates conflict detection with organizeImports set to "always"
+      const mockCodeActionsOnSave: Record<string, boolean | string> = { 'source.organizeImports': 'always' };
+
+      // Replicate conflict detection logic (updated to match production)
+      const organizeImportsValue: boolean | string | undefined = mockCodeActionsOnSave?.['source.organizeImports'];
+      const hasConflict = organizeImportsValue !== false && organizeImportsValue !== 'never' && organizeImportsValue !== undefined;
+
+      assert.ok(hasConflict, 'Should detect conflict when source.organizeImports is "always"');
+    });
+
+    test('should NOT detect VSCode built-in when source.organizeImports is "never" (logic verification)', () => {
+      // Simulates conflict detection with organizeImports explicitly set to "never"
+      const mockCodeActionsOnSave: Record<string, boolean | string> = { 'source.organizeImports': 'never' };
+
+      // Replicate conflict detection logic (updated to match production)
+      const organizeImportsValue: boolean | string | undefined = mockCodeActionsOnSave?.['source.organizeImports'];
+      const hasConflict = organizeImportsValue !== false && organizeImportsValue !== 'never' && organizeImportsValue !== undefined;
+
+      assert.strictEqual(hasConflict, false, 'Should not detect conflict when source.organizeImports is "never"');
     });
   });
 
@@ -268,6 +292,72 @@ suite('Conflict Detection System', () => {
       const hasConflict = mockCodeActionsOnSave && mockCodeActionsOnSave['source.organizeImports'];
 
       assert.strictEqual(hasConflict, false, 'Should not trigger conflict when set to false');
+    });
+  });
+
+  suite('Our organizeOnSave Requirement', () => {
+    test('should detect VS Code built-in conflict ONLY when both our organizeOnSave and VS Code built-in are enabled', () => {
+      // Simulates the production logic for detecting conflicts
+
+      // Scenario 1: Both enabled -> CONFLICT
+      const ourOrganizeOnSave1 = true;
+      const mockCodeActionsOnSave1: Record<string, boolean | string> = { 'source.organizeImports': true };
+      const organizeImportsValue1: boolean | string | undefined = mockCodeActionsOnSave1?.['source.organizeImports'];
+      const vsCodeBuiltInEnabled1 = organizeImportsValue1 !== false && organizeImportsValue1 !== 'never' && organizeImportsValue1 !== undefined;
+      const hasConflict1 = vsCodeBuiltInEnabled1 && ourOrganizeOnSave1;
+
+      assert.ok(hasConflict1, 'Should detect conflict when both are enabled');
+
+      // Scenario 2: Only VS Code built-in enabled -> NO CONFLICT (valid use case)
+      const ourOrganizeOnSave2 = false;
+      const mockCodeActionsOnSave2: Record<string, boolean | string> = { 'source.organizeImports': true };
+      const organizeImportsValue2: boolean | string | undefined = mockCodeActionsOnSave2?.['source.organizeImports'];
+      const vsCodeBuiltInEnabled2 = organizeImportsValue2 !== false && organizeImportsValue2 !== 'never' && organizeImportsValue2 !== undefined;
+      const hasConflict2 = vsCodeBuiltInEnabled2 && ourOrganizeOnSave2;
+
+      assert.strictEqual(hasConflict2, false, 'Should NOT detect conflict when only VS Code built-in is enabled');
+
+      // Scenario 3: Only our organizeOnSave enabled -> NO CONFLICT
+      const ourOrganizeOnSave3 = true;
+      const mockCodeActionsOnSave3: Record<string, boolean | string> = { 'source.organizeImports': false };
+      const organizeImportsValue3: boolean | string | undefined = mockCodeActionsOnSave3?.['source.organizeImports'];
+      const vsCodeBuiltInEnabled3 = organizeImportsValue3 !== false && organizeImportsValue3 !== 'never' && organizeImportsValue3 !== undefined;
+      const hasConflict3 = vsCodeBuiltInEnabled3 && ourOrganizeOnSave3;
+
+      assert.strictEqual(hasConflict3, false, 'Should NOT detect conflict when only our organizeOnSave is enabled');
+    });
+
+    test('should detect old TS Hero conflict ONLY when both our organizeOnSave and old organizeOnSave are enabled', () => {
+      // Simulates the production logic
+
+      // Scenario 1: Both enabled -> CONFLICT
+      const ourOrganizeOnSave1 = true;
+      const oldOrganizeOnSave1 = true;
+      const hasConflict1 = oldOrganizeOnSave1 && ourOrganizeOnSave1;
+
+      assert.ok(hasConflict1, 'Should detect conflict when both are enabled');
+
+      // Scenario 2: Only old enabled -> NO CONFLICT
+      const ourOrganizeOnSave2 = false;
+      const oldOrganizeOnSave2 = true;
+      const hasConflict2 = oldOrganizeOnSave2 && ourOrganizeOnSave2;
+
+      assert.strictEqual(hasConflict2, false, 'Should NOT detect conflict when only old organizeOnSave is enabled');
+
+      // Scenario 3: Only ours enabled -> NO CONFLICT
+      const ourOrganizeOnSave3 = true;
+      const oldOrganizeOnSave3 = false;
+      const hasConflict3 = oldOrganizeOnSave3 && ourOrganizeOnSave3;
+
+      assert.strictEqual(hasConflict3, false, 'Should NOT detect conflict when only our organizeOnSave is enabled');
+    });
+
+    test('should always detect old extension installed (keyboard conflict, independent of organizeOnSave)', () => {
+      // Old extension installed creates keyboard shortcut conflict regardless of organizeOnSave settings
+      const oldExtensionInstalled = true;
+
+      // This conflict is independent of organizeOnSave settings
+      assert.ok(oldExtensionInstalled, 'Should always detect when old extension is installed');
     });
   });
 

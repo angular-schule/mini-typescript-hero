@@ -32,6 +32,10 @@ async function checkForConflicts(
 
   const conflicts: string[] = [];
 
+  // Read our own organizeOnSave setting to determine if on-save conflicts are real
+  const ourConfig = workspace.getConfiguration('miniTypescriptHero.imports');
+  const ourOrganizeOnSave = ourConfig.get<boolean>('organizeOnSave', false);
+
   // Check 1: Old TypeScript Hero extension installed
   const oldExtension = extensions.getExtension(OLD_EXTENSION_ID);
   if (oldExtension) {
@@ -40,9 +44,10 @@ async function checkForConflicts(
   }
 
   // Check 2: Old TypeScript Hero organize-on-save enabled
+  // Only a conflict if OUR organizeOnSave is also enabled
   const oldTsHeroConfig = workspace.getConfiguration('typescriptHero.imports');
   const oldOrganizeOnSave = oldTsHeroConfig.get<boolean>('organizeOnSave');
-  if (oldOrganizeOnSave) {
+  if (oldOrganizeOnSave && ourOrganizeOnSave) {
     outputChannel.appendLine('Mini TypeScript Hero: WARNING - Old TypeScript Hero organize-on-save is enabled!');
     if (!conflicts.some(c => c.includes('Old TypeScript Hero extension'))) {
       conflicts.push('• Old TypeScript Hero "organizeOnSave" is enabled (will run on save alongside this extension)');
@@ -50,9 +55,14 @@ async function checkForConflicts(
   }
 
   // Check 3: VS Code built-in organize imports enabled
+  // Only a conflict if OUR organizeOnSave is also enabled
+  // Ignore "never" and false values (explicitly disabled)
   const editorConfig = workspace.getConfiguration('editor');
   const codeActionsOnSave = editorConfig.get('codeActionsOnSave') as Record<string, boolean | string> | undefined;
-  if (codeActionsOnSave && codeActionsOnSave['source.organizeImports']) {
+  const organizeImportsValue: boolean | string | undefined = codeActionsOnSave?.['source.organizeImports'];
+  const vsCodeBuiltInEnabled = organizeImportsValue !== false && organizeImportsValue !== 'never' && organizeImportsValue !== undefined;
+
+  if (vsCodeBuiltInEnabled && ourOrganizeOnSave) {
     outputChannel.appendLine('Mini TypeScript Hero: WARNING - VS Code built-in organize imports is enabled!');
     conflicts.push('• VS Code built-in "editor.codeActionsOnSave: source.organizeImports" is enabled (will run on save)');
   }
@@ -74,8 +84,8 @@ async function checkForConflicts(
     ).length;
 
     const hasKeyboardConflict = conflicts.some(c => c.includes('Ctrl+Alt+O'));
-    const hasVSCodeBuiltIn = codeActionsOnSave && codeActionsOnSave['source.organizeImports'];
-    const hasOldExtension = oldExtension || oldOrganizeOnSave;
+    const hasVSCodeBuiltIn = vsCodeBuiltInEnabled && ourOrganizeOnSave;
+    const hasOldExtension = oldExtension || (oldOrganizeOnSave && ourOrganizeOnSave);
 
     if (conflicts.length === 1 && hasKeyboardConflict && !onSaveCount) {
       // Only old extension installed (not organize-on-save)
@@ -94,9 +104,11 @@ async function checkForConflicts(
                'Please disable or uninstall the old TypeScript Hero extension manually.';
     } else {
       // Multiple conflicts
-      const conflictType = onSaveCount > 0
-        ? `imports will be organized ${onSaveCount + 1} times on every save`
-        : 'keyboard shortcut and organize-on-save conflicts';
+      // Add 1 to onSaveCount only if our organizeOnSave is enabled
+      const totalOnSaveCount = onSaveCount > 0 && ourOrganizeOnSave ? onSaveCount + 1 : onSaveCount;
+      const conflictType = totalOnSaveCount > 0
+        ? `imports will be organized ${totalOnSaveCount} times on every save`
+        : 'keyboard shortcut conflicts';
 
       const autoFixNote = hasVSCodeBuiltIn
         ? '\n\nClick "Disable for Me" to let us disable the VSCode built-in setting.'
@@ -114,7 +126,7 @@ async function checkForConflicts(
     const buttons: string[] = [];
 
     // Can we auto-fix VSCode built-in?
-    const canAutoFixVSCode = codeActionsOnSave && codeActionsOnSave['source.organizeImports'];
+    const canAutoFixVSCode = vsCodeBuiltInEnabled && ourOrganizeOnSave;
 
     if (canAutoFixVSCode) {
       buttons.push('Disable for Me');

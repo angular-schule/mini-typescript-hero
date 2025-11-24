@@ -5,9 +5,12 @@ import {
   TextDocument,
   TextDocumentWillSaveEvent,
   TextEdit,
+  Uri,
   window,
   workspace,
 } from 'vscode';
+
+import { minimatch } from 'minimatch';
 
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from './import-manager';
@@ -80,6 +83,15 @@ export class ImportOrganizer implements Disposable {
       window.showWarningMessage(
         `Mini TypeScript Hero: Organize imports is not supported for ${editor.document.languageId} files`,
       );
+      return;
+    }
+
+    // Check if file is excluded by user/team patterns
+    if (this.isFileExcluded(editor.document.uri)) {
+      window.showWarningMessage(
+        `Mini TypeScript Hero: This file is excluded from import organization by your workspace settings (check excludePatterns)`,
+      );
+      this.logger.appendLine(`[ImportOrganizer] File excluded by excludePatterns: ${editor.document.fileName}`);
       return;
     }
 
@@ -163,6 +175,45 @@ export class ImportOrganizer implements Disposable {
     // We proceed here - if they chose to keep both, that's their decision.
 
     return true;
+  }
+
+  /**
+   * Check if a file should be excluded from import organization based on exclude patterns.
+   * Uses both built-in defaults and user-configured patterns.
+   */
+  private isFileExcluded(fileUri: Uri): boolean {
+    // Get workspace folder for this file
+    const workspaceFolder = workspace.getWorkspaceFolder(fileUri);
+    if (!workspaceFolder) {
+      // File not in workspace - don't exclude
+      return false;
+    }
+
+    // Default exclude patterns (same as BatchOrganizer)
+    const defaultPatterns = [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/out/**',
+      '**/.git/**',
+      '**/coverage/**',
+    ];
+
+    // Get user-configured patterns
+    const userPatterns = this.config.excludePatterns(fileUri);
+    const allPatterns = [...defaultPatterns, ...userPatterns];
+
+    // Convert file URI to path relative to workspace root
+    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+
+    // Check if file matches any exclude pattern
+    for (const pattern of allPatterns) {
+      if (minimatch(relativePath, pattern)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

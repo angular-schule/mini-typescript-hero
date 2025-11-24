@@ -167,6 +167,16 @@
           "description": "Merge multiple import statements from the same module into a single import. For example, 'import { A } from \"./lib\"' and 'import { B } from \"./lib\"' become 'import { A, B } from \"./lib\"'. This setting is independent from removal behavior.",
           "scope": "resource"
         },
+        "miniTypescriptHero.imports.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": [],
+          "markdownDescription": "Additional glob patterns for files to exclude from import organization (workspace and single-file operations). These patterns are added to the built-in defaults: `**/node_modules/**`, `**/dist/**`, `**/build/**`, `**/out/**`, `**/.git/**`, `**/coverage/**`.\n\nCommon examples:\n- `**/.next/**` (Next.js build output)\n- `**/.nuxt/**` (Nuxt build output)\n- `**/tmp/**` (temporary files)\n- `**/generated/**` (auto-generated code)\n\n**Team collaboration:** When organizing a single file that matches an exclude pattern, a warning is shown to inform the user.",
+          "scope": "resource"
+        },
         "miniTypescriptHero.imports.ignoredFromRemoval": {
           "type": "array",
           "items": {
@@ -296,6 +306,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "minimatch": "^10.1.1",
     "ts-morph": "^27.0.0"
   }
 }

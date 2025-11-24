@@ -10,6 +10,8 @@ import {
   WorkspaceEdit,
 } from 'vscode';
 
+import { minimatch } from 'minimatch';
+
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
 
@@ -119,13 +121,20 @@ export class BatchOrganizer {
    */
   private async findTargetFiles(): Promise<Uri[]> {
     const include = '**/*.{ts,tsx,js,jsx}';
-    const exclude = this.getExcludePattern();
+    // Use first workspace folder for config resolution (or undefined if no folders)
+    const resource = workspace.workspaceFolders?.[0]?.uri;
+    const excludePatterns = this.getExcludePatterns(resource);
 
     this.logger.appendLine(`[BatchOrganizer] Searching workspace: ${include}`);
-    this.logger.appendLine(`[BatchOrganizer] Excluding: ${exclude}`);
+    this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
-    const files = await workspace.findFiles(include, exclude, 5000);
-    this.logger.appendLine(`[BatchOrganizer] Found ${files.length} files`);
+    // Find all files (VS Code respects files.exclude by default)
+    const allFiles = await workspace.findFiles(include, null, 5000);
+
+    // Manually filter files using exclude patterns
+    const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
+
+    this.logger.appendLine(`[BatchOrganizer] Found ${files.length} files (${allFiles.length - files.length} excluded)`);
 
     return files;
   }
@@ -146,31 +155,63 @@ export class BatchOrganizer {
     const include = relativePath
       ? `${relativePath}/**/*.{ts,tsx,js,jsx}`
       : '**/*.{ts,tsx,js,jsx}';
-    const exclude = this.getExcludePattern();
+    const excludePatterns = this.getExcludePatterns(folderUri);
 
     this.logger.appendLine(`[BatchOrganizer] Searching folder: ${include}`);
-    this.logger.appendLine(`[BatchOrganizer] Excluding: ${exclude}`);
+    this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
-    const files = await workspace.findFiles(include, exclude, 5000);
-    this.logger.appendLine(`[BatchOrganizer] Found ${files.length} files in folder`);
+    // Find all files (VS Code respects files.exclude by default)
+    const allFiles = await workspace.findFiles(include, null, 5000);
+
+    // Manually filter files using exclude patterns
+    const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
+
+    this.logger.appendLine(`[BatchOrganizer] Found ${files.length} files in folder (${allFiles.length - files.length} excluded)`);
 
     return files;
   }
 
   /**
-   * Get the exclude pattern for file search.
-   * Excludes common build and dependency directories.
+   * Get all exclude patterns (defaults + user-configured).
+   * Returns an array of glob patterns.
    */
-  private getExcludePattern(): string {
-    return [
+  private getExcludePatterns(resource?: Uri): string[] {
+    const defaults = [
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',
       '**/out/**',
       '**/.git/**',
       '**/coverage/**',
-      '**/.vscode-test/**',
-    ].join(',');
+    ];
+
+    // Add user-configured patterns (if resource is available)
+    const userPatterns = resource ? this.config.excludePatterns(resource) : [];
+    return [...defaults, ...userPatterns];
+  }
+
+  /**
+   * Check if a file should be excluded based on exclude patterns.
+   * Matches file path relative to workspace root against glob patterns.
+   */
+  private isFileExcluded(fileUri: Uri, excludePatterns: string[]): boolean {
+    const workspaceFolder = workspace.getWorkspaceFolder(fileUri);
+    if (!workspaceFolder) {
+      // File not in workspace - don't exclude
+      return false;
+    }
+
+    // Convert file URI to path relative to workspace root
+    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+
+    // Check if file matches any exclude pattern
+    for (const pattern of excludePatterns) {
+      if (minimatch(relativePath, pattern)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**

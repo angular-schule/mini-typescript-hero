@@ -70,6 +70,7 @@ Full configuration for Angular CLI / Nx Angular projects showing all available o
   // Mini TypeScript Hero - Advanced
   // ========================================
   "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
+  "miniTypescriptHero.imports.excludePatterns": [],  // (default: no additional excludes)
   "miniTypescriptHero.imports.useOnlyExtensionSettings": false,  // (default)
 
   // ========================================
@@ -144,6 +145,7 @@ Full configuration for React/Next.js/CRA/Vite with Prettier-style formatting.
     "react-dom",       // Add if using React DOM
     "react/jsx-runtime"  // Add if using new JSX transform
   ],
+  "miniTypescriptHero.imports.excludePatterns": [],  // (default: no additional excludes)
   "miniTypescriptHero.imports.useOnlyExtensionSettings": false,
 
   // ========================================
@@ -206,6 +208,7 @@ Full configuration for Express, NestJS, or plain TypeScript/JavaScript backends.
   // Mini TypeScript Hero - Advanced
   // ========================================
   "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
+  "miniTypescriptHero.imports.excludePatterns": [],  // (default: no additional excludes)
 
   // ========================================
   // Mini TypeScript Hero - Import Grouping
@@ -272,6 +275,7 @@ Full configuration for Nx, Turborepo, Yarn/pnpm workspaces.
   // Mini TypeScript Hero - Advanced
   // ========================================
   "miniTypescriptHero.imports.ignoredFromRemoval": [],  // Override default (nothing gets ignored)
+  "miniTypescriptHero.imports.excludePatterns": [],  // (default: no additional excludes)
 
   // ========================================
   // Mini TypeScript Hero - Import Grouping
@@ -477,6 +481,9 @@ const x = 1; // 2 blank lines before code
 
   // Libraries that should never be removed (even if unused)
   "miniTypescriptHero.imports.ignoredFromRemoval": ["react"],
+
+  // Additional glob patterns to exclude files from import organization
+  "miniTypescriptHero.imports.excludePatterns": [],
 }
 ```
 
@@ -498,6 +505,41 @@ If you want to preserve all React-related imports:
 ```
 
 This is useful in React projects where some imports (like `react/jsx-runtime`) are used implicitly by JSX compilation and the extension might incorrectly flag them as unused.
+
+### Exclude Patterns (Team Collaboration)
+
+The `excludePatterns` setting allows you to exclude files from import organization using glob patterns. This is particularly useful for:
+- **Auto-generated code** (e.g., GraphQL schemas, Prisma client)
+- **Build artifacts** that you keep in source control
+- **Framework-specific output directories** (Next.js `.next/`, Nuxt `.nuxt/`)
+- **Team standards** - enforce that certain files should not be auto-formatted
+
+**Built-in Defaults:**
+These patterns are always excluded (cannot be disabled):
+- `**/node_modules/**`, `**/dist/**`, `**/build/**`, `**/out/**`, `**/.git/**`, `**/coverage/**`
+
+**Adding Custom Patterns:**
+Your patterns are **added to** the built-in defaults (not replacing them).
+
+```json
+{
+  "miniTypescriptHero.imports.excludePatterns": [
+    "**/.next/**",           // Next.js build output
+    "**/.nuxt/**",           // Nuxt build output
+    "**/generated/**",       // Auto-generated code
+    "**/*.generated.ts",     // Generated TypeScript files
+    "**/tmp/**",             // Temporary files
+    "**/__generated__/**"    // Common GraphQL codegen output
+  ]
+}
+```
+
+**Team Collaboration Feature:**
+When organizing a single file manually (via keyboard shortcut or command), if the file matches an exclude pattern, the user gets a **warning notification**. This helps teams enforce conventions:
+
+> "Mini TypeScript Hero: This file is excluded from import organization by your workspace settings (check excludePatterns)"
+
+This is useful when working in teams - developers get immediate feedback that a file should not be auto-organized according to team standards.
 
 ```json
 {
