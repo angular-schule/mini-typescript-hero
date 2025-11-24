@@ -342,3 +342,126 @@ Successfully completed comprehensive documentation audit addressing all 15+ issu
 
 All documentation now consistent, accurate, and free of contradictions. Ready for production.
 
+
+---
+
+## Session: 2025-11-24 - Conflict Detection Overhaul
+
+### 1. Current Work Status
+
+**Completed Tasks:**
+- ✅ Phase 1 Complete: Workspace-wide organization with excludePatterns support
+- ✅ Updated documentation (blog post, README) for new workspace features
+- ✅ **MAJOR FIX**: Corrected conflict detection to eliminate false positives
+- ✅ Fixed "never" false positive in VS Code built-in detection
+- ✅ Added organizeOnSave requirement check (only warn when BOTH tools run on save)
+- ✅ Fixed count arithmetic for accurate conflict messages
+- ✅ Added comprehensive test coverage (5 new tests, all 416 tests passing)
+
+**In-Progress Tasks:**
+- None (session complete)
+
+**Blocked Items:**
+- None
+
+### 2. Technical Context
+
+**Files Modified:**
+- `src/extension.ts` - Critical conflict detection fixes:
+  - Added check for our own `organizeOnSave` setting
+  - Fixed VS Code built-in detection to ignore "never" and false values
+  - Updated all variable references to use new `vsCodeBuiltInEnabled`
+  - Fixed count arithmetic to only add +1 when our organizeOnSave is enabled
+  - Only detects on-save conflicts when BOTH settings are enabled
+
+- `src/test/conflict-detection.test.ts` - Enhanced test coverage:
+  - Added tests for "always" and "never" values
+  - Added "Our organizeOnSave Requirement" test suite (3 new tests)
+  - Validates valid use cases don't trigger false warnings
+  - Updated type annotations for TypeScript strict mode
+
+- `blog-post.md` - Added workspace-wide organization feature to key improvements
+- `README.md` - Updated with all 5 commands, workspace/folder operations
+
+**Files Created:**
+- None
+
+**Temporary/Debug Files:**
+- None
+
+### 3. Important Decisions
+
+**Architecture Choices:**
+1. **Conflict detection scope**: Focus ONLY on old TypeScript Hero + VS Code built-in
+   - Decided NOT to detect ESLint/Prettier conflicts
+   - Rationale: Avoid false positives, trust documentation, add later if users report issues
+   - Can monitor GitHub issues post-v4 release for real-world pain points
+
+2. **organizeOnSave requirement**: Only warn when BOTH tools would run on save
+   - Critical insight: User might use VS Code built-in for auto + our extension for manual
+   - This is a VALID use case, not a conflict
+   - Detection must check our organizeOnSave setting before warning
+
+3. **"never" handling**: Explicit checks instead of truthy logic
+   - VS Code values: true/"always"/"explicit" (conflict), false/"never" (no conflict)
+   - Type-safe implementation with proper TypeScript annotations
+
+**Open Questions:**
+- None (all questions resolved during session)
+
+### 4. Next Steps
+
+**Immediate TODO:**
+- Review commit history on branch `mini-typescript-hero-v4`
+- Consider merging to master if ready for v4.0.0 release
+- No code changes needed - conflict detection is now accurate
+
+**Testing Needed:**
+- ✅ All 416 tests passing
+- ✅ New tests validate organizeOnSave requirement
+- ✅ Tests cover all value types (true, false, "explicit", "always", "never")
+- Manual testing in real VS Code environment would be good but not critical
+
+**Documentation Updates:**
+- ✅ All documentation updated in this session
+- README explains workspace/folder commands
+- Blog post mentions workspace-wide organization
+- Configuration docs include excludePatterns
+
+### 5. Key Insights from Session
+
+**Critical Bug Discovery:**
+The original conflict detection had a fundamental flaw: it warned about VS Code built-in regardless of our `organizeOnSave` setting. This created false positives for users who:
+- Use VS Code built-in for auto-organize on save (simple cases)
+- Use our extension for manual Ctrl+Alt+O with custom grouping (complex cases)
+
+This is a VALID workflow, not a conflict!
+
+**Root Cause:**
+The code assumed any detection of VS Code built-in was a conflict. It didn't consider whether our extension would actually compete on save operations.
+
+**Solution:**
+Check `miniTypescriptHero.imports.organizeOnSave` setting. Only warn when BOTH our organizeOnSave AND other tool (VS Code built-in or old TS Hero) are enabled.
+
+**Impact:**
+- Eliminates false positive warnings
+- Supports mixed usage patterns
+- Accurate conflict count messages
+- Better user trust in conflict detection
+
+### 6. Commits Made
+
+1. `6214181` - docs: Complete Phase 1 documentation for workspace-wide organization
+2. `c525ef8` - fix: Correct conflict detection to require our organizeOnSave
+
+### 7. Test Results
+
+**Before fixes:** 411 tests passing
+**After fixes:** 416 tests passing (+5 new tests)
+
+All tests validate:
+- Correct detection logic for all VS Code value types
+- organizeOnSave requirement for on-save conflicts
+- Valid use cases don't trigger warnings
+- Keyboard conflicts always detected (independent of organizeOnSave)
+
