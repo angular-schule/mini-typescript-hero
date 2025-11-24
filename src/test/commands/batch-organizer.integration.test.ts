@@ -623,12 +623,15 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       assert.strictEqual(workspace.workspaceFolders?.length || 0, 0, 'Should have no workspace folders');
 
       // Call organizeWorkspace - should show warning and return early
-      // Note: We can't directly test window.showWarningMessage() in tests,
-      // but we can verify the function returns without error
+      // The function should complete without error, proving the guard clause works
       await organizer.organizeWorkspace();
 
-      // If we get here without error, the early return worked
-      assert.ok(true, 'organizeWorkspace should return gracefully when no workspace');
+      // REAL validation: Verify still no workspace folders (nothing was added/modified)
+      assert.strictEqual(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        'Should still have no workspace folders after organizeWorkspace call'
+      );
 
     } finally {
       // Restore original workspace folders
@@ -663,13 +666,37 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Call organizeWorkspace - should show info message and return
-      // Note: We can't directly test window.showInformationMessage() in tests,
-      // but we can verify the function returns without error
+      // Get file modification times BEFORE calling organizeWorkspace
+      const readmeStat = fs.statSync(tempWs.fileUris[0].fsPath);
+      const jsonStat = fs.statSync(tempWs.fileUris[1].fsPath);
+      const readmeMtimeBefore = readmeStat.mtimeMs;
+      const jsonMtimeBefore = jsonStat.mtimeMs;
+
+      // Call organizeWorkspace - should show info message and return (no TS/JS files to process)
       await organizer.organizeWorkspace();
 
-      // If we get here without error, the function handled empty file list correctly
-      assert.ok(true, 'organizeWorkspace should handle no TS/JS files gracefully');
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // REAL validation: Verify files were NOT modified (mtime unchanged)
+      const readmeMtimeAfter = fs.statSync(tempWs.fileUris[0].fsPath).mtimeMs;
+      const jsonMtimeAfter = fs.statSync(tempWs.fileUris[1].fsPath).mtimeMs;
+
+      assert.strictEqual(
+        readmeMtimeAfter,
+        readmeMtimeBefore,
+        'README.md should not be modified (no TS/JS processing attempted)'
+      );
+      assert.strictEqual(
+        jsonMtimeAfter,
+        jsonMtimeBefore,
+        'config.json should not be modified (no TS/JS processing attempted)'
+      );
+
+      // Also verify content unchanged as additional safety check
+      const readmeContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      const jsonContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      assert.strictEqual(readmeContent, '# Test', 'README content should remain unchanged');
+      assert.strictEqual(jsonContent, '{}', 'JSON content should remain unchanged');
 
     } finally {
       await cleanupWorkspace(tempWs);
@@ -781,10 +808,20 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // The function should complete without throwing (error handled internally)
       await organizer.organizeFolder(tempWs.rootUri); // Use REAL path, not symlink
 
-      // We can't verify window.showErrorMessage was called in tests,
-      // but we can verify the function handled the error gracefully without crashing.
-      // The fact that we reach this line means error handling worked.
-      assert.ok(true, 'organizeFolder should handle symlink edge case gracefully');
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // REAL validation: Verify file was NOT modified (error prevented processing)
+      const fileContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.strictEqual(
+        fileContent,
+        'import { B } from \'./b\';\nimport { A } from \'./a\';\nconsole.log(A, B);',
+        'File should remain unchanged when folder not in workspace'
+      );
+      // Additional check: imports should still be in WRONG order (not organized)
+      assert.ok(
+        fileContent.indexOf("from './b'") < fileContent.indexOf("from './a'"),
+        'Imports should NOT be organized - B should still come before A (proves error prevented processing)'
+      );
 
     } finally {
       // Clean up symlink
