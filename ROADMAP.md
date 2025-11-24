@@ -437,12 +437,21 @@ describe('CLI', () => {
 ### Phase 1 Audit Checklist
 
 **Before considering complete**:
-- [ ] All 384 existing tests still passing
-- [ ] New workspace tests added (>10 tests)
+- [x] All existing tests still passing
+- [x] Basic workspace/folder integration tests added
+- [x] Documentation updated (README, CONFIGURATION.md)
+- [ ] Test single-file excludePatterns warning (team collaboration feature)
+- [ ] Test workspace excludePatterns (built-in + user patterns)
+- [ ] Test no workspace folder error handling
+- [ ] Test empty workspace info message
+- [ ] Test workspace syntax-error robustness
+- [ ] Test symlink edge case (VS Code bug #44964)
+- [ ] Test cancellation behavior
+- [ ] Fix + test multi-root workspace excludePatterns
+- [ ] Refactor settings migration (remove assert.ok(true) placeholder)
+- [ ] Refactor conflict detection (extract + test real logic)
 - [ ] Manual testing on 3 real projects (Angular, React, Node)
 - [ ] Performance tested on workspace with 1000+ files
-- [ ] Error handling tested (syntax errors, read-only files, cancellation)
-- [ ] Documentation updated (README, CHANGELOG)
 - [ ] No memory leaks detected
 - [ ] Works on Windows, macOS, Linux (CI validates)
 
@@ -543,15 +552,25 @@ describe('CLI', () => {
 
 **Note:** Implementation modified original plan. Instead of adding cookbook to README, created 3-file structure (README/CONFIGURATION/MIGRATION) for better organization.
 
-### Phase 1 Done When:
-- ✅ Commands implemented and tested
-- ✅ Context menu working
-- ✅ Progress UI polished
-- ✅ Error handling robust
-- ✅ All tests passing (existing + new)
-- ✅ Documentation updated
-- ✅ Tested on real projects
+### Phase 1 Done When (Implementation Complete, Audit In Progress):
+
+**Note:** These are criteria, not current status. See Phase 1 Audit Checklist above for actual completion tracking.
+
+**Implementation Status:**
+- ✅ Commands implemented (organizeWorkspace, organizeFolder)
+- ✅ Context menu working (right-click folder)
+- ✅ Progress UI with cancellation support
+- ✅ Error handling (continues on errors, shows summary)
+- ✅ Documentation updated (README, CONFIGURATION.md)
+- ✅ Basic integration tests added
 - ✅ Committed to git
+
+**Audit Status (see checklist above for details):**
+- [ ] Comprehensive test coverage for all behavioral claims
+- [ ] Manual testing on 3 real projects (Angular, React, Node)
+- [ ] Performance tested on workspace with 1000+ files
+- [ ] Multi-root workspace edge cases tested
+- [ ] All error paths have test coverage
 
 ### Phase 2 Done When:
 - ✅ Core package extracted
