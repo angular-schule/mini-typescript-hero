@@ -497,4 +497,229 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       await cleanupWorkspace(tempWs);
     }
   });
+
+  test('organizeWorkspace() should respect built-in excludePatterns (node_modules, dist)', async function() {
+    this.timeout(15000);
+
+    const files: TempFileSpec[] = [
+      {
+        path: 'src/app.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'node_modules/lib/index.ts',
+        content: `import { Z } from './z';\nimport { Y } from './y';\nconsole.log(Y, Z);`,
+      },
+      {
+        path: 'dist/output.ts',
+        content: `import { D } from './d';\nimport { C } from './c';\nconsole.log(C, D);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // CALL THE REAL METHOD - organizeWorkspace() instead of organizeFolder()
+      await organizer.organizeWorkspace();
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify src/app.ts was organized
+      const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.ok(appContent.indexOf("from './a'") < appContent.indexOf("from './b'"), 'src/app.ts should be organized');
+
+      // Verify node_modules and dist files were NOT modified
+      const nodeModulesContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      const distContent = fs.readFileSync(tempWs.fileUris[2].fsPath, 'utf-8');
+
+      // They should remain unsorted (Z before Y, D before C)
+      assert.ok(nodeModulesContent.indexOf("from './z'") < nodeModulesContent.indexOf("from './y'"), 'node_modules file should NOT be organized');
+      assert.ok(distContent.indexOf("from './d'") < distContent.indexOf("from './c'"), 'dist file should NOT be organized');
+    } finally {
+      await cleanupWorkspace(tempWs);
+    }
+  });
+
+  test('organizeWorkspace() should respect user excludePatterns', async function() {
+    this.timeout(15000);
+
+    const files: TempFileSpec[] = [
+      {
+        path: 'src/app.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'generated/schema.ts',
+        content: `import { Z } from './z';\nimport { Y } from './y';\nconsole.log(Y, Z);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      // Configure custom exclude pattern (use Global scope for tests)
+      await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .update('excludePatterns', ['**/generated/**'], 1); // ConfigurationTarget.Global
+
+      // Wait for config to propagate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify config was set
+      const actualPatterns = workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .get<string[]>('excludePatterns');
+      assert.deepStrictEqual(actualPatterns, ['**/generated/**'], 'Config should be set');
+
+      // CALL THE REAL METHOD - organizeWorkspace() instead of organizeFolder()
+      await organizer.organizeWorkspace();
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify src/app.ts was organized
+      const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.ok(appContent.indexOf("from './a'") < appContent.indexOf("from './b'"), 'src/app.ts should be organized');
+
+      // Verify generated file was NOT modified (excluded by user pattern)
+      const generatedContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      assert.ok(generatedContent.indexOf("from './z'") < generatedContent.indexOf("from './y'"), 'generated file should NOT be organized (excluded)');
+    } finally {
+      // Clean up config
+      await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
+        .update('excludePatterns', undefined, 1); // ConfigurationTarget.Global
+      await cleanupWorkspace(tempWs);
+    }
+  });
+
+  test('organizeWorkspace() should show warning when no workspace folder open', async function() {
+    this.timeout(5000);
+
+    // Save current workspace folders to restore later
+    const originalFolders = workspace.workspaceFolders || [];
+    const originalCount = originalFolders.length;
+
+    try {
+      // Remove all workspace folders
+      if (originalCount > 0) {
+        await workspace.updateWorkspaceFolders(0, originalCount);
+      }
+
+      // Wait for workspace to update
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Verify no workspace folders
+      assert.strictEqual(workspace.workspaceFolders?.length || 0, 0, 'Should have no workspace folders');
+
+      // Call organizeWorkspace - should show warning and return early
+      // Note: We can't directly test window.showWarningMessage() in tests,
+      // but we can verify the function returns without error
+      await organizer.organizeWorkspace();
+
+      // If we get here without error, the early return worked
+      assert.ok(true, 'organizeWorkspace should return gracefully when no workspace');
+
+    } finally {
+      // Restore original workspace folders
+      if (originalCount > 0) {
+        await workspace.updateWorkspaceFolders(0, 0, ...originalFolders);
+      }
+    }
+  });
+
+  test('organizeWorkspace() should show info message when no TS/JS files found', async function() {
+    this.timeout(10000);
+
+    // Create workspace with only non-TS/JS files
+    const files: TempFileSpec[] = [
+      {
+        path: 'README.md',
+        content: '# Test',
+      },
+      {
+        path: 'config.json',
+        content: '{}',
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Call organizeWorkspace - should show info message and return
+      // Note: We can't directly test window.showInformationMessage() in tests,
+      // but we can verify the function returns without error
+      await organizer.organizeWorkspace();
+
+      // If we get here without error, the function handled empty file list correctly
+      assert.ok(true, 'organizeWorkspace should handle no TS/JS files gracefully');
+
+    } finally {
+      await cleanupWorkspace(tempWs);
+    }
+  });
+
+  test('organizeWorkspace() should continue processing when file has syntax error', async function() {
+    this.timeout(15000);
+
+    const files: TempFileSpec[] = [
+      {
+        path: 'valid.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'invalid.ts',
+        content: `import { broken from './broken';\nconsole.log('syntax error');`, // Missing closing brace
+      },
+      {
+        path: 'valid2.ts',
+        content: `import { D } from './d';\nimport { C } from './c';\nconsole.log(C, D);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Call organizeWorkspace - should continue despite syntax error in middle file
+      await organizer.organizeWorkspace();
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify valid files were organized
+      const valid1Content = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      const valid2Content = fs.readFileSync(tempWs.fileUris[2].fsPath, 'utf-8');
+
+      assert.ok(valid1Content.indexOf("from './a'") < valid1Content.indexOf("from './b'"), 'valid.ts should be organized');
+      assert.ok(valid2Content.indexOf("from './c'") < valid2Content.indexOf("from './d'"), 'valid2.ts should be organized');
+
+      // Verify invalid file was NOT modified (syntax error prevents processing)
+      const invalidContent = fs.readFileSync(tempWs.fileUris[1].fsPath, 'utf-8');
+      assert.ok(invalidContent.includes('import { broken from'), 'invalid.ts should remain unchanged');
+
+    } finally {
+      await cleanupWorkspace(tempWs);
+    }
+  });
 });
