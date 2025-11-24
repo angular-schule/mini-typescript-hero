@@ -129,7 +129,7 @@ export class BatchOrganizer {
     this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
     // Find all files (VS Code respects files.exclude by default)
-    const allFiles = await workspace.findFiles(include, null, 5000);
+    const allFiles = await workspace.findFiles(include, null);
 
     // Manually filter files using exclude patterns
     const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
@@ -161,7 +161,7 @@ export class BatchOrganizer {
     this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
     // Find all files (VS Code respects files.exclude by default)
-    const allFiles = await workspace.findFiles(include, null, 5000);
+    const allFiles = await workspace.findFiles(include, null);
 
     // Manually filter files using exclude patterns
     const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
