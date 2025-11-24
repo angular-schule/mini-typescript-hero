@@ -15,6 +15,8 @@ This extension is a modernized extraction of the "Organize Imports" feature from
 - **Sort imports** alphabetically (by module path or first specifier)
 - **Remove unused imports** automatically
 - **Merge duplicate imports** from the same module
+- **Organize workspace** - Process all files in workspace or selected folder
+- **Exclude patterns** - Skip auto-generated files using glob patterns (team collaboration feature)
 - **Custom grouping patterns** with regex (e.g., group all `/@angular/` imports together)
 - **Organize on save** (optional)
 - Blank line control between groups (1 line, 2 lines, or preserve existing)
@@ -80,8 +82,13 @@ That's it! Your imports are now organized.
 Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
 1. **Mini TS Hero: Organize imports (sort and remove unused)** — `Ctrl+Alt+O` / `Cmd+Alt+O`
-2. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
-3. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
+   - Organizes imports in the current file
+2. **Mini TS Hero: Organize imports in workspace** — Process all TypeScript/JavaScript files in your workspace
+3. **Mini TS Hero: Organize imports in folder** — Right-click any folder in the Explorer to organize all files within
+4. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
+5. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
+
+> **Tip:** Workspace and folder commands automatically skip build artifacts (`node_modules`, `dist`, `build`, etc.). You can add custom exclude patterns for auto-generated files — see [excludePatterns configuration](CONFIGURATION.md#exclude-patterns-team-collaboration).
 
 ### Organize on Save
 
