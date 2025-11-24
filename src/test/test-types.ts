@@ -36,6 +36,7 @@ export interface ConfigOverrides {
   // Behavior and compatibility
   organizeOnSave?: boolean;
   legacyMode?: boolean;
+  excludePatterns?: string[];
 
   // Indentation (modern mode)
   tabSize?: number;

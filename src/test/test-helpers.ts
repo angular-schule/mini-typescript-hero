@@ -18,11 +18,26 @@ import { Uri, TextEdit, TextDocument, workspace, WorkspaceEdit, commands } from 
  *
  * @param content - The file content
  * @param extension - File extension (ts, tsx, js, jsx, etc.)
+ * @param subfolder - Optional subfolder path (e.g., 'src', 'generated', 'node_modules/pkg')
  * @returns A real VSCode TextDocument backed by a temp file
  */
-export async function createTempDocument(content: string, extension: string = 'ts'): Promise<TextDocument> {
+export async function createTempDocument(
+  content: string,
+  extension: string = 'ts',
+  subfolder?: string
+): Promise<TextDocument> {
   const tempDir = os.tmpdir();
-  const tempFile = path.join(tempDir, `test-${Date.now()}-${Math.random()}.${extension}`);
+  const filename = `test-${Date.now()}-${Math.random()}.${extension}`;
+
+  let tempFile: string;
+  if (subfolder) {
+    const subfolderPath = path.join(tempDir, subfolder);
+    fs.mkdirSync(subfolderPath, { recursive: true });
+    tempFile = path.join(subfolderPath, filename);
+  } else {
+    tempFile = path.join(tempDir, filename);
+  }
+
   fs.writeFileSync(tempFile, content, 'utf-8');
 
   const doc = await workspace.openTextDocument(Uri.file(tempFile));
