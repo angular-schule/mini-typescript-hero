@@ -440,16 +440,16 @@ describe('CLI', () => {
 - [x] All existing tests still passing
 - [x] Basic workspace/folder integration tests added
 - [x] Documentation updated (README, CONFIGURATION.md)
-- [ ] Test single-file excludePatterns warning (team collaboration feature)
-- [ ] Test workspace excludePatterns (built-in + user patterns)
-- [ ] Test no workspace folder error handling
-- [ ] Test empty workspace info message
-- [ ] Test workspace syntax-error robustness
-- [ ] Test symlink edge case (VS Code bug #44964)
-- [ ] Test cancellation behavior
-- [ ] Fix + test multi-root workspace excludePatterns
-- [ ] Refactor settings migration (remove assert.ok(true) placeholder)
-- [ ] Refactor conflict detection (extract + test real logic)
+- [x] Test single-file excludePatterns warning (team collaboration feature)
+- [x] Test workspace excludePatterns (built-in + user patterns)
+- [x] Test no workspace folder error handling
+- [x] Test empty workspace info message
+- [x] Test workspace syntax-error robustness
+- [x] Test symlink edge case (VS Code bug #44964)
+- [x] Test cancellation behavior
+- [x] Fix + test multi-root workspace excludePatterns
+- [x] Refactor settings migration (remove assert.ok(true) placeholder)
+- [x] Refactor conflict detection (extract + test real logic)
 - [ ] Manual testing on 3 real projects (Angular, React, Node)
 - [ ] Performance tested on workspace with 1000+ files
 - [ ] No memory leaks detected
