@@ -15,7 +15,7 @@ import * as assert from 'assert';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { workspace, WorkspaceFolder, OutputChannel, Uri } from 'vscode';
+import { workspace, WorkspaceFolder, OutputChannel, Uri, CancellationToken, Disposable } from 'vscode';
 import { BatchOrganizer } from '../../commands/batch-organizer';
 import { ImportsConfig } from '../../configuration';
 import { createTempWorkspace, deleteTempWorkspace, TempFileSpec, TempWorkspace } from '../test-helpers';
@@ -908,6 +908,102 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
     } finally {
       await cleanupWorkspace(tempWs1);
       await cleanupWorkspace(tempWs2);
+    }
+  });
+
+  test('organizeWorkspace() should stop processing when cancelled and leave files unchanged', async function() {
+    this.timeout(20000);
+
+    // Create workspace with multiple files that need organizing
+    const files: TempFileSpec[] = [
+      {
+        path: 'file1.ts',
+        content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);`,
+      },
+      {
+        path: 'file2.ts',
+        content: `import { D } from './d';\nimport { C } from './c';\nconsole.log(C, D);`,
+      },
+      {
+        path: 'file3.ts',
+        content: `import { F } from './f';\nimport { E } from './e';\nconsole.log(E, F);`,
+      },
+    ];
+
+    const tempWs = createTempWorkspace(files);
+    try {
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs.rootUri, name: 'TestWorkspace' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Capture original file contents
+      const originalContents = tempWs.fileUris.map(uri => fs.readFileSync(uri.fsPath, 'utf-8'));
+
+      // Create a custom BatchOrganizer that will simulate cancellation
+      // We'll call the REAL organizeWorkspace() but with a CancellationToken that gets cancelled
+      // However, organizeWorkspace() uses window.withProgress which creates its own token.
+      // So we need to test this differently - we'll verify the error handling path works.
+
+      // STRATEGY: Call organizeWorkspace() normally, but then immediately check that
+      // the error message path is covered by reading the logger output.
+      // For actual cancellation, we need to test processFilesWithProgress directly.
+
+      // Since processFilesWithProgress is private, we'll use a different approach:
+      // Create a mock Progress and CancellationToken and call the ACTUAL method via type assertion
+
+      const mockProgress = {
+        report: (_value: { message?: string; increment?: number }) => {
+          // No-op for test
+        }
+      };
+
+      // Create a CancellationToken that's already cancelled
+      const cancelledToken: CancellationToken = {
+        isCancellationRequested: true,
+        onCancellationRequested: (_listener: (e: unknown) => unknown): Disposable => ({ dispose: () => {} })
+      };
+
+      // Call processFilesWithProgress directly (accessing private method for testing)
+      try {
+        // @ts-expect-error - accessing private method for testing
+        await organizer.processFilesWithProgress(
+          tempWs.fileUris,
+          mockProgress,
+          cancelledToken
+        );
+        assert.fail('Should have thrown cancellation error');
+      } catch (error) {
+        assert.ok(
+          error instanceof Error && error.message.includes('cancelled'),
+          'Should throw cancellation error'
+        );
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // REAL validation: Verify ALL files remain unchanged (cancellation prevented modifications)
+      tempWs.fileUris.forEach((uri, i) => {
+        const currentContent = fs.readFileSync(uri.fsPath, 'utf-8');
+        assert.strictEqual(
+          currentContent,
+          originalContents[i],
+          `File ${i + 1} should remain unchanged after cancellation`
+        );
+      });
+
+      // Additional validation: Files should still have imports in WRONG order (not organized)
+      const file1Content = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
+      assert.ok(
+        file1Content.indexOf("from './b'") < file1Content.indexOf("from './a'"),
+        'file1.ts should NOT be organized (cancelled before applying edits)'
+      );
+
+    } finally {
+      await cleanupWorkspace(tempWs);
     }
   });
 });
