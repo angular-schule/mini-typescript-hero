@@ -19,7 +19,10 @@
       "Bash(git push:*)",
       "Bash(git rev-parse:*)",
       "Bash(npm test:*)",
-      "Bash(gh issue view:*)"
+      "Bash(gh issue view:*)",
+      "Bash(grep:*)",
+      "Bash(node /tmp/test-ts-morph.js:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
