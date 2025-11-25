@@ -838,4 +838,76 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       await cleanupWorkspace(tempWs);
     }
   });
+
+  test('organizeWorkspace() should respect per-root excludePatterns in multi-root workspace', async function() {
+    this.timeout(20000);
+
+    // BUG FIX: Previously used first root's excludePatterns for ALL files
+    // NOW: Each file uses its own workspace root's excludePatterns
+
+    // Create two separate workspace roots
+    const root1Files: TempFileSpec[] = [
+      { path: 'src/app.ts', content: `import { B } from './b';\nimport { A } from './a';\nconsole.log(A, B);` },
+      { path: 'dist/auto.ts', content: `import { Z } from './z';\nimport { Y } from './y';\nconsole.log(Y, Z);` },
+    ];
+
+    const root2Files: TempFileSpec[] = [
+      { path: 'src/lib.ts', content: `import { D } from './d';\nimport { C } from './c';\nconsole.log(C, D);` },
+      { path: 'dist/gen.ts', content: `import { F } from './f';\nimport { E } from './e';\nconsole.log(E, F);` },
+    ];
+
+    const tempWs1 = createTempWorkspace(root1Files);
+    const tempWs2 = createTempWorkspace(root2Files);
+
+    try {
+      // Add BOTH roots to workspace
+      await workspace.updateWorkspaceFolders(
+        workspace.workspaceFolders?.length || 0,
+        0,
+        { uri: tempWs1.rootUri, name: 'Root1' },
+        { uri: tempWs2.rootUri, name: 'Root2' }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Both roots use default excludePatterns (includes **/dist/**)
+      // This tests that each root's patterns are applied correctly to its own files
+
+      await organizer.organizeWorkspace();
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify files were organized correctly
+      // Root1: src/app.ts should be organized, dist/auto.ts should NOT (excluded by default)
+      const root1AppContent = fs.readFileSync(tempWs1.fileUris[0].fsPath, 'utf-8');
+      const root1DistContent = fs.readFileSync(tempWs1.fileUris[1].fsPath, 'utf-8');
+
+      assert.ok(
+        root1AppContent.indexOf("from './a'") < root1AppContent.indexOf("from './b'"),
+        'Root1 src/app.ts should be organized'
+      );
+      // dist folder is in default excludePatterns, so should NOT be organized
+      assert.ok(
+        root1DistContent.indexOf("from './z'") < root1DistContent.indexOf("from './y'"),
+        'Root1 dist/auto.ts should NOT be organized (excluded by default patterns)'
+      );
+
+      // Root2: src/lib.ts should be organized, dist/gen.ts should NOT (excluded by default)
+      const root2LibContent = fs.readFileSync(tempWs2.fileUris[0].fsPath, 'utf-8');
+      const root2DistContent = fs.readFileSync(tempWs2.fileUris[1].fsPath, 'utf-8');
+
+      assert.ok(
+        root2LibContent.indexOf("from './c'") < root2LibContent.indexOf("from './d'"),
+        'Root2 src/lib.ts should be organized'
+      );
+      // dist folder is in default excludePatterns, so should NOT be organized
+      assert.ok(
+        root2DistContent.indexOf("from './f'") < root2DistContent.indexOf("from './e'"),
+        'Root2 dist/gen.ts should NOT be organized (excluded by default patterns)'
+      );
+
+    } finally {
+      await cleanupWorkspace(tempWs1);
+      await cleanupWorkspace(tempWs2);
+    }
+  });
 });

@@ -121,18 +121,16 @@ export class BatchOrganizer {
    */
   private async findTargetFiles(): Promise<Uri[]> {
     const include = '**/*.{ts,tsx,js,jsx}';
-    // Use first workspace folder for config resolution (or undefined if no folders)
-    const resource = workspace.workspaceFolders?.[0]?.uri;
-    const excludePatterns = this.getExcludePatterns(resource);
 
     this.logger.appendLine(`[BatchOrganizer] Searching workspace: ${include}`);
-    this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
     // Find all files (VS Code respects files.exclude by default)
     const allFiles = await workspace.findFiles(include, null);
 
     // Manually filter files using exclude patterns
-    const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
+    // IMPORTANT: Get excludePatterns per file based on its workspace folder
+    // (multi-root workspaces can have different settings per root)
+    const files = allFiles.filter(fileUri => !this.isFileExcludedInWorkspace(fileUri));
 
     this.logger.appendLine(`[BatchOrganizer] Found ${files.length} files (${allFiles.length - files.length} excluded)`);
 
@@ -191,8 +189,37 @@ export class BatchOrganizer {
   }
 
   /**
+   * Check if a file should be excluded in a multi-root workspace.
+   * Gets excludePatterns from the file's specific workspace folder.
+   * Use this for workspace-wide operations (organizeWorkspace).
+   */
+  private isFileExcludedInWorkspace(fileUri: Uri): boolean {
+    const workspaceFolder = workspace.getWorkspaceFolder(fileUri);
+    if (!workspaceFolder) {
+      // File not in workspace - don't exclude
+      return false;
+    }
+
+    // Get excludePatterns for THIS file's workspace folder
+    const excludePatterns = this.getExcludePatterns(workspaceFolder.uri);
+
+    // Convert file URI to path relative to workspace root
+    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+
+    // Check if file matches any exclude pattern
+    for (const pattern of excludePatterns) {
+      if (minimatch(relativePath, pattern)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Check if a file should be excluded based on exclude patterns.
    * Matches file path relative to workspace root against glob patterns.
+   * Use this for folder-specific operations (organizeFolder) where patterns are pre-fetched.
    */
   private isFileExcluded(fileUri: Uri, excludePatterns: string[]): boolean {
     const workspaceFolder = workspace.getWorkspaceFolder(fileUri);
