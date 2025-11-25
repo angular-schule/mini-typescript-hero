@@ -246,21 +246,19 @@ suite('Settings Migration Scope Tests', () => {
      * 5. All three scopes can receive legacyMode=true if old settings existed in multiple scopes
      *
      * Manual testing with real TypeScript Hero extension confirms this behavior.
+     *
+     * Expected behavior when old settings DO exist:
+     * - If old settings exist in Global scope → legacyMode written to Global
+     * - If old settings exist in Workspace scope → legacyMode written to Workspace
+     * - If old settings exist in WorkspaceFolder scope → legacyMode written to WorkspaceFolder
+     * - Multiple scopes can receive legacyMode=true simultaneously (not mutually exclusive)
      */
 
     // Run migration (which will find no old settings, but won't crash)
     await migrateSettings(mockContext);
 
-    // Verify migration flag was set (migration attempted)
+    // Verify migration flag was set (migration attempted and completed successfully)
     const flagSet = mockContext.globalState.get<boolean>('settingsMigrationAttempted', false);
     assert.strictEqual(flagSet, true, 'Migration should complete successfully even with no old settings');
-
-    // Document the expected behavior for when old settings DO exist:
-    // If old settings exist in Global scope → legacyMode written to Global
-    // If old settings exist in Workspace scope → legacyMode written to Workspace
-    // If old settings exist in WorkspaceFolder scope → legacyMode written to WorkspaceFolder
-    // Multiple scopes can receive legacyMode=true simultaneously (not mutually exclusive)
-
-    assert.ok(true, 'Multi-scope migration logic is documented and verified in manual testing');
   });
 });
