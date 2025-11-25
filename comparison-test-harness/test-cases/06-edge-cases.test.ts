@@ -531,4 +531,46 @@ console.log(A, B, C);
     assert.equal(oldResult, expected, 'Old extension must match expected output');
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
+
+  test('124. Malformed import (missing closing brace)', async () => {
+    // Tests robustness with syntax errors
+    // Both parsers (typescript-parser and ts-morph) are lenient and can extract imports
+    // from malformed code, then remove them as unused.
+    const input = `import { broken from './broken';
+console.log('syntax error');
+`;
+
+    // EXPECTED: Both extensions successfully parse the malformed import and remove it
+    // (because 'broken' is not used in the code)
+    const expected = `console.log('syntax error');
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must remove malformed unused import');
+    assert.equal(newResult, expected, 'New extension must remove malformed unused import');
+  });
+
+  test('125. Malformed import (missing closing brace) - used identifier', async () => {
+    // Even with syntax error, if the identifier IS used, both parsers should preserve it
+    const input = `import { broken from './broken';
+
+console.log(broken);
+`;
+
+    // EXPECTED: Malformed import is "fixed" and preserved because 'broken' is used
+    // Both parsers extract the import declaration despite syntax error
+    // Blank line in input is preserved by both extensions
+    const expected = `import { broken } from './broken';
+
+console.log(broken);
+`;
+
+    const oldResult = await organizeImportsOld(input);
+    const newResult = await organizeImportsNew(input);
+
+    assert.equal(oldResult, expected, 'Old extension must preserve and fix malformed import when used');
+    assert.equal(newResult, expected, 'New extension must preserve and fix malformed import when used');
+  });
 });
