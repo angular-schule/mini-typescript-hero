@@ -22,7 +22,8 @@
       "Bash(gh issue view:*)",
       "Bash(grep:*)",
       "Bash(node /tmp/test-ts-morph.js:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(/tmp/test-output.txt)"
     ],
     "deny": [],
     "ask": []
