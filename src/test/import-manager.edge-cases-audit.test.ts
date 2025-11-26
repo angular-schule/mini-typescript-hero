@@ -291,7 +291,7 @@ const x = A + Z;
 
       const result = doc.getText();
       // Should be multi-line WITHOUT trailing comma
-      assert.ok(!result.includes(',\n}') || result.includes('\n}'), 'Multi-line import must NOT have trailing comma when disabled');
+      assert.ok(!result.includes(',\n}'), 'Multi-line import must NOT have trailing comma when disabled');
     } finally {
       await deleteTempDocument(doc);
     }

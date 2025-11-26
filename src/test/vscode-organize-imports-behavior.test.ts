@@ -79,8 +79,8 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
       const input = `import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { UserService } from '../imports/import-manager';
-import { BookService } from '../configuration/imports-config';
+import { UserService } from './services';
+import { BookService } from './config';
 
 declare const x: Component;
 declare const y: Router;
@@ -89,12 +89,12 @@ declare const w: BookService;
 `;
 
       // VS Code preserves the blank line and sorts within each group
-      // Alphabetically: 'c' < 'i', so '../configuration/...' comes before '../imports/...'
+      // Alphabetically: 'c' < 's', so './config' comes before './services'
       const expected = `import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { BookService } from '../configuration/imports-config';
-import { UserService } from '../imports/import-manager';
+import { BookService } from './config';
+import { UserService } from './services';
 
 declare const x: Component;
 declare const y: Router;

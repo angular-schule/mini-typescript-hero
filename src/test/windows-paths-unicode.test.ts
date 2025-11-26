@@ -17,7 +17,7 @@ import { ImportsConfig } from '../configuration';
 
 suite('Windows Paths & Unicode Edge Cases', () => {
   suite('Windows Backslash Paths', () => {
-    test('Backslash paths are normalized and sorted', async () => {
+    test('Backslash paths handled gracefully (no crash)', async () => {
       // Note: TypeScript compiler normalizes backslashes to forward slashes internally
       // We test that the extension handles this gracefully
       const input = String.raw`import { B } from './dir\\file-b';
