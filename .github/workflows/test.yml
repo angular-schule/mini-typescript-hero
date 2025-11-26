@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     name: Test on ${{ matrix.os }}
+    timeout-minutes: 10  # Tests take ~2-3min, add buffer for CI overhead
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
