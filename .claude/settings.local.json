@@ -23,7 +23,10 @@
       "Bash(grep:*)",
       "Bash(node /tmp/test-ts-morph.js:*)",
       "Bash(cat:*)",
-      "Bash(/tmp/test-output.txt)"
+      "Bash(/tmp/test-output.txt)",
+      "Bash(for i in 1 2 3)",
+      "Bash(do echo \"=== Run $i ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
