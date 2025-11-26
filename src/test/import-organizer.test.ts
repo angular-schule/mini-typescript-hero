@@ -19,7 +19,7 @@
 
 import * as assert from 'assert';
 import * as path from 'path';
-import { commands, OutputChannel, Uri, extensions, workspace } from 'vscode';
+import { commands, OutputChannel, Uri, extensions, workspace, WorkspaceFolder } from 'vscode';
 import { ImportOrganizer } from '../imports/import-organizer';
 import { ImportsConfig } from '../configuration';
 import { createTempDocument, deleteTempDocument } from './test-helpers';
@@ -391,6 +391,16 @@ console.log(A);
   });
 
   suite('File Exclusion (excludePatterns)', () => {
+    let originalGetWorkspaceFolder: (uri: Uri) => WorkspaceFolder | undefined;
+
+    setup(() => {
+      originalGetWorkspaceFolder = workspace.getWorkspaceFolder;
+    });
+
+    teardown(() => {
+      workspace.getWorkspaceFolder = originalGetWorkspaceFolder;
+    });
+
     test('should warn when organizing excluded file (team collaboration feature)', async () => {
       // This test validates the documented "team collaboration" feature:
       // When a file matches excludePatterns, running "Organize imports" shows a warning
@@ -406,12 +416,14 @@ console.log(A, B);
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude/generated');
 
       try {
-        // Add parent directory as workspace folder so file is "in workspace"
+        // Stub workspace.getWorkspaceFolder to pretend file is in workspace
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
-        await workspace.updateWorkspaceFolders(0, 0, {
-          uri: workspaceRoot,
-          name: 'Test Workspace'
-        });
+        workspace.getWorkspaceFolder = (uri: Uri): WorkspaceFolder | undefined => {
+          if (uri.fsPath.startsWith(workspaceRoot.fsPath)) {
+            return { uri: workspaceRoot, name: 'Test Workspace', index: 0 };
+          }
+          return undefined;
+        };
 
         // Configure excludePatterns to exclude generated files
         config.setConfig('excludePatterns', ['**/generated/**']);
@@ -431,8 +443,6 @@ console.log(A, B);
         assert.ok(edits.length > 0, 'organizeImportsForDocument should produce edits regardless of exclusion');
 
       } finally {
-        // Remove the workspace folder we added (1 folder at index 0)
-        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -448,7 +458,12 @@ console.log(A, B);
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
-        await workspace.updateWorkspaceFolders(0, 0, { uri: workspaceRoot, name: 'Test' });
+        workspace.getWorkspaceFolder = (uri: Uri): WorkspaceFolder | undefined => {
+          if (uri.fsPath.startsWith(workspaceRoot.fsPath)) {
+            return { uri: workspaceRoot, name: 'Test', index: 0 };
+          }
+          return undefined;
+        };
 
         config.setConfig('excludePatterns', ['**/generated/**']);
 
@@ -458,8 +473,6 @@ console.log(A, B);
         assert.strictEqual(isExcluded, false, 'File in src folder should NOT be excluded');
 
       } finally {
-        // Remove the workspace folder we added (1 folder at index 0)
-        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -475,7 +488,12 @@ console.log(A, B);
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(path.dirname(doc.uri.fsPath))));
-        await workspace.updateWorkspaceFolders(0, 0, { uri: workspaceRoot, name: 'Test' });
+        workspace.getWorkspaceFolder = (uri: Uri): WorkspaceFolder | undefined => {
+          if (uri.fsPath.startsWith(workspaceRoot.fsPath)) {
+            return { uri: workspaceRoot, name: 'Test', index: 0 };
+          }
+          return undefined;
+        };
 
         config.setConfig('excludePatterns', []);
 
@@ -485,8 +503,6 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'Files in node_modules should be excluded by default');
 
       } finally {
-        // Remove the workspace folder we added (1 folder at index 0)
-        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -502,7 +518,12 @@ console.log(A, B);
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
-        await workspace.updateWorkspaceFolders(0, 0, { uri: workspaceRoot, name: 'Test' });
+        workspace.getWorkspaceFolder = (uri: Uri): WorkspaceFolder | undefined => {
+          if (uri.fsPath.startsWith(workspaceRoot.fsPath)) {
+            return { uri: workspaceRoot, name: 'Test', index: 0 };
+          }
+          return undefined;
+        };
 
         config.setConfig('excludePatterns', []);
 
@@ -512,8 +533,6 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'Files in dist folder should be excluded by default');
 
       } finally {
-        // Remove the workspace folder we added (1 folder at index 0)
-        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -529,7 +548,12 @@ console.log(A, B);
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
-        await workspace.updateWorkspaceFolders(0, 0, { uri: workspaceRoot, name: 'Test' });
+        workspace.getWorkspaceFolder = (uri: Uri): WorkspaceFolder | undefined => {
+          if (uri.fsPath.startsWith(workspaceRoot.fsPath)) {
+            return { uri: workspaceRoot, name: 'Test', index: 0 };
+          }
+          return undefined;
+        };
 
         config.setConfig('excludePatterns', ['**/custom-generated/**']);
 
@@ -539,8 +563,6 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'File should be excluded by user pattern');
 
       } finally {
-        // Remove the workspace folder we added (1 folder at index 0)
-        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
