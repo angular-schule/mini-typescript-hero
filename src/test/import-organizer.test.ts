@@ -405,10 +405,6 @@ console.log(A, B);
       // Create temp file in generated subfolder within a workspace
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude/generated');
 
-      // Save current workspace folders to restore later
-      const currentFolders = workspace.workspaceFolders || [];
-      const currentCount = currentFolders.length;
-
       try {
         // Add parent directory as workspace folder so file is "in workspace"
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
@@ -435,8 +431,8 @@ console.log(A, B);
         assert.ok(edits.length > 0, 'organizeImportsForDocument should produce edits regardless of exclusion');
 
       } finally {
-        // Restore original workspace folders
-        await workspace.updateWorkspaceFolders(0, currentCount);
+        // Remove the workspace folder we added (1 folder at index 0)
+        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -449,7 +445,6 @@ console.log(A, B);
 `;
 
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude2/src');
-      const currentCount = (workspace.workspaceFolders || []).length;
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
@@ -463,7 +458,8 @@ console.log(A, B);
         assert.strictEqual(isExcluded, false, 'File in src folder should NOT be excluded');
 
       } finally {
-        await workspace.updateWorkspaceFolders(0, currentCount);
+        // Remove the workspace folder we added (1 folder at index 0)
+        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -476,7 +472,6 @@ console.log(A, B);
 `;
 
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude3/node_modules/pkg');
-      const currentCount = (workspace.workspaceFolders || []).length;
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(path.dirname(doc.uri.fsPath))));
@@ -490,7 +485,8 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'Files in node_modules should be excluded by default');
 
       } finally {
-        await workspace.updateWorkspaceFolders(0, currentCount);
+        // Remove the workspace folder we added (1 folder at index 0)
+        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -503,7 +499,6 @@ console.log(A, B);
 `;
 
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude4/dist');
-      const currentCount = (workspace.workspaceFolders || []).length;
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
@@ -517,7 +512,8 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'Files in dist folder should be excluded by default');
 
       } finally {
-        await workspace.updateWorkspaceFolders(0, currentCount);
+        // Remove the workspace folder we added (1 folder at index 0)
+        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
@@ -530,7 +526,6 @@ console.log(A, B);
 `;
 
       const doc = await createTempDocument(content, 'ts', 'test-workspace-exclude5/custom-generated');
-      const currentCount = (workspace.workspaceFolders || []).length;
 
       try {
         const workspaceRoot = Uri.file(path.dirname(path.dirname(doc.uri.fsPath)));
@@ -544,7 +539,8 @@ console.log(A, B);
         assert.strictEqual(isExcluded, true, 'File should be excluded by user pattern');
 
       } finally {
-        await workspace.updateWorkspaceFolders(0, currentCount);
+        // Remove the workspace folder we added (1 folder at index 0)
+        await workspace.updateWorkspaceFolders(0, 1);
         await deleteTempDocument(doc);
       }
     });
