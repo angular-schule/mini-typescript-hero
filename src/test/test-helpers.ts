@@ -143,15 +143,17 @@ export interface TempWorkspace {
 /**
  * Create a REAL temporary workspace with a complete folder structure
  *
- * This creates an actual directory structure in os.tmpdir() and uses VSCode's
- * real workspace APIs. No mocking - tests run against real file system operations.
+ * This creates an actual directory structure and uses VSCode's real workspace APIs.
+ * No mocking - tests run against real file system operations.
  *
  * @param files - Array of file specifications with paths and content
+ * @param baseDir - Optional base directory. Defaults to the pre-opened test workspace (workspace.workspaceFolders[0])
  * @returns Workspace handle for cleanup
  */
-export function createTempWorkspace(files: TempFileSpec[]): TempWorkspace {
-  const tempDir = os.tmpdir();
-  const workspaceRoot = path.join(tempDir, `test-workspace-${Date.now()}-${Math.random()}`);
+export function createTempWorkspace(files: TempFileSpec[], baseDir?: string): TempWorkspace {
+  // Default to pre-opened test workspace, fallback to os.tmpdir() if no workspace
+  const rootBase = baseDir ?? workspace.workspaceFolders?.[0]?.uri.fsPath ?? os.tmpdir();
+  const workspaceRoot = path.join(rootBase, `mths-workspace-${Date.now()}-${Math.random().toString(36).substring(7)}`);
 
   // Create root directory
   fs.mkdirSync(workspaceRoot, { recursive: true });
