@@ -18,6 +18,7 @@
 		".vscode-test",
 		"manual-test-cases",
 		"old-typescript-hero",
-		"comparison-test-harness"
+		"comparison-test-harness",
+		"test-workspaces"
 	]
 }
