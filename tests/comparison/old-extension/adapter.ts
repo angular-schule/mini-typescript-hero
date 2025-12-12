@@ -20,7 +20,7 @@ import { TypescriptCodeGeneratorFactory } from '../old-typescript-hero/src/ioc-s
 import { getScriptKind } from '../old-typescript-hero/src/utilities/utility-functions';
 import { ImportGroupSettingParser } from '../old-typescript-hero/src/imports/import-grouping/import-group-setting-parser';
 import { ImportGroup, KeywordImportGroup, RegexImportGroup, RemainImportGroup } from '../old-typescript-hero/src/imports/import-grouping';
-import { createTempDocument, deleteTempDocument } from '../../src/test/test-helpers';
+import { createTempDocument, deleteTempDocument } from '../../unit/test-helpers';
 
 /**
  * Mock Logger for old extension that implements the Logger interface

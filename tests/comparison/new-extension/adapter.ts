@@ -2,19 +2,19 @@
  * Adapter for Mini TypeScript Hero (New Extension)
  *
  * This adapter provides a standalone function interface to the new extension.
- * It uses the REAL production code from ../../src/ with mocked VSCode dependencies.
+ * It uses the REAL production code from ../../../src/ with mocked VSCode dependencies.
  *
  * APPROACH:
- * - Import actual ImportManager from ../../src/imports/import-manager
+ * - Import actual ImportManager from ../../../src/imports/import-manager
  * - Use mock implementations of VSCode types (same pattern as existing tests)
  * - Reference real code via relative paths (no copying!)
  */
 
 import { Uri, TextEdit, TextDocument, OutputChannel, workspace, WorkspaceEdit } from 'vscode';
-import { ImportManager } from '../../src/imports/import-manager';
-import { ImportsConfig } from '../../src/configuration';
-import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../src/imports/import-grouping';
-import { createTempDocument, deleteTempDocument } from '../../src/test/test-helpers';
+import { ImportManager } from '../../../src/imports/import-manager';
+import { ImportsConfig } from '../../../src/configuration';
+import { ImportGroup, ImportGroupSettingParser, RemainImportGroup } from '../../../src/imports/import-grouping';
+import { createTempDocument, deleteTempDocument } from '../../unit/test-helpers';
 
 /**
  * Mock OutputChannel (same as in existing tests)
