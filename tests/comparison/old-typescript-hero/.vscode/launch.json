@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": ["${workspaceRoot}/src", "--extensionDevelopmentPath=${workspaceRoot}"],
+      "env": {
+        "EXT_DEBUG": "true"
+      },
+      "stopOnEntry": false,
+      "sourceMaps": true,
+      "outFiles": ["${workspaceRoot}/out/src/**/*.js"]
+    },
+    {
+      "name": "Launch Tests",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}", "--extensionTestsPath=${workspaceRoot}/out/test/"],
+      "env": {
+        "EXT_DEBUG": "true",
+        "LOCAL_TEST": "true",
+        "COVERAGE": "",
+        "CHAI_JEST_SNAPSHOT_UPDATE_ALL": ""
+      },
+      "stopOnEntry": false,
+      "sourceMaps": true,
+      "smartStep": true,
+      "outFiles": ["${workspaceRoot}/out/**/*.js"]
+    }
+  ],
+  "compounds": []
+}

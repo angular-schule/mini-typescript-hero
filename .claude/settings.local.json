@@ -33,7 +33,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(git checkout:*)",
       "Bash(gh run view:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

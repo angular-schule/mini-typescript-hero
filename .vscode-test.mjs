@@ -5,8 +5,8 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-	files: 'out/test/**/*.test.js',
-	workspaceFolder: path.join(__dirname, 'test-workspaces/single-root'),
+	files: 'out/tests/unit/**/*.test.js',
+	workspaceFolder: path.join(__dirname, 'tests/workspaces/single-root'),
 	// Use short path to avoid macOS socket path length limit (103 chars)
 	launchArgs: ['--user-data-dir=/tmp/mths-user-data'],
 	mocha: {

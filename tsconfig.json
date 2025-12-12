@@ -6,19 +6,21 @@
 			"ES2022"
 		],
 		"sourceMap": true,
-		"rootDir": "src",
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true
 	},
+	"include": [
+		"src/**/*.ts",
+		"tests/unit/**/*.ts"
+	],
 	"exclude": [
 		"node_modules",
 		".vscode-test",
-		"manual-test-cases",
-		"old-typescript-hero",
-		"comparison-test-harness",
-		"test-workspaces"
+		"tests/manual",
+		"tests/comparison",
+		"tests/workspaces"
 	]
 }

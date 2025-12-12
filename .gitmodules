@@ -1,3 +1,3 @@
-[submodule "comparison-test-harness/old-typescript-hero"]
-	path = comparison-test-harness/old-typescript-hero
+[submodule "tests/comparison/old-typescript-hero"]
+	path = tests/comparison/old-typescript-hero
 	url = https://github.com/buehler/typescript-hero.git

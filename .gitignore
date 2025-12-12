@@ -9,7 +9,7 @@ node_modules
 # CI/CD or local build generates dist/ before packaging
 
 # Test workspace contents (keep structure, ignore generated files)
-test-workspaces/**/mths-workspace-*
+tests/workspaces/**/mths-workspace-*
 
 # Logs
 logs

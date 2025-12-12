@@ -257,7 +257,7 @@ This extension is based on the "Organize Imports" feature from [TypeScript Hero]
 
 ## License
 
-MIT License — Copyright (c) 2025 [Angular.Schule](https://angular.schule) (by Johannes Hoppe)
+MIT License — Copyright (c) 2025-2026 [Angular.Schule](https://angular.schule) (by Johannes Hoppe)
 
 Original work Copyright (c) Christoph Bühler
 

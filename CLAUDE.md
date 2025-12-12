@@ -163,29 +163,27 @@ mini-typescript-hero/                     ← Project root
 │   │   ├── import-types.ts               ← Import model types (NamedImport, etc.)
 │   │   ├── import-utilities.ts           ← Sorting and helper functions
 │   │   └── import-grouping/              ← Group definitions (Plains, Modules, etc.)
-│   ├── configuration/
-│   │   ├── imports-config.ts             ← Config options wrapper
-│   │   ├── settings-migration.ts         ← Migrates old TypeScript Hero settings
-│   │   └── conflict-detector.ts          ← Detects conflicts with Prettier/ESLint
-│   └── test/                             ← All test files (flat structure)
-│       ├── import-manager.test.ts        ← Core import manager tests
-│       ├── import-manager.*.test.ts      ← Additional import manager tests
-│       ├── import-grouping.test.ts       ← Grouping logic tests
-│       ├── settings-migration.test.ts    ← Migration tests
-│       ├── verify-vscode-defaults.test.ts← VS Code defaults verification
-│       ├── vscode-organize-imports-behavior.test.ts ← VS Code command tests
-│       └── test-helpers.ts               ← Shared test utilities
+│   └── configuration/
+│       ├── imports-config.ts             ← Config options wrapper
+│       ├── settings-migration.ts         ← Migrates old TypeScript Hero settings
+│       └── conflict-detector.ts          ← Detects conflicts with Prettier/ESLint
 │
-├── comparison-test-harness/              ← Old vs new comparison tests
-│   ├── old-extension/adapter.ts          ← Adapter for old TypeScript Hero
-│   ├── new-extension/adapter.ts          ← Adapter for new Mini TypeScript Hero
-│   ├── old-typescript-hero/              ← Git submodule (original extension)
-│   └── test-cases/*.test.ts              ← Comparison tests
+├── tests/                                ← All test-related folders
+│   ├── unit/                             ← Main extension tests (run with npm test)
+│   │   ├── import-manager.test.ts        ← Core import manager tests
+│   │   ├── import-manager.*.test.ts      ← Additional import manager tests
+│   │   ├── import-grouping.test.ts       ← Grouping logic tests
+│   │   ├── settings-migration.test.ts    ← Migration tests
+│   │   └── test-helpers.ts               ← Shared test utilities
+│   ├── comparison/                       ← Old vs new comparison tests
+│   │   ├── old-extension/adapter.ts      ← Adapter for old TypeScript Hero
+│   │   ├── new-extension/adapter.ts      ← Adapter for new Mini TypeScript Hero
+│   │   ├── old-typescript-hero/          ← Git submodule (original extension)
+│   │   └── test-cases/*.test.ts          ← Comparison tests
+│   ├── manual/                           ← Manual testing scenarios
+│   └── workspaces/                       ← Pre-configured workspace for tests
+│       └── single-root/                  ← VS Code opens this folder during tests
 │
-├── manual-test-cases/                    ← Manual testing scenarios
-├── test-workspaces/                      ← Pre-configured workspace for tests
-│   └── single-root/                      ← VS Code opens this folder during tests
-│       └── .vscode/settings.json         ← Empty settings file
 ├── package.json                          ← Extension manifest, config schema
 ├── CLAUDE.md                             ← This file (project overview)
 └── README.md                             ← User-facing documentation
@@ -207,22 +205,22 @@ mini-typescript-hero/                     ← Project root
 
 ```javascript
 export default defineConfig({
-    files: 'out/test/**/*.test.js',
-    workspaceFolder: path.join(__dirname, 'test-workspaces/single-root'),  // ← WORKSPACE
-    launchArgs: ['--user-data-dir=/tmp/mths-user-data'],                   // ← USER DATA
+    files: 'out/tests/unit/**/*.test.js',
+    workspaceFolder: path.join(__dirname, 'tests/workspaces/single-root'),  // ← WORKSPACE
+    launchArgs: ['--user-data-dir=/tmp/mths-user-data'],                    // ← USER DATA
     mocha: { timeout: 10000 }
 });
 ```
 
 | Setting | Path | Purpose |
 |---------|------|---------|
-| `workspaceFolder` | `test-workspaces/single-root/` | **Workspace** - the "project folder" VS Code opens. Tests create temp files here. |
+| `workspaceFolder` | `tests/workspaces/single-root/` | **Workspace** - the "project folder" VS Code opens. Tests create temp files here. |
 | `--user-data-dir` | `/tmp/mths-user-data` | **User data** - VS Code's internal storage (settings, extensions, caches). Isolated from your real VS Code installation. |
 
 **Visual representation:**
 ```
 VS Code Test Instance
-├── Workspace: test-workspaces/single-root/    ← Project folder (workspaceFolder)
+├── Workspace: tests/workspaces/single-root/   ← Project folder (workspaceFolder)
 │   └── mths-workspace-123456-abc/             ← Temp files created by tests
 │       ├── file1.ts
 │       └── file2.ts
@@ -238,29 +236,28 @@ VS Code Test Instance
 - Default VS Code user-data paths can exceed this limit, causing crashes
 - Short path `/tmp/mths-user-data` avoids this issue
 
-**Why `test-workspaces/single-root/`?**
+**Why `tests/workspaces/single-root/`?**
 - Tests need a workspace to be open for `vscode.workspace.*` APIs
 - Pre-opening avoids `workspace.updateWorkspaceFolders()` calls that crash CI
 - Temp files are created INSIDE this folder and cleaned up after tests
 
 ### tsconfig.json Excludes
 
-The `test-workspaces` folder MUST be excluded from TypeScript compilation:
+The `tests/workspaces` folder MUST be excluded from TypeScript compilation:
 
 ```json
 {
   "exclude": [
     "node_modules",
     ".vscode-test",
-    "manual-test-cases",
-    "old-typescript-hero",
-    "comparison-test-harness",
-    "test-workspaces"           // ← IMPORTANT: Exclude temp test files!
+    "tests/manual",
+    "tests/comparison",
+    "tests/workspaces"           // ← IMPORTANT: Exclude temp test files!
   ]
 }
 ```
 
-**Why?** Tests create `.ts` files in `test-workspaces/`. If a test crashes without cleanup, these orphaned files would cause TypeScript compilation errors.
+**Why?** Tests create `.ts` files in `tests/workspaces/`. If a test crashes without cleanup, these orphaned files would cause TypeScript compilation errors.
 
 ---
 
