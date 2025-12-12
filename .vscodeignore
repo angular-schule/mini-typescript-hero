@@ -27,8 +27,8 @@ manual-test-cases/**
 **/*.txt
 !README.md
 !CHANGELOG.md
-!MIGRATION.md
-!CONFIGURATION.md
+!README-migration.md
+!README-configuration.md
 !LICENSE
 !LICENSE.txt
 

@@ -26,7 +26,14 @@
       "Bash(/tmp/test-output.txt)",
       "Bash(for i in 1 2 3)",
       "Bash(do echo \"=== Run $i ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(tee:*)",
+      "WebFetch(domain:mochajs.org)",
+      "Bash(npx vscode-test:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git checkout:*)",
+      "Bash(gh run view:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

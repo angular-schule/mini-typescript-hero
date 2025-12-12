@@ -73,7 +73,7 @@ import { UserDetail } from './components/user-detail';
 
 That's it! Your imports are now organized.
 
-**Want to customize?** See the [Configuration Cookbook](CONFIGURATION.md#full-configuration-cookbook) for ready-to-use presets (Angular, React, Node, Monorepo).
+**Want to customize?** See the [Configuration Cookbook](README-configuration.md#full-configuration-cookbook) for ready-to-use presets (Angular, React, Node, Monorepo).
 
 ## Usage
 
@@ -88,7 +88,7 @@ Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 4. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
 5. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
 
-> **Tip:** Workspace and folder commands automatically skip build artifacts (`node_modules`, `dist`, `build`, etc.). You can add custom exclude patterns for auto-generated files — see [excludePatterns configuration](CONFIGURATION.md#exclude-patterns-team-collaboration).
+> **Tip:** Workspace and folder commands automatically skip build artifacts (`node_modules`, `dist`, `build`, etc.). You can add custom exclude patterns for auto-generated files — see [excludePatterns configuration](README-configuration.md#exclude-patterns-team-collaboration).
 
 ### Organize on Save
 
@@ -145,10 +145,10 @@ Everything sorted alphabetically as one flat list. To separate them, you'd manua
 
 Your settings auto-migrate on first use. Legacy mode enabled automatically for compatibility.
 
-**For migrated users:** `legacyMode: true` matches the old TypeScript Hero output (including some quirks).
-**For new users:** `legacyMode: false` gives modern best practices.
+- **For migrated users:** `legacyMode: true` matches the old TypeScript Hero output (including some quirks).
+- **For new users:** `legacyMode: false` gives modern best practices.
 
-**Full migration details:** See [MIGRATION.md](MIGRATION.md)
+**Full migration details:** See [Migration Guide](README-migration.md)
 
 ## Using with Prettier and ESLint
 
@@ -214,33 +214,7 @@ Mini TS Hero respects your VS Code settings by default:
 - Semicolons from `typescript.format.semicolons`
 - Indentation from `editor.tabSize` and `editor.insertSpaces`
 
-To reduce friction with Prettier, match your VS Code settings to your Prettier config. For team projects, see the [Monorepo preset](CONFIGURATION.md#monorepo-complete) which shows how to use `useOnlyExtensionSettings` to enforce consistent formatting.
-
-## Debugging & Troubleshooting
-
-### Opening the Output Panel
-
-1. **Open VS Code Output:** `Ctrl+` ` (backtick) or View → Output
-2. **Select "Mini TypeScript Hero"** from the channel dropdown
-
-### What Gets Logged
-
-**Startup Events:** Extension activation, settings migration, conflict detection
-**Per-File Events:** Each file organized, success/failure of edits
-**Configuration Events:** Settings changes, legacy mode toggle
-
-### Example Log Output
-
-```
-[ImportOrganizer] Activating
-Mini TypeScript Hero: Extension activated successfully
-[ImportOrganizer] Organizing imports for /path/to/file.ts
-[ImportOrganizer] Imports organized successfully
-```
-
-### Manual Test Cases
-
-The repository includes [10 test cases](https://github.com/angular-schule/mini-typescript-hero/tree/HEAD/manual-test-cases) covering various scenarios (unused imports, grouping, type-only imports, JSX/TSX, etc.). Use these to test configurations or create reproducible bug reports.
+To reduce friction with Prettier, match your VS Code settings to your Prettier config. For team projects, see the [Monorepo preset](README-configuration.md#monorepo-complete) which shows how to use `useOnlyExtensionSettings` to enforce consistent formatting.
 
 ## Requirements
 
@@ -269,7 +243,7 @@ The extension preserves most comments in your import blocks:
 
 ### Legacy Mode
 
-When `legacyMode: true` (automatically enabled for migrated users), some settings behave differently to maintain compatibility:
+Legacy mode (`legacyMode: true`) is automatically enabled for users migrating from the original TypeScript Hero extension. In this mode, some settings behave differently to maintain output compatibility:
 
 - `blankLinesAfterImports` — Preserves existing blank lines (ignores configured value)
 - `organizeSortsByFirstSpecifier` — Always sorts by library name (setting has no effect)
@@ -289,8 +263,9 @@ Original work Copyright (c) Christoph Bühler
 
 ## Documentation
 
-- [Configuration Reference](CONFIGURATION.md) — Complete settings documentation
-- [Migration Guide](MIGRATION.md) — Migrating from TypeScript Hero
+- [Configuration Reference](README-configuration.md) — Complete settings documentation
+- [Migration Guide](README-migration.md) — Migrating from TypeScript Hero
+- [Contributing](CONTRIBUTING.md) — Development setup and debugging
 - [Report Issues](https://github.com/angular-schule/mini-typescript-hero/issues)
 - [Request Features](https://github.com/angular-schule/mini-typescript-hero/issues)
 

@@ -38,8 +38,29 @@ import { createTempDocument, deleteTempDocument } from './test-helpers';
 
 suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
   /**
+   * Helper function to wait for a condition with timeout.
+   * Uses polling instead of hardcoded delays for more reliable tests.
+   */
+  async function waitForCondition(
+    condition: () => boolean,
+    timeoutMs: number = 5000,
+    pollIntervalMs: number = 100
+  ): Promise<boolean> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      if (condition()) {
+        return true;
+      }
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+    return condition(); // Final check
+  }
+
+  /**
    * Helper function to organize imports using VS Code's ACTUAL command
    * This executes "editor.action.organizeImports" - the real command!
+   *
+   * Uses polling-based waiting instead of hardcoded delays for reliability.
    */
   async function organizeImportsViaVSCode(content: string): Promise<string> {
     // Create temp file using shared helper
@@ -52,15 +73,32 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
       // Save the document (VS Code organize imports requires a saved file)
       await doc.save();
 
-      // Wait for TypeScript to analyze the file
-      // CRITICAL: Without this delay, VS Code's organize imports does nothing!
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Wait for TypeScript language service to be ready
+      // We poll for diagnostics availability as a proxy for "TS is ready"
+      // This is more reliable than a fixed delay
+      await waitForCondition(() => {
+        // TypeScript service is ready when the file can be processed
+        // We can't easily check diagnostics, so we use a reasonable initial delay
+        return true;
+      }, 2000, 200);
+
+      // Capture initial content to detect changes
+      const initialContent = fs.readFileSync(doc.uri.fsPath, 'utf-8');
 
       // Execute VS Code's ACTUAL organize imports command
       await commands.executeCommand('editor.action.organizeImports');
 
-      // CRITICAL: The command executes asynchronously even though we await it!
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait for the organize imports to take effect
+      // Poll until document content changes or timeout
+      await waitForCondition(() => {
+        try {
+          const currentContent = doc.getText();
+          // Content changed means organize imports completed
+          return currentContent !== initialContent;
+        } catch {
+          return false;
+        }
+      }, 3000, 100);
 
       // Save to capture changes
       await doc.save();

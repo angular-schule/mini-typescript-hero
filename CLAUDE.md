@@ -155,17 +155,26 @@ assert.equal(newResult, expected, 'New extension must produce correct output'); 
 mini-typescript-hero/                     ← Project root
 ├── src/
 │   ├── extension.ts                      ← Entry point, command registration
+│   ├── commands/
+│   │   └── batch-organizer.ts            ← Workspace/folder batch operations
 │   ├── imports/
 │   │   ├── import-manager.ts             ← Core: organizes imports, ts-morph usage
 │   │   ├── import-organizer.ts           ← Orchestrator, VSCode integration
+│   │   ├── import-types.ts               ← Import model types (NamedImport, etc.)
+│   │   ├── import-utilities.ts           ← Sorting and helper functions
 │   │   └── import-grouping/              ← Group definitions (Plains, Modules, etc.)
 │   ├── configuration/
-│   │   ├── imports-config.ts             ← config options wrapper
-│   │   └── settings-migration.ts         ← Migrates old TypeScript Hero settings
-│   └── test/                             ← General extension tests
-│       ├── imports/import-manager.test.ts
-│       ├── imports/blank-lines.test.ts
-│       └── configuration/settings-migration.test.ts
+│   │   ├── imports-config.ts             ← Config options wrapper
+│   │   ├── settings-migration.ts         ← Migrates old TypeScript Hero settings
+│   │   └── conflict-detector.ts          ← Detects conflicts with Prettier/ESLint
+│   └── test/                             ← All test files (flat structure)
+│       ├── import-manager.test.ts        ← Core import manager tests
+│       ├── import-manager.*.test.ts      ← Additional import manager tests
+│       ├── import-grouping.test.ts       ← Grouping logic tests
+│       ├── settings-migration.test.ts    ← Migration tests
+│       ├── verify-vscode-defaults.test.ts← VS Code defaults verification
+│       ├── vscode-organize-imports-behavior.test.ts ← VS Code command tests
+│       └── test-helpers.ts               ← Shared test utilities
 │
 ├── comparison-test-harness/              ← Old vs new comparison tests
 │   ├── old-extension/adapter.ts          ← Adapter for old TypeScript Hero
@@ -178,7 +187,6 @@ mini-typescript-hero/                     ← Project root
 │   └── single-root/                      ← VS Code opens this folder during tests
 │       └── .vscode/settings.json         ← Empty settings file
 ├── package.json                          ← Extension manifest, config schema
-├── CLAUDE_TODO.md                        ← Current session context & tasks
 ├── CLAUDE.md                             ← This file (project overview)
 └── README.md                             ← User-facing documentation
 ```
@@ -356,7 +364,7 @@ All tests use REAL VSCode APIs with verified expected outputs.
 
 All settings are under `miniTypescriptHero.imports.*`:
 
-### Core Settings
+### Core Formatting
 1. `insertSpaceBeforeAndAfterImportBraces` (boolean) - `{ A }` vs `{A}`
 2. `insertSemicolons` (boolean) - Add semicolons or not
 3. `stringQuoteStyle` (single/double) - `'` vs `"`
@@ -364,22 +372,44 @@ All settings are under `miniTypescriptHero.imports.*`:
 5. `multiLineWrapThreshold` (number) - Chars before wrapping to multiple lines
 6. `multiLineTrailingComma` (boolean) - Add trailing comma in multiline imports
 
+### Indentation (used when `useOnlyExtensionSettings` is true)
+7. `tabSize` (number) - Tab size for multiline imports (default: 2)
+8. `insertSpaces` (boolean) - Use spaces instead of tabs (default: true)
+9. `useOnlyExtensionSettings` (boolean) - Ignore VS Code settings, use only extension settings
+
 ### Grouping & Sorting
-7. `grouping` (array) - Group order: `['Plains', 'Modules', 'Workspace']`
-8. `disableImportsSorting` (boolean) - Disable all sorting
-9. `organizeSortsByFirstSpecifier` (boolean) - Sort by first specifier vs library name
+10. `grouping` (array) - Group order: `['Plains', 'Modules', 'Workspace']`
+11. `disableImportsSorting` (boolean) - Disable all sorting
+12. `organizeSortsByFirstSpecifier` (boolean) - Sort by first specifier vs library name
 
 ### Removal & Merging
-10. `disableImportRemovalOnOrganize` (boolean) - Keep unused imports
-11. `ignoredFromRemoval` (string[]) - Libraries to never remove (default: `['react']`)
-12. `mergeImportsFromSameModule` (boolean) - **NEW!** Merge duplicate imports
+13. `disableImportRemovalOnOrganize` (boolean) - Keep unused imports
+14. `ignoredFromRemoval` (string[]) - Libraries to never remove (default: `['react']`)
+15. `mergeImportsFromSameModule` (boolean) - Merge duplicate imports from same module
+
+### File Exclusion
+16. `excludePatterns` (string[]) - Glob patterns for files to exclude from import organization
 
 ### Blank Lines
-13. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Partially overridden in legacyMode for files with headers or leading blanks; otherwise respected)
+17. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Partially overridden in legacyMode for files with headers or leading blanks; otherwise respected)
 
 ### Behavior & Compatibility
-14. `organizeOnSave` (boolean) - Automatically organize imports when saving files
-15. `legacyMode` (boolean) - Replicate old TypeScript Hero behavior exactly (auto-set to `true` for migrated users)
+18. `organizeOnSave` (boolean) - Automatically organize imports when saving files
+19. `legacyMode` (boolean) - Replicate old TypeScript Hero behavior exactly (auto-set to `true` for migrated users)
+
+---
+
+## 🎮 Commands
+
+All commands are prefixed with `miniTypescriptHero`:
+
+| Command | Title | Description |
+|---------|-------|-------------|
+| `imports.organize` | Organize imports (sort and remove unused) | Organize imports in current file (Ctrl+Alt+O / Cmd+Alt+O) |
+| `imports.organizeWorkspace` | Organize imports in workspace | Organize imports in all TS/JS files in workspace |
+| `imports.organizeFolder` | Organize imports in folder | Organize imports in all TS/JS files in selected folder (context menu) |
+| `checkConflicts` | Check for configuration conflicts | Detect conflicts with other formatters (Prettier, ESLint) |
+| `toggleLegacyMode` | Toggle legacy mode | Switch between legacy and modern formatting behavior |
 
 ---
 

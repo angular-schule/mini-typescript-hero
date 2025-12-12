@@ -1089,10 +1089,10 @@ export class ImportManager {
     }
 
     // Step 2: Count blank lines between header and imports
-    // IMPORTANT: Reset blankLinesBefore if we found a header
-    // Leading blanks before the header should NOT be deleted
+    // When a header exists, we only care about blank lines AFTER the header (before imports).
+    // Leading blanks BEFORE the header are handled separately via hasLeadingBlanks.
     if (hasHeader && lastHeaderLine >= 0) {
-      blankLinesBefore = 0; // Reset - we only care about blanks AFTER header
+      blankLinesBefore = 0; // Reset to count only blanks between header and imports
       for (let i = lastHeaderLine + 1; i < insertLine; i++) {
         if (lines[i].trim() === '') {
           blankLinesBefore++;

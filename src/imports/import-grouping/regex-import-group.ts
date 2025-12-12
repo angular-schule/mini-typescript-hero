@@ -8,6 +8,7 @@ import { ImportGroupOrder } from './import-group-order';
  */
 export class RegexImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
+  private readonly compiledRegex: RegExp;
 
   public get sortedImports(): Import[] {
     const sorted = this.imports.sort((i1, i2) =>
@@ -28,13 +29,9 @@ export class RegexImportGroup implements ImportGroup {
   constructor(
     public readonly regex: string,
     public readonly order: ImportGroupOrder = ImportGroupOrder.Asc,
-  ) {}
-
-  public reset(): void {
-    this.imports.length = 0;
-  }
-
-  public processImport(tsImport: Import): boolean {
+  ) {
+    // Compile regex once in constructor for performance
+    // Strip surrounding slashes if present (e.g., '/^@angular/' -> '^@angular')
     let regexString = this.regex;
     regexString = regexString.startsWith('/')
       ? regexString.substring(1)
@@ -42,9 +39,15 @@ export class RegexImportGroup implements ImportGroup {
     regexString = regexString.endsWith('/')
       ? regexString.substring(0, regexString.length - 1)
       : regexString;
-    const regex = new RegExp(regexString, 'g');
+    this.compiledRegex = new RegExp(regexString);
+  }
 
-    if (regex.test(tsImport.libraryName)) {
+  public reset(): void {
+    this.imports.length = 0;
+  }
+
+  public processImport(tsImport: Import): boolean {
+    if (this.compiledRegex.test(tsImport.libraryName)) {
       this.imports.push(tsImport);
       return true;
     }
