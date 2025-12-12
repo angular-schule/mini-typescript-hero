@@ -11,7 +11,7 @@
 
 **Terminology**:
 - **Old extension** = Original "TypeScript Hero" by Christoph Bühler (deprecated, uses typescript-parser)
-  - Included as git submodule at `comparison-test-harness/old-typescript-hero/`
+  - Included as git submodule at `tests/comparison/old-typescript-hero/`
   - Used by comparison tests to verify backward compatibility
 - **New extension** = This project "Mini TypeScript Hero" (modern, uses ts-morph)
 
@@ -123,7 +123,7 @@ const result = await organizeImports(input, config);
 assert.equal(result, expected, 'Must produce correct output');  // ✅ Validates correctness!
 ```
 
-**For Comparison Tests (test harness):**
+**For Comparison Tests:**
 ```typescript
 // CORRECT - Validates BOTH extensions against known-good expected output
 const input = `...source code...`;
@@ -263,7 +263,7 @@ The `tests/workspaces` folder MUST be excluded from TypeScript compilation:
 
 ## 🔧 Two Test Environments
 
-### 1. General Extension Tests (`src/test/`)
+### 1. General Extension Tests (`tests/unit/`)
 
 **Purpose**: Ensure the new extension has high reliability and catches all known bugs
 
@@ -329,7 +329,7 @@ The `activationEvents` array is **required and correct**:
 
 ---
 
-### 2. Test Harness Tests (`comparison-test-harness/`)
+### 2. Comparison Tests (`tests/comparison/`)
 
 **Purpose**: Validate backward compatibility between old and new extension
 
@@ -506,8 +506,8 @@ TypeScript 3.8+ `import type` syntax affects runtime semantics and bundling. Con
 # Main extension tests
 npm test
 
-# Comparison test harness
-cd comparison-test-harness
+# Comparison tests
+cd tests/comparison
 npm test
 
 # Watch mode (during development)
@@ -546,7 +546,7 @@ and of the old typescript hero
 
 ```
 gitingest -e "*node_modules*,*vscode-test*,*.js,*logo*,*old-typescript*,*package*,CLAUDE*,*logo*,.claude,*.DS_Store*,digest.txt,*out*" ./
-cd comparison-test-harness/old-typescript-hero && gitingest -e "*node_modules*,*vscode-test*,*.DS_Store*,digest.txt" ./ && cd ../..
+cd tests/comparison/old-typescript-hero && gitingest -e "*node_modules*,*vscode-test*,*.DS_Store*,digest.txt" ./ && cd ../../..
 {
   echo "*** MINI TYPESCRIPT HERO FOLDER CONTENT ***"
   echo ""
@@ -555,6 +555,6 @@ cd comparison-test-harness/old-typescript-hero && gitingest -e "*node_modules*,*
   echo ""
   echo "*** OLD TYPESCRIPT HERO FOLDER CONTENT ***"
   echo ""
-  cat comparison-test-harness/old-typescript-hero/digest.txt
+  cat tests/comparison/old-typescript-hero/digest.txt
 } > digest-combined.txt && mv digest-combined.txt digest.txt
 ```

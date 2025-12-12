@@ -2,6 +2,23 @@
 
 This guide is for developers working on the Mini TypeScript Hero extension.
 
+## Getting Started
+
+```bash
+# Clone the repository
+git clone https://github.com/angular-schule/mini-typescript-hero.git
+cd mini-typescript-hero
+
+# Install dependencies
+npm install
+
+# Compile and watch for changes
+npm run watch
+
+# Run tests
+npm test
+```
+
 ## Running Unit Tests
 
 ### Run Tests
@@ -18,8 +35,8 @@ This will:
 **Note:** These are integration tests that run in a real VS Code environment with the full TypeScript/JavaScript language server. Tests use real file I/O (temp files in `os.tmpdir()`), real VS Code APIs (`workspace.openTextDocument`, `workspace.applyEdit`), and real ts-morph parsing. This makes them slower than unit tests but ensures accurate testing of the actual user experience.
 
 - Tests run on: Ubuntu, macOS, Windows (via GitHub Actions)
-- Main extension tests location: `src/test/`
-- Comparison tests location: `comparison-test-harness/test-cases/`
+- Main extension tests location: `tests/unit/`
+- Comparison tests location: `tests/comparison/test-cases/`
 
 ## Manual Testing
 
@@ -33,7 +50,7 @@ This will:
 
 ### Manual Test Cases
 
-The `manual-test-cases/` folder contains 10 test scenarios:
+The `tests/manual/` folder contains 10 test scenarios:
 
 #### Case 01: Basic Unused Imports (`case01-basic-unused-imports.ts`)
 **Tests:** Basic unused import removal
@@ -88,7 +105,7 @@ The `manual-test-cases/` folder contains 10 test scenarios:
 ### Testing Workflow
 
 1. Open Extension Development Host (F5)
-2. Open a test case file from `manual-test-cases/`
+2. Open a test case file from `tests/manual/`
 3. Press `Ctrl+Alt+O` (or `Cmd+Alt+O`)
 4. Verify:
    - ✅ Unused imports are removed
@@ -168,13 +185,14 @@ mini-typescript-hero/
 │   │   ├── import-organizer.ts # VSCode integration
 │   │   ├── import-types.ts     # Import representations
 │   │   └── import-utilities.ts # Sorting/precedence
-│   ├── test/                   # Unit tests
-│   │   ├── configuration/      # Migration tests
-│   │   └── imports/            # Import logic tests
 │   └── extension.ts            # Extension entry point
-├── manual-test-cases/          # Manual testing scenarios
-│   ├── case01-*.ts             # Test case files
-│   └── helpers/                # Mock modules
+├── tests/
+│   ├── unit/                   # Main extension tests
+│   ├── comparison/             # Old vs new extension comparison
+│   ├── manual/                 # Manual testing scenarios
+│   │   ├── case01-*.ts         # Test case files
+│   │   └── helpers/            # Mock modules
+│   └── workspaces/             # Pre-configured test workspaces
 ├── package.json                # Extension manifest
 ├── tsconfig.json               # TypeScript config
 └── esbuild.js                  # Build configuration
@@ -208,7 +226,7 @@ mini-typescript-hero/
 ### TypeScript Configuration
 
 - **Extension runtime** (`src/`): Compiled with `strict: true`, `noUnusedLocals: true`
-- **Comparison test harness** (`comparison-test-harness/`): Uses relaxed `tsconfig.json` with `strict: false` so we can compile the original TypeScript Hero code without rewriting it
+- **Comparison tests** (`tests/comparison/`): Uses relaxed `tsconfig.json` with `strict: false` so we can compile the original TypeScript Hero code without rewriting it
 - **Manual test cases**: Simple demonstration files, may use `any` for clarity
 
 ## Debugging

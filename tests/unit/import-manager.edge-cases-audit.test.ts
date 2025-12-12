@@ -223,7 +223,7 @@ const x = A + B + Z;
 `;
 
     // LEGACY MODE: Strip comments to match old TypeScript Hero extension
-    // (Proven in comparison-test-harness/test-cases/999-manual-proof.test.ts)
+    // (Proven in tests/comparison/test-cases/999-manual-proof.test.ts)
     const expected = `import { A, B, Z } from 'lib';
 
 const x = A + B + Z;

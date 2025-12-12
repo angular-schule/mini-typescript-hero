@@ -37,7 +37,7 @@ jobs:
         if: runner.os != 'Linux'
         run: npm test
 
-      - name: Install comparison test harness dependencies
+      - name: Install comparison tests dependencies
         run: npm install
         working-directory: ./tests/comparison
 

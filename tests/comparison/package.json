@@ -1,7 +1,7 @@
 {
-  "name": "comparison-test-harness",
+  "name": "comparison-tests",
   "version": "1.0.0",
-  "description": "Test harness comparing old vs new TypeScript Hero",
+  "description": "Comparison tests: old vs new TypeScript Hero",
   "private": true,
   "engines": {
     "vscode": "^1.85.0",

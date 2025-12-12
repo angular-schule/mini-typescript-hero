@@ -19,8 +19,7 @@ esbuild.js
 .yarnrc
 
 # Test infrastructure (DO NOT SHIP)
-comparison-test-harness/**
-manual-test-cases/**
+tests/**
 
 # Documentation - exclude all .md and .txt files EXCEPT user-facing docs
 **/*.md

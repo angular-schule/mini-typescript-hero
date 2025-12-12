@@ -1,4 +1,4 @@
-# Comparison Test Harness
+# Comparison Tests
 
 Verifies behavioral compatibility between old TypeScript Hero and new Mini TypeScript Hero.
 
@@ -7,7 +7,7 @@ Verifies behavioral compatibility between old TypeScript Hero and new Mini TypeS
 ## Structure
 
 ```
-comparison-test-harness/
+tests/comparison/
 ├── old-typescript-hero/     # Git submodule to buehler/typescript-hero
 ├── old-extension/adapter.ts # Wrapper for old extension
 ├── new-extension/adapter.ts # Wrapper for new extension
