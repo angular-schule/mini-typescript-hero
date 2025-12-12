@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="Mini TypeScript Hero Logo" width="200">
+  <img src="logo.png" alt="Mini TypeScript Hero Logo" width="300">
 </div>
 
 # Mini TypeScript Hero – Small hero. Big cleanup!
