@@ -81,8 +81,7 @@ That's it! Your imports are now organized.
 
 Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-1. **Mini TS Hero: Organize imports (sort and remove unused)** — `Ctrl+Alt+O` / `Cmd+Alt+O`
-   - Organizes imports in the current file
+1. **Mini TS Hero: Organize imports (sort and remove unused)** — `Ctrl+Alt+O` / `Cmd+Alt+O` — Organizes imports in the current file
 2. **Mini TS Hero: Organize imports in workspace** — Process all TypeScript/JavaScript files in your workspace
 3. **Mini TS Hero: Organize imports in folder** — Right-click any folder in the Explorer to organize all files within
 4. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
