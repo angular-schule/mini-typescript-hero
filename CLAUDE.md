@@ -174,11 +174,85 @@ mini-typescript-hero/                     ← Project root
 │   └── test-cases/*.test.ts              ← Comparison tests
 │
 ├── manual-test-cases/                    ← Manual testing scenarios
+├── test-workspaces/                      ← Pre-configured workspace for tests
+│   └── single-root/                      ← VS Code opens this folder during tests
+│       └── .vscode/settings.json         ← Empty settings file
 ├── package.json                          ← Extension manifest, config schema
 ├── CLAUDE_TODO.md                        ← Current session context & tasks
 ├── CLAUDE.md                             ← This file (project overview)
 └── README.md                             ← User-facing documentation
 ```
+
+---
+
+## 🧪 Test Infrastructure - CRITICAL!
+
+### Why Tests Need a Pre-Configured Workspace
+
+**The Problem:** Tests that call `workspace.updateWorkspaceFolders()` cause VS Code to restart the extension host. In CI headless mode, this crashes tests with `{ name: 'Canceled' }` errors.
+
+**The Solution:** Pre-configure a workspace folder that VS Code opens BEFORE tests run. Tests create temp files INSIDE this workspace instead of mutating the workspace structure.
+
+### Configuration Files Explained
+
+**.vscode-test.mjs** configures the test runner with TWO different directories:
+
+```javascript
+export default defineConfig({
+    files: 'out/test/**/*.test.js',
+    workspaceFolder: path.join(__dirname, 'test-workspaces/single-root'),  // ← WORKSPACE
+    launchArgs: ['--user-data-dir=/tmp/mths-user-data'],                   // ← USER DATA
+    mocha: { timeout: 10000 }
+});
+```
+
+| Setting | Path | Purpose |
+|---------|------|---------|
+| `workspaceFolder` | `test-workspaces/single-root/` | **Workspace** - the "project folder" VS Code opens. Tests create temp files here. |
+| `--user-data-dir` | `/tmp/mths-user-data` | **User data** - VS Code's internal storage (settings, extensions, caches). Isolated from your real VS Code installation. |
+
+**Visual representation:**
+```
+VS Code Test Instance
+├── Workspace: test-workspaces/single-root/    ← Project folder (workspaceFolder)
+│   └── mths-workspace-123456-abc/             ← Temp files created by tests
+│       ├── file1.ts
+│       └── file2.ts
+│
+└── User Data: /tmp/mths-user-data             ← VS Code internals (--user-data-dir)
+    ├── User/settings.json
+    ├── extensions/
+    └── logs/
+```
+
+**Why `/tmp/mths-user-data`?**
+- macOS has a 103-character limit for Unix socket paths
+- Default VS Code user-data paths can exceed this limit, causing crashes
+- Short path `/tmp/mths-user-data` avoids this issue
+
+**Why `test-workspaces/single-root/`?**
+- Tests need a workspace to be open for `vscode.workspace.*` APIs
+- Pre-opening avoids `workspace.updateWorkspaceFolders()` calls that crash CI
+- Temp files are created INSIDE this folder and cleaned up after tests
+
+### tsconfig.json Excludes
+
+The `test-workspaces` folder MUST be excluded from TypeScript compilation:
+
+```json
+{
+  "exclude": [
+    "node_modules",
+    ".vscode-test",
+    "manual-test-cases",
+    "old-typescript-hero",
+    "comparison-test-harness",
+    "test-workspaces"           // ← IMPORTANT: Exclude temp test files!
+  ]
+}
+```
+
+**Why?** Tests create `.ts` files in `test-workspaces/`. If a test crashes without cleanup, these orphaned files would cause TypeScript compilation errors.
 
 ---
 

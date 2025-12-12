@@ -7,11 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
 	files: 'out/test/**/*.test.js',
 	workspaceFolder: path.join(__dirname, 'test-workspaces/single-root'),
-	// Use shorter user-data-dir to avoid macOS socket path length issues (103 char limit)
-	launchArgs: ['--user-data-dir=/tmp/vscode-test-data'],
+	// Use short path to avoid macOS socket path length limit (103 chars)
+	launchArgs: ['--user-data-dir=/tmp/mths-user-data'],
 	mocha: {
 		timeout: 10000 // Increased from default 2000ms for slower CI environments (especially macOS)
-		// NOTE: parallel/jobs options here are IGNORED by @vscode/test-cli
-		// Use --jobs 1 CLI flag in package.json instead (see "test" script)
 	}
 });
