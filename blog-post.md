@@ -45,10 +45,27 @@ Angular libraries grouped together and automatically merged into one import. RxJ
 [Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair. We all have our seasons with different technologies.
 
 But I needed this feature. Every. Single. Day.
-So I reached out to Christoph with a simple question: Could I rescue the import organizer and release it as a new extension?
+So I reached out to Christoph with a simple question: Could I pick up TypeScript Hero and release it as a new extension?
 His response was incredibly kind and supportive. He gave me his blessing, shared what code he still had, and even said he'd be excited to see the work continue.
 
 **My mission was simple**: Preserve this feature for myself. And hopefully, other people will like it too.
+
+## Cool New Features
+
+While modernizing, we added some features that the original never had:
+
+**🗂️ Organize entire folders or your whole workspace at once!**
+
+Right-click any folder in the Explorer → "Organize imports in folder". Or run "Organize imports in workspace" from the Command Palette. Perfect for:
+- Cleaning up after major refactorings
+- Onboarding legacy projects to your team's import style
+- Enforcing consistent imports across hundreds of files
+
+The extension intelligently skips `node_modules`, `dist`, `build`, and other artifacts. You can also configure custom exclude patterns for auto-generated files your team shouldn't touch.
+
+**⚠️ Conflict detection**
+
+Using Prettier or ESLint plugins that also sort imports? Run "Check for configuration conflicts" to detect if multiple tools are fighting over your imports.
 
 ## Wait, Doesn't VS Code Already Have This?
 
@@ -78,16 +95,15 @@ For a tool I rely on daily, that was a ticking time bomb.
 - Complex codebase from 2018
 
 **The new engine:**
-- [`ts-morph`](https://github.com/dsherret/ts-morph) v27 (actively maintained, modern)
-- TypeScript 5.7 with strict mode
+- [`ts-morph`](https://github.com/dsherret/ts-morph) (actively maintained, modern)
+- TypeScript with strict mode
 - Simpler, cleaner architecture, everything new
 - No deprecated dependencies
 
-**Key improvements:**
-- **Smart blank line handling**: Choose how many blank lines you want after imports. The new default is 1 blank line (standard from ESLint), but you can configure it to 2 lines, preserve existing spacing, or use the old TypeScript Hero behavior. Honestly, I always felt that 1 line would be better than the old behavior where blank lines would sometimes "move" around unpredictably. Now everyone can decide what preference they have!
-- **Configurable import merging**: The extension can combine multiple imports from the same module (like two `@angular/core` imports) into one clean statement. This is now a configurable option, and migrated users automatically get their original behavior preserved while new users benefit from modern best practices.
-- **Workspace-wide organization**: Beyond the familiar single-file shortcut, you can now organize imports across your entire workspace or within specific folders via the context menu. Useful for cleaning up after major refactorings or onboarding new projects. The extension intelligently skips build artifacts and includes configurable exclude patterns for auto-generated files.
-- **Modern TypeScript support**: Full support for TypeScript 3.8+ `import type` syntax and import attributes (`with { type: 'json' }`), preserving semantic import behavior for better type safety and tree-shaking. Legacy mode available for compatibility with older TypeScript versions.
+**Other improvements:**
+- **Smart blank line handling**: Choose how many blank lines you want after imports (1, 2, or preserve existing). The old behavior where blank lines would sometimes "move" unpredictably is now configurable.
+- **Configurable import merging**: Combine multiple imports from the same module into one clean statement. Migrated users keep their original behavior; new users get modern best practices.
+- **Modern TypeScript support**: Full support for `import type` syntax and import attributes (`with { type: 'json' }`).
 
 The goal was simple: **Future-proof**. Make sure this tool keeps working for years to come, without depending on abandoned libraries.
 
@@ -108,7 +124,7 @@ This extension is **MIT licensed and free for everyone**.
 
 I'm incredibly grateful to Christoph Bühler for creating TypeScript Hero in the first place, and for being so generous in allowing this work to continue. The original code, the design decisions, the thoughtful features: all of that came from Christoph.
 
-I'm just keeping the lights on and making sure it stays maintained, though I'm known for being a lazy maintainer. Feel free to fork it when I ever abandon it.
+I'm committed to keeping this tool maintained and working for the community.
 
 ## Install Mini TypeScript Hero Now
 
@@ -129,6 +145,6 @@ Ready to organize your imports with a single keystroke?
 
 ---
 
-**TL;DR:** TypeScript Hero isn't dead. It's been rescued and modernized as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and import organization that can match your team's style guide.
+**TL;DR:** TypeScript Hero isn't dead. We picked it up and modernized it as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and import organization that can match your team's style guide.
 
 Happy coding! ✨

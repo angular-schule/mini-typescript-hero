@@ -4,11 +4,11 @@
 
 # Mini TypeScript Hero – Small hero. Big cleanup!
 
-**Sorts and organizes TypeScript/JavaScript imports** — A lightweight, modern VSCode extension that automatically manages your import statements.
+**One keystroke. One click. Hundreds of files organized.** — A lightweight, modern VSCode extension that sorts and organizes your TypeScript/JavaScript imports.
 
-This extension is a modernized extraction of the "Organize Imports" feature from the original [TypeScript Hero](https://github.com/buehler/typescript-hero) extension, rebuilt with modern best practices.
+[TypeScript Hero](https://github.com/buehler/typescript-hero) was well-known for its import organizer, but it went unmaintained. We picked it up, modernized everything, and added new features.
 
-**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-10-mini-typescript-hero)
+**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2025-12-mini-typescript-hero)
 
 ## Features
 
@@ -252,7 +252,7 @@ New users get `legacyMode: false` by default. You can toggle this setting anytim
 
 ## Credits
 
-This extension is based on the "Organize Imports" feature from [TypeScript Hero](https://github.com/buehler/typescript-hero) by Christoph Bühler. The original TypeScript Hero is no longer maintained, so we've extracted and modernized this valuable feature.
+This extension continues [TypeScript Hero](https://github.com/buehler/typescript-hero) by Christoph Bühler. The original went unmaintained, so we picked it up and modernized it.
 
 ## License
 
