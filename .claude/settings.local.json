@@ -34,7 +34,9 @@
       "Bash(git checkout:*)",
       "Bash(gh run view:*)",
       "Bash(git rm:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gh release list:*)",
+      "Bash(gh release view:*)"
     ],
     "deny": [],
     "ask": []
