@@ -256,7 +256,7 @@ This extension continues [TypeScript Hero](https://github.com/buehler/typescript
 
 ## License
 
-MIT License — Copyright (c) 2025-2026 [Angular.Schule](https://angular.schule) (by Johannes Hoppe)
+MIT License — Copyright (c) [Angular.Schule](https://angular.schule) (by Johannes Hoppe)
 
 Original work Copyright (c) Christoph Bühler
 

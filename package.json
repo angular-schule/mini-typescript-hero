@@ -134,7 +134,7 @@
         "miniTypescriptHero.imports.multiLineTrailingComma": {
           "type": "boolean",
           "default": true,
-          "description": "Defined if multi line imports contain the last trailing comma.",
+          "description": "Defines if multiline imports contain the last trailing comma.",
           "scope": "resource"
         },
         "miniTypescriptHero.imports.organizeOnSave": {

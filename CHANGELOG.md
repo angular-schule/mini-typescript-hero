@@ -37,7 +37,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
   - `Mini TS Hero: Organize imports in folder` - Organize all files in selected folder (context menu)
   - `Mini TS Hero: Check for configuration conflicts` - Detect if multiple tools would organize imports
   - `Mini TS Hero: Toggle legacy mode` - Switch between modern and legacy behavior
-- Modern implementation using ts-morph (v27)
+- Modern implementation using ts-morph
 - Built with esbuild for optimal performance
 
 #### Notes
@@ -45,7 +45,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
 [TypeScript Hero](https://github.com/buehler/typescript-hero) by Christoph Bühler was well-known for its import organizer, but it went unmaintained. We picked it up, modernized everything, and added new features.
 
 **Technology improvements:**
-- Replaced deprecated `typescript-parser` with modern `ts-morph`
+- Replaced deprecated `typescript-parser` with modern ts-morph
 - Simplified architecture (removed InversifyJS DI container)
 - Native VSCode OutputChannel logging (replaced winston)
 - Modern esbuild bundling

@@ -21,7 +21,7 @@
 
 Extract and modernize the "Sort and organize your imports" feature with:
 - ✅ **Comprehensive backward compatibility** with TypeScript Hero settings
-- ✅ **Modern 2025 tech stack** (ts-morph, esbuild, TypeScript 5.7)
+- ✅ **Modern tech stack** (ts-morph, esbuild, latest TypeScript)
 - ✅ **No dependencies on deprecated libraries** (typescript-parser is 7 years old!)
 - ✅ **Simplified architecture** (no InversifyJS DI container overkill)
 

@@ -216,7 +216,7 @@ mini-typescript-hero/
 
 ### Key Design Decisions
 
-- **ts-morph v27** instead of deprecated `typescript-parser`
+- **ts-morph** instead of deprecated `typescript-parser`
 - **Direct instantiation** instead of InversifyJS DI container
 - **OutputChannel** logging instead of winston
 - **esbuild** bundling instead of tsc alone
