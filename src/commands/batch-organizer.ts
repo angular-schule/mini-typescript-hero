@@ -348,23 +348,28 @@ export class BatchOrganizer {
 
         // CRITICAL: Save all modified documents to disk!
         // workspace.applyEdit() only modifies in-memory documents, doesn't save!
+        // NOTE: We must explicitly open each document because files that weren't already
+        // open may not appear in workspace.textDocuments (race condition fix).
         const saveFailed: string[] = [];
-        for (const [fileUriStr] of workspaceEdit.entries()) {
-          const doc = workspace.textDocuments.find(d => d.uri.fsPath === fileUriStr.fsPath);
-          if (doc && !doc.isUntitled && doc.isDirty) {
-            try {
+        let savedCount = 0;
+        for (const [fileUri] of workspaceEdit.entries()) {
+          try {
+            // Explicitly open the document to ensure it's in memory
+            const doc = await workspace.openTextDocument(fileUri);
+            if (!doc.isUntitled && doc.isDirty) {
               await doc.save();
-            } catch (saveError) {
-              saveFailed.push(doc.fileName);
-              errors++;
-              this.logger.appendLine(`[BatchOrganizer] Failed to save ${doc.fileName}: ${saveError}`);
+              savedCount++;
             }
+          } catch (saveError) {
+            saveFailed.push(fileUri.fsPath);
+            errors++;
+            this.logger.appendLine(`[BatchOrganizer] Failed to save ${fileUri.fsPath}: ${saveError}`);
           }
         }
         if (saveFailed.length > 0) {
           window.showWarningMessage(`Mini TypeScript Hero: Failed to save ${saveFailed.length} file(s). Check output for details.`);
         }
-        this.logger.appendLine(`[BatchOrganizer] Saved ${processed - saveFailed.length} files to disk`);
+        this.logger.appendLine(`[BatchOrganizer] Saved ${savedCount} files to disk`);
       } else {
         window.showErrorMessage('Mini TypeScript Hero: Failed to apply some edits');
         this.logger.appendLine('[BatchOrganizer] Failed to apply edits');
