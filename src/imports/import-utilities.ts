@@ -76,11 +76,18 @@ function getImportFirstSpecifier(imp: Import): string {
 }
 
 /**
- * Order specifiers by name.
- * Uses stringSort (not localeStringSort) to match old TypeScript Hero behavior.
+ * Order specifiers by name using case-insensitive comparison.
+ *
+ * NOTE: Old TypeScript Hero extension's source code uses stringSort (ASCII),
+ * but the typescript-parser code generator (namedImport.js line 19-28) overrides
+ * this with case-insensitive sorting using toLowerCase(). Since we don't use
+ * typescript-parser, we need to match what users actually see (case-insensitive).
  */
 export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
-  return stringSort(i1.specifier, i2.specifier);
+  // Match typescript-parser's case-insensitive sort behavior
+  const strA = i1.specifier.toLowerCase();
+  const strB = i2.specifier.toLowerCase();
+  return stringSort(strA, strB);
 }
 
 /**
