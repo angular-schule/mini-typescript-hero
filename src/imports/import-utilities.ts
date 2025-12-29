@@ -76,10 +76,11 @@ function getImportFirstSpecifier(imp: Import): string {
 }
 
 /**
- * Order specifiers by name (case-insensitive, locale-aware).
+ * Order specifiers by name.
+ * Uses stringSort (not localeStringSort) to match old TypeScript Hero behavior.
  */
 export function specifierSort(i1: SymbolSpecifier, i2: SymbolSpecifier): number {
-  return localeStringSort(i1.specifier, i2.specifier);
+  return stringSort(i1.specifier, i2.specifier);
 }
 
 /**

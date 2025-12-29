@@ -277,31 +277,31 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
     // Register command: Toggle legacy mode
     const toggleLegacyModeCommand = commands.registerCommand('miniTypescriptHero.toggleLegacyMode', async () => {
-      const importsConfig = workspace.getConfiguration('miniTypescriptHero.imports');
-      const currentValue = importsConfig.get<boolean>('legacyMode', false);
-      const newValue = !currentValue;
-
-      // Determine best scope to update
-      // Priority: WorkspaceFolder > Workspace > Global
-      const inspection = importsConfig.inspect('legacyMode');
-      let target = ConfigurationTarget.Global;
-      let scopeName = 'User (Global)';
-
-      if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {
-        if (inspection?.workspaceFolderValue !== undefined) {
-          target = ConfigurationTarget.WorkspaceFolder;
-          scopeName = 'Workspace Folder';
-        } else if (inspection?.workspaceValue !== undefined) {
-          target = ConfigurationTarget.Workspace;
-          scopeName = 'Workspace';
-        } else if (workspace.workspaceFolders.length === 1) {
-          // Single workspace folder - prefer Workspace scope
-          target = ConfigurationTarget.Workspace;
-          scopeName = 'Workspace';
-        }
-      }
-
       try {
+        const importsConfig = workspace.getConfiguration('miniTypescriptHero.imports');
+        const currentValue = importsConfig.get<boolean>('legacyMode', false);
+        const newValue = !currentValue;
+
+        // Determine best scope to update
+        // Priority: WorkspaceFolder > Workspace > Global
+        const inspection = importsConfig.inspect('legacyMode');
+        let target = ConfigurationTarget.Global;
+        let scopeName = 'User (Global)';
+
+        if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {
+          if (inspection?.workspaceFolderValue !== undefined) {
+            target = ConfigurationTarget.WorkspaceFolder;
+            scopeName = 'Workspace Folder';
+          } else if (inspection?.workspaceValue !== undefined) {
+            target = ConfigurationTarget.Workspace;
+            scopeName = 'Workspace';
+          } else if (workspace.workspaceFolders.length === 1) {
+            // Single workspace folder - prefer Workspace scope
+            target = ConfigurationTarget.Workspace;
+            scopeName = 'Workspace';
+          }
+        }
+
         await importsConfig.update('legacyMode', newValue, target);
         const statusText = newValue ? 'enabled' : 'disabled';
         window.showInformationMessage(
@@ -328,17 +328,23 @@ export async function activate(context: ExtensionContext): Promise<void> {
 
     // Register command: Organize imports in folder
     const organizeFolderCommand = commands.registerCommand('miniTypescriptHero.imports.organizeFolder', async (clickedFolder?: Uri) => {
-      if (!clickedFolder) {
-        // Fallback: use workspace root if called from command palette
-        if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
-          window.showWarningMessage('Mini TypeScript Hero: No workspace folder open');
-          return;
+      try {
+        if (!clickedFolder) {
+          // Fallback: use workspace root if called from command palette
+          if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
+            window.showWarningMessage('Mini TypeScript Hero: No workspace folder open');
+            return;
+          }
+          clickedFolder = workspace.workspaceFolders[0].uri;
         }
-        clickedFolder = workspace.workspaceFolders[0].uri;
-      }
 
-      outputChannel.appendLine(`Mini TypeScript Hero: Running organize imports in folder: ${clickedFolder.fsPath}`);
-      await batchOrganizer.organizeFolder(clickedFolder);
+        outputChannel.appendLine(`Mini TypeScript Hero: Running organize imports in folder: ${clickedFolder.fsPath}`);
+        await batchOrganizer.organizeFolder(clickedFolder);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        window.showErrorMessage(`Mini TypeScript Hero: Failed to organize folder: ${errorMessage}`);
+        outputChannel.appendLine(`Mini TypeScript Hero: Error organizing folder: ${errorMessage}`);
+      }
     });
     context.subscriptions.push(organizeFolderCommand);
 

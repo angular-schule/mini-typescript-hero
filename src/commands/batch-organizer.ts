@@ -55,6 +55,18 @@ export class BatchOrganizer {
         return;
       }
 
+      // Warn user about large workspaces to prevent memory issues
+      if (files.length > 1000) {
+        const proceed = await window.showWarningMessage(
+          `Mini TypeScript Hero: Found ${files.length} files. This may take a while and use significant memory. Continue?`,
+          'Continue', 'Cancel'
+        );
+        if (proceed !== 'Continue') {
+          this.logger.appendLine(`[BatchOrganizer] User cancelled operation with ${files.length} files`);
+          return;
+        }
+      }
+
       const result = await window.withProgress(
         {
           location: ProgressLocation.Window,
@@ -148,7 +160,10 @@ export class BatchOrganizer {
     }
 
     // Calculate relative path from workspace root to folder
-    const relativePath = folderUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+    // Normalize to forward slashes for glob matching (Windows uses backslashes)
+    const relativePath = folderUri.fsPath
+      .substring(workspaceFolder.uri.fsPath.length + 1)
+      .replace(/\\/g, '/');
     // Handle case where folder IS the workspace root (relative path is empty)
     const include = relativePath
       ? `${relativePath}/**/*.{ts,tsx,js,jsx}`
@@ -204,7 +219,10 @@ export class BatchOrganizer {
     const excludePatterns = this.getExcludePatterns(workspaceFolder.uri);
 
     // Convert file URI to path relative to workspace root
-    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+    // Normalize to forward slashes for glob matching (Windows uses backslashes)
+    const relativePath = fileUri.fsPath
+      .substring(workspaceFolder.uri.fsPath.length + 1)
+      .replace(/\\/g, '/');
 
     // Check if file matches any exclude pattern
     for (const pattern of excludePatterns) {
@@ -229,7 +247,10 @@ export class BatchOrganizer {
     }
 
     // Convert file URI to path relative to workspace root
-    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+    // Normalize to forward slashes for glob matching (Windows uses backslashes)
+    const relativePath = fileUri.fsPath
+      .substring(workspaceFolder.uri.fsPath.length + 1)
+      .replace(/\\/g, '/');
 
     // Check if file matches any exclude pattern
     for (const pattern of excludePatterns) {
@@ -327,13 +348,23 @@ export class BatchOrganizer {
 
         // CRITICAL: Save all modified documents to disk!
         // workspace.applyEdit() only modifies in-memory documents, doesn't save!
+        const saveFailed: string[] = [];
         for (const [fileUriStr] of workspaceEdit.entries()) {
-          const doc = workspace.textDocuments.find(d => d.uri.toString() === fileUriStr.toString());
+          const doc = workspace.textDocuments.find(d => d.uri.fsPath === fileUriStr.fsPath);
           if (doc && !doc.isUntitled && doc.isDirty) {
-            await doc.save();
+            try {
+              await doc.save();
+            } catch (saveError) {
+              saveFailed.push(doc.fileName);
+              errors++;
+              this.logger.appendLine(`[BatchOrganizer] Failed to save ${doc.fileName}: ${saveError}`);
+            }
           }
         }
-        this.logger.appendLine(`[BatchOrganizer] Saved ${processed} files to disk`);
+        if (saveFailed.length > 0) {
+          window.showWarningMessage(`Mini TypeScript Hero: Failed to save ${saveFailed.length} file(s). Check output for details.`);
+        }
+        this.logger.appendLine(`[BatchOrganizer] Saved ${processed - saveFailed.length} files to disk`);
       } else {
         window.showErrorMessage('Mini TypeScript Hero: Failed to apply some edits');
         this.logger.appendLine('[BatchOrganizer] Failed to apply edits');

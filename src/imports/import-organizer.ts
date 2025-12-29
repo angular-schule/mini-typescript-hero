@@ -57,6 +57,10 @@ export class ImportOrganizer implements Disposable {
           this.runningOrganizes.add(key);
           event.waitUntil(
             this.organizeImportsForDocument(event.document)
+              .catch(err => {
+                this.logger.appendLine(`[ImportOrganizer] Error in organize-on-save: ${err}`);
+                return []; // Return empty edits on error to allow save to proceed
+              })
               .finally(() => {
                 this.runningOrganizes.delete(key);
               }),
@@ -204,7 +208,10 @@ export class ImportOrganizer implements Disposable {
     const allPatterns = [...defaultPatterns, ...userPatterns];
 
     // Convert file URI to path relative to workspace root
-    const relativePath = fileUri.fsPath.substring(workspaceFolder.uri.fsPath.length + 1);
+    // Normalize to forward slashes for glob matching (Windows uses backslashes)
+    const relativePath = fileUri.fsPath
+      .substring(workspaceFolder.uri.fsPath.length + 1)
+      .replace(/\\/g, '/');
 
     // Check if file matches any exclude pattern
     for (const pattern of allPatterns) {

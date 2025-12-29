@@ -59,8 +59,9 @@ suite('Conflict Detector Tests', () => {
 
     // VSCode built-in is enabled, but it's NOT a conflict because our organizeOnSave is false
     assert.strictEqual(result.ourOrganizeOnSaveEnabled, false, 'Our organizeOnSave should be disabled');
-    assert.strictEqual(result.vsCodeBuiltInEnabled, false, 'Should NOT be a conflict (our organizeOnSave is disabled)');
-    assert.strictEqual(result.conflicts.length, 0, 'Should have no conflicts');
+    // vsCodeBuiltInEnabled returns the actual enabled state (true), not the conflict state
+    assert.strictEqual(result.vsCodeBuiltInEnabled, true, 'VSCode built-in IS enabled');
+    assert.strictEqual(result.conflicts.length, 0, 'Should have no conflicts (our organizeOnSave is disabled)');
   });
 
   test('should detect VSCode built-in conflict when BOTH are enabled', async () => {
@@ -246,5 +247,56 @@ suite('Conflict Detector Tests', () => {
     assert.strictEqual(result.ourOrganizeOnSaveEnabled, true, 'Our organizeOnSave should be enabled');
     assert.strictEqual(result.vsCodeBuiltInEnabled, false, 'VSCode built-in should NOT be a conflict (undefined)');
     assert.strictEqual(result.conflicts.length, 0, 'Should have no conflicts');
+  });
+
+  test('should handle codeActionsOnSave as boolean (edge case)', async () => {
+    // Setup: codeActionsOnSave set to a boolean instead of object (unusual but possible)
+    const ourConfig = workspace.getConfiguration('miniTypescriptHero.imports');
+    const editorConfig = workspace.getConfiguration('editor');
+
+    await ourConfig.update('organizeOnSave', true, ConfigurationTarget.Global);
+    // Setting as boolean - not a valid config but should not crash
+    await editorConfig.update('codeActionsOnSave', true, ConfigurationTarget.Global);
+
+    const result = detectConflicts();
+
+    // Should not crash and should treat non-object as "not configured"
+    assert.strictEqual(result.ourOrganizeOnSaveEnabled, true, 'Our organizeOnSave should be enabled');
+    assert.strictEqual(result.vsCodeBuiltInEnabled, false, 'VSCode built-in should be false (codeActionsOnSave is not an object)');
+    assert.strictEqual(result.conflicts.length, 0, 'Should have no conflicts');
+  });
+
+  test('should handle codeActionsOnSave as string (edge case)', async () => {
+    // Setup: codeActionsOnSave set to a string instead of object (unusual but possible)
+    const ourConfig = workspace.getConfiguration('miniTypescriptHero.imports');
+    const editorConfig = workspace.getConfiguration('editor');
+
+    await ourConfig.update('organizeOnSave', true, ConfigurationTarget.Global);
+    // Setting as string - not a valid config but should not crash
+    await editorConfig.update('codeActionsOnSave', 'invalid', ConfigurationTarget.Global);
+
+    const result = detectConflicts();
+
+    // Should not crash and should treat non-object as "not configured"
+    assert.strictEqual(result.ourOrganizeOnSaveEnabled, true, 'Our organizeOnSave should be enabled');
+    assert.strictEqual(result.vsCodeBuiltInEnabled, false, 'VSCode built-in should be false (codeActionsOnSave is not an object)');
+    assert.strictEqual(result.conflicts.length, 0, 'Should have no conflicts');
+  });
+
+  test('vsCodeBuiltInEnabled returns actual enabled state, not conflict state', async () => {
+    // This test verifies the fix for issue #3: vsCodeBuiltInEnabled should return
+    // the actual enabled state, NOT the conflict state (which requires both enabled)
+    const editorConfig = workspace.getConfiguration('editor');
+
+    // Enable VSCode built-in, but keep our organizeOnSave disabled
+    await editorConfig.update('codeActionsOnSave', { 'source.organizeImports': true }, ConfigurationTarget.Global);
+
+    const result = detectConflicts();
+
+    // vsCodeBuiltInEnabled should be TRUE (it IS enabled)
+    // But conflicts should be empty (no conflict because our setting is disabled)
+    assert.strictEqual(result.vsCodeBuiltInEnabled, true, 'vsCodeBuiltInEnabled should reflect actual enabled state');
+    assert.strictEqual(result.ourOrganizeOnSaveEnabled, false, 'Our organizeOnSave is disabled');
+    assert.strictEqual(result.conflicts.length, 0, 'No conflict because our organizeOnSave is disabled');
   });
 });

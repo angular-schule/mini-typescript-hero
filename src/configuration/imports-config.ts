@@ -130,6 +130,7 @@ export class ImportsConfig {
     const insertSpaces = editorConfig.get<boolean>('insertSpaces', true);
 
     // Check if tabSize is explicitly configured (vs just VS Code's built-in default of 4)
+    // Note: EditorConfig values also appear here, which is correct - we respect EditorConfig.
     const tabSizeInspect = editorConfig.inspect<number>('tabSize');
     let tabSize: number;
 

@@ -301,14 +301,17 @@ const x = A + Z;
   // B6: Unicode and case ordering
   // ============================================================================
 
-  test('B6: Unicode and mixed case specifiers', async () => {
+  test('B6: Unicode and mixed case specifiers (ASCII order)', async () => {
+    // Old TypeScript Hero uses stringSort (ASCII comparison) for specifiers.
+    // ASCII order for these characters: A, B, a, b, Ä, ä, Ω, α, β
+    // (Uppercase ASCII before lowercase ASCII, then extended chars by code point)
     const content = `import { Ω, α, β, A, a, B, b, Ä, ä } from 'lib';
 
 const x = A + a + B + b + Ä + ä + α + β + Ω;
 `;
 
-    // Case-insensitive sorting: a, A, ä, Ä, b, B, α, β, Ω
-    const expected = `import { a, A, ä, Ä, b, B, α, β, Ω } from 'lib';
+    // ASCII sort order: A, B, a, b, Ä, ä, Ω, α, β
+    const expected = `import { A, B, a, b, Ä, ä, Ω, α, β } from 'lib';
 
 const x = A + a + B + b + Ä + ä + α + β + Ω;
 `;
@@ -321,7 +324,7 @@ const x = A + a + B + b + Ä + ä + α + β + Ω;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Unicode specifiers must be sorted case-insensitively');
+      assert.strictEqual(result, expected, 'Specifiers must be sorted using ASCII order (matching old extension)');
     } finally {
       await deleteTempDocument(doc);
     }

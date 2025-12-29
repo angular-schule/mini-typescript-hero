@@ -445,11 +445,12 @@ const y = map;
     }
   });
 
-  test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', async () => {
-    // CRITICAL: This test validates the fix for a major sorting bug.
-    // Specifiers must be sorted using localeCompare (case-insensitive), not ASCII sort.
-    // ASCII sort: Component, OnInit, inject (capitals first)
-    // localeCompare: Component, inject, OnInit (natural alphabetical order)
+  test('12a. Sort specifiers using ASCII order (matching old TypeScript Hero)', async () => {
+    // Old TypeScript Hero uses stringSort (ASCII comparison) for specifiers.
+    // This means uppercase letters come before lowercase (A-Z before a-z).
+    // ASCII order: Component, OnInit, inject (capitals first)
+    // localeCompare order: Component, inject, OnInit (case-insensitive)
+    // We match old extension behavior: ASCII order.
     const content = `import { OnInit, Component, inject } from '@angular/core';
 
 const x = Component;
@@ -470,9 +471,10 @@ const z: OnInit = {};
       assert.ok(match, 'Should have named imports');
       const specifiers = match![1].split(',').map(s => s.trim());
 
-      // Verify exact order: Component, inject, OnInit (localeCompare order)
-      assert.deepStrictEqual(specifiers, ['Component', 'inject', 'OnInit'],
-        'Specifiers should be sorted case-insensitively using localeCompare (Component, inject, OnInit)');
+      // Verify ASCII order: Component, OnInit, inject (uppercase before lowercase)
+      // This matches old TypeScript Hero's stringSort behavior
+      assert.deepStrictEqual(specifiers, ['Component', 'OnInit', 'inject'],
+        'Specifiers should be sorted using ASCII order (Component, OnInit, inject) to match old extension');
     } finally {
       await deleteTempDocument(doc);
     }

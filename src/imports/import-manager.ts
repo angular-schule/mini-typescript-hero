@@ -179,6 +179,9 @@ export class ImportManager {
 
     // Extract re-export statements (export { X } from './m' or export * as ns from './m')
     // These should be preserved and placed AFTER imports
+    //
+    // KNOWN LIMITATION: Re-exports are preserved in original file order, not sorted/grouped.
+    // Sorting re-exports could be added in a future version if there's demand.
     const exportDeclarations = this.sourceFile.getExportDeclarations();
     for (const exportDecl of exportDeclarations) {
       // Only capture re-exports (those with moduleSpecifier)
@@ -550,7 +553,12 @@ export class ImportManager {
       for (const imp of keep) {
         // In modern mode, include isTypeOnly in the grouping key
         // This prevents merging type-only imports with value imports
-        const typePrefix = (!isLegacy && imp instanceof NamedImport && imp.isTypeOnly) ? 'type:' : '';
+        // Check both NamedImport and NamespaceImport for isTypeOnly flag
+        const isTypeOnlyImport = !isLegacy && (
+          (imp instanceof NamedImport && imp.isTypeOnly) ||
+          (imp instanceof NamespaceImport && imp.isTypeOnly)
+        );
+        const typePrefix = isTypeOnlyImport ? 'type:' : '';
         const groupKey = typePrefix + imp.libraryName;
 
         if (!byLibrary.has(groupKey)) {
@@ -726,15 +734,6 @@ export class ImportManager {
     // Get the position info including blank lines before imports
     const { blankLinesBefore, hasHeader, hasLeadingBlanks, headerStartLine } = this.getImportInsertPosition();
 
-    // Delete leading blank lines before header (if any) as a separate edit
-    if (hasLeadingBlanks && headerStartLine > 0) {
-      const leadingBlanksRange = new Range(
-        new Position(0, 0),
-        new Position(headerStartLine, 0),
-      );
-      edits.push(TextEdit.delete(leadingBlanksRange));
-    }
-
     // Calculate the full range of imports to replace (excluding any header)
     const firstImport = allImports[0];
     const lastImport = allImports[allImports.length - 1];
@@ -742,9 +741,28 @@ export class ImportManager {
     let importSectionStartLine = firstImport.getStartLineNumber() - 1; // Convert to 0-indexed
     let importSectionEndLine = lastImport.getEndLineNumber() - 1;
 
+    // Delete leading blank lines before header or imports (if any) as a separate edit
+    // When hasLeadingBlanks is true:
+    //   - If headerStartLine > 0: There's a header, delete blanks from line 0 to headerStartLine
+    //   - If headerStartLine === -1: No header, delete blanks from line 0 to importSectionStartLine
+    if (hasLeadingBlanks) {
+      const deleteToLine = headerStartLine > 0 ? headerStartLine : importSectionStartLine;
+      if (deleteToLine > 0) {
+        const leadingBlanksRange = new Range(
+          new Position(0, 0),
+          new Position(deleteToLine, 0),
+        );
+        edits.push(TextEdit.delete(leadingBlanksRange));
+      }
+    }
+
     // Extract comments between imports (old TypeScript Hero moves them after imports)
     // Only extract standalone comment lines that are BETWEEN import declarations,
     // not lines that are WITHIN a multi-line import declaration
+    //
+    // KNOWN LIMITATION: Comments INSIDE multiline import braces are not preserved.
+    // Example: `import { Foo, /* comment */ Bar } from 'lib'` - the comment is lost.
+    // This is complex to fix and is an edge case. Standalone comments between imports ARE preserved.
     const commentsBetweenImports: string[] = [];
     for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
       const lineNumber = i + 1; // Convert to 1-indexed for comparison with ts-morph
@@ -773,8 +791,11 @@ export class ImportManager {
       }
     }
 
-    // Include blank lines before first import (but not header)
-    if (blankLinesBefore > 0) {
+    // Include blank lines before first import (but not header) in the replace range.
+    // IMPORTANT: Only do this if we did NOT create a separate delete edit for leading blanks!
+    // When hasLeadingBlanks is true, we already deleted lines 0 to importSectionStartLine,
+    // so we must NOT extend importSectionStartLine backwards (would create overlapping ranges).
+    if (blankLinesBefore > 0 && !hasLeadingBlanks) {
       importSectionStartLine = Math.max(0, importSectionStartLine - blankLinesBefore);
     }
 

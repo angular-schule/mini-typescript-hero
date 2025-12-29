@@ -66,8 +66,13 @@ export function detectConflicts(): ConflictInfo {
   // Only a conflict if OUR organizeOnSave is also enabled
   // Ignore "never" and false values (explicitly disabled)
   const editorConfig = workspace.getConfiguration('editor');
-  const codeActionsOnSave = editorConfig.get('codeActionsOnSave') as Record<string, boolean | string> | undefined;
-  const organizeImportsValue: boolean | string | undefined = codeActionsOnSave?.['source.organizeImports'];
+  const codeActionsOnSaveRaw = editorConfig.get('codeActionsOnSave');
+  // Handle different types - codeActionsOnSave could be object, boolean, string, or undefined
+  let organizeImportsValue: boolean | string | undefined;
+  if (codeActionsOnSaveRaw && typeof codeActionsOnSaveRaw === 'object') {
+    organizeImportsValue = (codeActionsOnSaveRaw as Record<string, boolean | string>)['source.organizeImports'];
+  }
+  // If codeActionsOnSave is not an object, organizeImportsValue stays undefined (no conflict)
   const vsCodeBuiltInEnabled = organizeImportsValue !== false && organizeImportsValue !== 'never' && organizeImportsValue !== undefined;
   const vsCodeBuiltInConflict = vsCodeBuiltInEnabled && ourOrganizeOnSave;
 
@@ -78,7 +83,7 @@ export function detectConflicts(): ConflictInfo {
   return {
     oldExtensionInstalled,
     oldOrganizeOnSaveEnabled,
-    vsCodeBuiltInEnabled: vsCodeBuiltInConflict,
+    vsCodeBuiltInEnabled,  // Return actual enabled state, not conflict state
     ourOrganizeOnSaveEnabled: ourOrganizeOnSave,
     conflicts,
   };

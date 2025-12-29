@@ -24,6 +24,35 @@ const SETTINGS_TO_MIGRATE = [
 ];
 
 /**
+ * Expected types for each setting. Used to validate migrated values.
+ */
+const SETTING_TYPES: Record<string, string> = {
+  'insertSpaceBeforeAndAfterImportBraces': 'boolean',
+  'insertSemicolons': 'boolean',
+  'removeTrailingIndex': 'boolean',
+  'stringQuoteStyle': 'string',
+  'multiLineWrapThreshold': 'number',
+  'multiLineTrailingComma': 'boolean',
+  'disableImportRemovalOnOrganize': 'boolean',
+  'disableImportsSorting': 'boolean',
+  'organizeOnSave': 'boolean',
+  'organizeSortsByFirstSpecifier': 'boolean',
+  'ignoredFromRemoval': 'object', // array
+  'grouping': 'object', // array
+};
+
+/**
+ * Validates that a setting value has the expected type.
+ */
+function isValidSettingType(setting: string, value: unknown): boolean {
+  const expectedType = SETTING_TYPES[setting];
+  if (!expectedType) {
+    return true; // Unknown setting, allow migration
+  }
+  return typeof value === expectedType;
+}
+
+/**
  * Migrates settings from the original TypeScript Hero extension to Mini TypeScript Hero.
  *
  * This function:
@@ -90,23 +119,24 @@ async function performMigration(): Promise<number> {
 
     // Migrate from each configuration level where it was set
     // Priority: workspace > workspaceFolder > global
+    // Only migrate if the value has the correct type
 
     // Migrate workspace settings
-    if (inspect.workspaceValue !== undefined) {
+    if (inspect.workspaceValue !== undefined && isValidSettingType(setting, inspect.workspaceValue)) {
       await newConfig.update(setting, inspect.workspaceValue, ConfigurationTarget.Workspace);
       migratedCount++;
       migratedWorkspaceCount++;
     }
 
     // Migrate workspace folder settings
-    if (inspect.workspaceFolderValue !== undefined) {
+    if (inspect.workspaceFolderValue !== undefined && isValidSettingType(setting, inspect.workspaceFolderValue)) {
       await newConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
       migratedCount++;
       migratedWorkspaceFolderCount++;
     }
 
     // Migrate global (user) settings
-    if (inspect.globalValue !== undefined) {
+    if (inspect.globalValue !== undefined && isValidSettingType(setting, inspect.globalValue)) {
       await newConfig.update(setting, inspect.globalValue, ConfigurationTarget.Global);
       migratedCount++;
       migratedGlobalCount++;
