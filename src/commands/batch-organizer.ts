@@ -348,8 +348,11 @@ export class BatchOrganizer {
 
         // CRITICAL: Save all modified documents to disk!
         // workspace.applyEdit() only modifies in-memory documents, doesn't save!
-        // NOTE: We must explicitly open each document because files that weren't already
-        // open may not appear in workspace.textDocuments (race condition fix).
+        //
+        // NOTE: We must explicitly open each document because workspace.textDocuments
+        // has lazy loading behavior - it only contains documents that have been "activated".
+        // See: https://github.com/microsoft/vscode/issues/33546
+        // See: https://github.com/microsoft/vscode/issues/38665
         const saveFailed: string[] = [];
         let savedCount = 0;
         for (const [fileUri] of workspaceEdit.entries()) {
