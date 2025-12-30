@@ -10,8 +10,7 @@ export class RemainImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
 
   public get sortedImports(): Import[] {
-    // IMPORTANT: Copy array before sorting to avoid mutating the original
-    const sorted = [...this.imports].sort((i1, i2) =>
+    const sorted = this.imports.sort((i1, i2) =>
       importSort(i1, i2, this.order),
     );
     return [
