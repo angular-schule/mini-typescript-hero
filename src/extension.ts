@@ -157,9 +157,10 @@ async function checkForConflicts(
         // Mark as warned - conflict resolved
         await context.globalState.update(hasWarnedKey, true);
       } else if (selection === 'Open Extensions') {
-        // Open Extensions view so user can disable old TypeScript Hero manually
-        await commands.executeCommand('workbench.extensions.action.showInstalledExtensions');
-        // Don't mark as warned - let user see warning again if they didn't actually fix it
+        // Open Extensions sidebar so user can disable old TypeScript Hero manually
+        // NOTE: Using 'workbench.view.extensions' instead of 'workbench.extensions.action.showInstalledExtensions'
+        // because the latter silently fails in some contexts.
+        await commands.executeCommand('workbench.view.extensions');
       } else if (selection === 'Don\'t Show Again') {
         // User explicitly wants to suppress warning
         await context.globalState.update(hasWarnedKey, true);
