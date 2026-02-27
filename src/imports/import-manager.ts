@@ -713,15 +713,37 @@ export class ImportManager {
     const importEquals = this.sourceFile.getStatements()
       .filter(stmt => Node.isImportEqualsDeclaration(stmt)) as ImportEqualsDeclaration[];
 
-    // Also include re-export declarations in the range (they'll be moved after imports)
+    // Build list of actual imports (without re-exports)
+    const actualImports: Array<ImportDeclaration | ImportEqualsDeclaration> = [
+      ...importDeclarations,
+      ...importEquals,
+    ];
+
+    // If there are no actual imports, nothing to organize.
+    // Re-exports alone (e.g., barrel files) don't need sorting/grouping.
+    if (actualImports.length === 0) {
+      return edits;
+    }
+
+    // Get re-export declarations (export { X } from './m')
     const exportDeclarations = this.sourceFile.getExportDeclarations()
       .filter(exportDecl => exportDecl.getModuleSpecifier() !== undefined);
 
-    // Combine all declaration types - they all have getStart() and getStartLineNumber() methods
+    // Only include re-exports that are contiguous with the import block
+    // (no code lines between them - only blank lines and comments allowed).
+    // This prevents accidentally deleting code between imports and distant re-exports.
+    const adjacentExports = this.findAdjacentExports(actualImports, exportDeclarations);
+
+    // Filter this.reExports to only include adjacent ones (non-adjacent stay in place)
+    if (adjacentExports.length < exportDeclarations.length) {
+      const adjacentTexts = new Set(adjacentExports.map(e => e.getText()));
+      this.reExports = this.reExports.filter(text => adjacentTexts.has(text));
+    }
+
+    // Combine imports and adjacent re-exports for range calculation
     const allImports: Array<ImportDeclaration | ImportEqualsDeclaration | ExportDeclaration> = [
-      ...importDeclarations,
-      ...importEquals,
-      ...exportDeclarations
+      ...actualImports,
+      ...adjacentExports,
     ];
 
     if (allImports.length === 0) {
@@ -919,6 +941,60 @@ export class ImportManager {
     }
 
     return edits;
+  }
+
+  /**
+   * Find re-export declarations that are adjacent to the import block.
+   * A re-export is "adjacent" if there are only blank lines and comments
+   * between it and the import section (no code).
+   */
+  private findAdjacentExports(
+    actualImports: Array<ImportDeclaration | ImportEqualsDeclaration>,
+    exportDeclarations: ExportDeclaration[],
+  ): ExportDeclaration[] {
+    if (exportDeclarations.length === 0) {
+      return [];
+    }
+
+    const sortedImports = [...actualImports].sort((a, b) => a.getStart() - b.getStart());
+    const sortedExports = [...exportDeclarations].sort((a, b) => a.getStart() - b.getStart());
+
+    const lastImportLine = sortedImports[sortedImports.length - 1].getEndLineNumber(); // 1-indexed
+
+    const adjacent: ExportDeclaration[] = [];
+
+    for (const exportDecl of sortedExports) {
+      const exportStartLine = exportDecl.getStartLineNumber(); // 1-indexed
+
+      if (exportStartLine <= lastImportLine) {
+        // Re-export is within or before the import block - always include
+        adjacent.push(exportDecl);
+        continue;
+      }
+
+      // Re-export is after the import block.
+      // Check if there's only blank lines/comments between the section end and this re-export.
+      const sectionEndLine = adjacent.length > 0
+        ? Math.max(lastImportLine, ...adjacent.map(e => e.getEndLineNumber()))
+        : lastImportLine;
+
+      let isAdjacent = true;
+      for (let line1 = sectionEndLine + 1; line1 < exportStartLine; line1++) {
+        const lineText = this.document.lineAt(line1 - 1).text.trim(); // lineAt is 0-indexed
+        if (lineText !== '' && !lineText.startsWith('//') && !lineText.startsWith('/*') && !lineText.startsWith('*')) {
+          isAdjacent = false;
+          break;
+        }
+      }
+
+      if (isAdjacent) {
+        adjacent.push(exportDecl);
+      } else {
+        break; // Non-adjacent → all subsequent re-exports are also non-adjacent
+      }
+    }
+
+    return adjacent;
   }
 
   /**

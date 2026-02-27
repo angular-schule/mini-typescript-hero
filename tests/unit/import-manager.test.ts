@@ -3223,7 +3223,64 @@ console.log(A, B, C);
     }
   });
 
-  test('99. ignoredFromRemoval libraries have sorted specifiers', async () => {
+  test('99. Barrel file with only re-exports must NOT be emptied', async () => {
+    // Bug: When a file has only re-exports and no regular imports,
+    // the else branch in generateTextEdits() deletes the entire range
+    // without preserving re-exports (importLines is empty → delete all)
+    const content = `export { Foo } from './foo';
+export { Bar } from './bar';
+export { Baz } from './baz';
+`;
+
+    const expected = `export { Foo } from './foo';
+export { Bar } from './bar';
+export { Baz } from './baz';
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      assert.strictEqual(result, expected, 'Barrel file re-exports must be preserved, not deleted');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('100. Re-exports separated from imports by code must NOT delete code between them', async () => {
+    // Bug: allImports includes export declarations, so the range spans from
+    // the first import to the last re-export. Code between them is silently deleted.
+    const content = `import { Component } from '@angular/core';
+
+export class MyComponent {
+  constructor(private comp: Component) {}
+}
+
+export { Helper } from './helpers';
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      assert.ok(result.includes('export class MyComponent'),
+        'Code between imports and re-exports must NOT be deleted');
+      assert.ok(result.includes('constructor'),
+        'Class body must be preserved');
+      assert.ok(result.includes("from '@angular/core'"),
+        'Used import must be kept');
+      assert.ok(result.includes("export { Helper } from './helpers'"),
+        'Re-export must be preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('101. ignoredFromRemoval libraries have sorted specifiers', async () => {
     // Verify that libraries in ignoredFromRemoval list still get their specifiers sorted
     // This ensures consistent formatting even when imports are protected from removal
 

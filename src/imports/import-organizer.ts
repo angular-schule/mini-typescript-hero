@@ -173,6 +173,12 @@ export class ImportOrganizer implements Disposable {
       return false;
     }
 
+    // Check if file is excluded by user/team patterns (same check as manual command)
+    if (this.isFileExcluded(document.uri)) {
+      this.logger.appendLine(`[ImportOrganizer] Skipping organize-on-save for excluded file: ${document.fileName}`);
+      return false;
+    }
+
     // Note: Conflict detection runs on activation (see extension.ts)
     // If user has both Mini TS Hero AND VSCode built-in organize imports enabled,
     // they were warned and offered auto-resolution via "Disable for Me" button.
