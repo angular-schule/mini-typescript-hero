@@ -931,8 +931,27 @@ export class ImportManager {
         this.document.lineAt(importSectionEndLine).rangeIncludingLineBreak.end,
       );
       edits.push(TextEdit.replace(replaceRange, importText));
+    } else if (this.reExports.length > 0 || commentsBetweenImports.length > 0) {
+      // No imports, but re-exports and/or comments need to be preserved
+      let replacementText = '';
+      if (commentsBetweenImports.length > 0) {
+        replacementText += commentsBetweenImports.join(this.eol);
+        replacementText += this.eol;
+      }
+      if (this.reExports.length > 0) {
+        replacementText += this.reExports.join(this.eol);
+        replacementText += this.eol;
+      }
+      if (finalBlankLinesAfter > 0) {
+        replacementText += this.eol.repeat(finalBlankLinesAfter);
+      }
+      const replaceRange = new Range(
+        this.document.lineAt(importSectionStartLine).range.start,
+        this.document.lineAt(importSectionEndLine).rangeIncludingLineBreak.end,
+      );
+      edits.push(TextEdit.replace(replaceRange, replacementText));
     } else {
-      // No imports to insert, just delete the old import section
+      // Truly nothing to keep — delete the old import section
       const deleteRange = new Range(
         this.document.lineAt(importSectionStartLine).range.start,
         this.document.lineAt(importSectionEndLine).rangeIncludingLineBreak.end,

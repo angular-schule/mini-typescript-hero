@@ -170,11 +170,19 @@ mini-typescript-hero/                     ← Project root
 │
 ├── tests/                                ← All test-related folders
 │   ├── unit/                             ← Main extension tests (run with npm test)
-│   │   ├── import-manager.test.ts        ← Core import manager tests
-│   │   ├── import-manager.*.test.ts      ← Additional import manager tests
+│   │   ├── import-manager.test.ts        ← Core import manager tests (~100 tests)
+│   │   ├── import-manager.*.test.ts      ← Additional: blank-lines, edge-cases, indentation, etc.
 │   │   ├── import-grouping.test.ts       ← Grouping logic tests
-│   │   ├── settings-migration.test.ts    ← Migration tests
-│   │   └── test-helpers.ts               ← Shared test utilities
+│   │   ├── import-organizer.test.ts      ← Orchestrator/command tests
+│   │   ├── import-utilities.test.ts      ← Sorting utility tests
+│   │   ├── configuration/                ← Config-related tests
+│   │   │   ├── settings-migration.test.ts  ← Migration tests
+│   │   │   └── conflict-detector.test.ts   ← Conflict detection tests
+│   │   ├── commands/
+│   │   │   └── batch-organizer.integration.test.ts  ← Batch operation tests
+│   │   ├── test-helpers.ts               ← Shared test utilities
+│   │   ├── test-types.ts                 ← Test type definitions
+│   │   └── *.test.ts                     ← Additional: manifest, perf, vscode defaults, etc.
 │   ├── comparison/                       ← Old vs new comparison tests
 │   │   ├── old-extension/adapter.ts      ← Adapter for old TypeScript Hero
 │   │   ├── new-extension/adapter.ts      ← Adapter for new Mini TypeScript Hero
@@ -388,7 +396,7 @@ All settings are under `miniTypescriptHero.imports.*`:
 16. `excludePatterns` (string[]) - Glob patterns for files to exclude from import organization
 
 ### Blank Lines
-17. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: Partially overridden in legacyMode for files with headers or leading blanks; otherwise respected)
+17. `blankLinesAfterImports` (one/two/preserve) - How many blank lines after imports (Note: This setting has no effect when legacyMode is true — legacy mode always uses 'preserve' behavior with special handling for headers and leading blanks)
 
 ### Behavior & Compatibility
 18. `organizeOnSave` (boolean) - Automatically organize imports when saving files

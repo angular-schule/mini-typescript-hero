@@ -115,7 +115,7 @@ VS Code has a built-in "Organize Imports" that removes unused imports and sorts 
 
 ### Example: Automatic vs Manual Grouping
 
-**Mini TypeScript Hero** with default grouping (`["Modules", "Workspace"]`):
+**Mini TypeScript Hero** with default grouping (`["Plains", "Modules", "Workspace"]`):
 
 ```typescript
 import { Component, OnInit } from '@angular/core';

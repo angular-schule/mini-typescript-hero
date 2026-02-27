@@ -3280,7 +3280,34 @@ export { Helper } from './helpers';
     }
   });
 
-  test('101. ignoredFromRemoval libraries have sorted specifiers', async () => {
+  test('101. Adjacent re-exports preserved when all imports are removed as unused', async () => {
+    // Bug: When all imports are unused but adjacent re-exports exist,
+    // the else branch in generateTextEdits() deletes the entire range
+    // without preserving re-exports.
+    const content = `import { A } from './a';
+export { X } from './x';
+
+const y = 1;
+`;
+
+    const expected = `export { X } from './x';
+
+const y = 1;
+`;
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      const result = await applyEditsToDocument(doc, edits);
+
+      assert.strictEqual(result, expected, 'Adjacent re-exports must be preserved when all imports are removed');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('102. ignoredFromRemoval libraries have sorted specifiers', async () => {
     // Verify that libraries in ignoredFromRemoval list still get their specifiers sorted
     // This ensures consistent formatting even when imports are protected from removal
 

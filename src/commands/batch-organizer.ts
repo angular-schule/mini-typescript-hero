@@ -3,6 +3,7 @@ import {
   OutputChannel,
   Progress,
   ProgressLocation,
+  RelativePattern,
   TextEdit,
   Uri,
   window,
@@ -165,15 +166,17 @@ export class BatchOrganizer {
       .substring(workspaceFolder.uri.fsPath.length + 1)
       .replace(/\\/g, '/');
     // Handle case where folder IS the workspace root (relative path is empty)
-    const include = relativePath
+    const includeGlob = relativePath
       ? `${relativePath}/**/*.{ts,tsx,js,jsx}`
       : '**/*.{ts,tsx,js,jsx}';
-    const excludePatterns = this.getExcludePatterns(folderUri);
+    const excludePatterns = this.getExcludePatterns(workspaceFolder.uri);
 
-    this.logger.appendLine(`[BatchOrganizer] Searching folder: ${include}`);
+    this.logger.appendLine(`[BatchOrganizer] Searching folder: ${includeGlob}`);
     this.logger.appendLine(`[BatchOrganizer] Excluding: ${excludePatterns.join(', ')}`);
 
-    // Find all files (VS Code respects files.exclude by default)
+    // Use RelativePattern to scope findFiles to the specific workspace folder
+    // (plain string patterns search across ALL workspace roots in multi-root workspaces)
+    const include = new RelativePattern(workspaceFolder, includeGlob);
     const allFiles = await workspace.findFiles(include, null);
 
     // Manually filter files using exclude patterns
