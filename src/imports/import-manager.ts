@@ -367,7 +367,7 @@ export class ImportManager {
         const rest = leadingBlockMatch[2];
 
         // Extract specifier name from rest (might be "A," or "A as B," etc.)
-        const specMatch = rest.match(/^(?:type\s+)?(\w+)/);
+        const specMatch = rest.match(/^(?:type\s+)?([$\w]+)/);
         if (specMatch) {
           const specName = specMatch[1];
           if (specifierNames.includes(specName)) {
@@ -380,7 +380,7 @@ export class ImportManager {
       }
 
       // Check for trailing line comment: specifier // comment
-      const trailingLineMatch = trimmed.match(/^(?:type\s+)?(\w+)(?:\s+as\s+\w+)?\s*,?\s*(\/\/.*?)$/);
+      const trailingLineMatch = trimmed.match(/^(?:type\s+)?([$\w]+)(?:\s+as\s+[$\w]+)?\s*,?\s*(\/\/.*?)$/);
       if (trailingLineMatch) {
         const specName = trailingLineMatch[1];
         const comment = trailingLineMatch[2];
@@ -394,7 +394,7 @@ export class ImportManager {
       }
 
       // Regular specifier without comments
-      const regularMatch = trimmed.match(/^(?:type\s+)?(\w+)/);
+      const regularMatch = trimmed.match(/^(?:type\s+)?([$\w]+)/);
       if (regularMatch) {
         const specName = regularMatch[1];
         if (specifierNames.includes(specName) && !result.has(specName)) {
@@ -460,8 +460,13 @@ export class ImportManager {
         if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName)) {
           // Still need to sort specifiers for NamedImport to maintain consistent formatting
           if (imp instanceof NamedImport && imp.specifiers.length > 0) {
-            const sortedSpecifiers = [...imp.specifiers].sort(specifierSort);
-            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes));
+            const isLegacy = this.config.legacyMode(this.document.uri);
+            // In legacy mode, strip specifier-level isTypeOnly (old extension doesn't support it)
+            const specs = isLegacy
+              ? imp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
+              : imp.specifiers;
+            const sortedSpecifiers = [...specs].sort(specifierSort);
+            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, isLegacy ? false : imp.isTypeOnly, imp.attributes));
           } else {
             keep.push(imp);
           }
@@ -786,6 +791,7 @@ export class ImportManager {
     // Example: `import { Foo, /* comment */ Bar } from 'lib'` - the comment is lost.
     // This is complex to fix and is an edge case. Standalone comments between imports ARE preserved.
     const commentsBetweenImports: string[] = [];
+    let insideBlockComment = false;
     for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
       const lineNumber = i + 1; // Convert to 1-indexed for comparison with ts-morph
 
@@ -800,6 +806,16 @@ export class ImportManager {
       if (!isWithinImport) {
         const lineText = this.document.lineAt(i).text;
         const trimmedText = lineText.trim();
+
+        // Track multi-line block comments (/* ... */ spanning multiple lines)
+        if (insideBlockComment) {
+          commentsBetweenImports.push(lineText);
+          if (trimmedText.includes('*/')) {
+            insideBlockComment = false;
+          }
+          continue;
+        }
+
         // GOLDEN RULE - NEVER DELETE USER COMMENTS!
         // We MUST preserve ALL comments, including those with "import" keyword.
         // This includes commented-out imports like "// import { Foo } from './bar';"
@@ -809,6 +825,9 @@ export class ImportManager {
 
         if (isStandaloneComment) {
           commentsBetweenImports.push(lineText);
+          if (trimmedText.startsWith('/*') && !trimmedText.includes('*/')) {
+            insideBlockComment = true;
+          }
         }
       }
     }
@@ -1137,7 +1156,9 @@ export class ImportManager {
       }
 
       // Add 'type' keyword for type-only imports (TS 3.8+)
-      const typeKeyword = imp.isTypeOnly ? 'type ' : '';
+      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
+      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
+      const typeKeyword = useTypeKeyword ? 'type ' : '';
       return `import ${typeKeyword}${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 

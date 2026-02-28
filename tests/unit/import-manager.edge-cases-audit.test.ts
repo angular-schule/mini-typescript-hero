@@ -249,49 +249,74 @@ const x = A + B + Z;
   // ============================================================================
 
   test('B5a: Trailing comma enabled for multiline imports', async () => {
-    const content = `import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z } from 'lib';
+    const content = `import { Component, useState, useEffect } from 'lib';
 
-const x = A + Z;
+const x = Component;
+const y = useState;
+const z = useEffect;
+`;
+
+    const expected = `import {
+  Component,
+  useEffect,
+  useState,
+} from 'lib';
+
+const x = Component;
+const y = useState;
+const z = useEffect;
 `;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new ImportsConfig();
+      const config = new (class extends ImportsConfig {
+        public multiLineWrapThreshold() { return 20; } // Force multiline
+        public multiLineTrailingComma() { return true; }
+        public indentation() { return '  '; }
+      })();
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      // multiLineTrailingComma is true by default
-      // If multi-line (contains newline in import), should have trailing comma
-      if (result.includes('} from') && result.includes('\n  ')) {
-        // Is multi-line
-        assert.ok(result.includes(',\n}') || result.includes(', }'), 'Multi-line import should have trailing comma');
-      }
-      // If single-line, just verify it's sorted
-      assert.ok(result.includes('from \'lib\''), 'Import from lib must be present');
+      assert.strictEqual(result, expected, 'Multi-line import must have trailing comma when enabled');
     } finally {
       await deleteTempDocument(doc);
     }
   });
 
   test('B5b: Trailing comma disabled', async () => {
-    const content = `import { A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z } from 'lib';
+    const content = `import { Component, useState, useEffect } from 'lib';
 
-const x = A + Z;
+const x = Component;
+const y = useState;
+const z = useEffect;
+`;
+
+    const expected = `import {
+  Component,
+  useEffect,
+  useState
+} from 'lib';
+
+const x = Component;
+const y = useState;
+const z = useEffect;
 `;
 
     const doc = await createTempDocument(content, 'ts');
     try {
-      const config = new MockImportsConfig();
-      config.setConfig('multiLineTrailingComma', false);
+      const config = new (class extends ImportsConfig {
+        public multiLineWrapThreshold() { return 20; } // Force multiline
+        public multiLineTrailingComma() { return false; }
+        public indentation() { return '  '; }
+      })();
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      // Should be multi-line WITHOUT trailing comma
-      assert.ok(!result.includes(',\n}'), 'Multi-line import must NOT have trailing comma when disabled');
+      assert.strictEqual(result, expected, 'Multi-line import must NOT have trailing comma when disabled');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -655,7 +680,7 @@ const x = A + Z;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, "'use client' must be treated as header");
+      assert.strictEqual(result, expected, "'use client' directive must be preserved before imports");
     } finally {
       await deleteTempDocument(doc);
     }
@@ -732,13 +757,14 @@ const x = A + Z;
   // ============================================================================
 
   test('B17: Large file with 50+ imports remains stable', async () => {
-    // Generate 50 imports
+    // Generate 50 imports with UNIQUE module names and USE all of them so none are removed
     let imports = '';
+    const usages: string[] = [];
     for (let i = 0; i < 50; i++) {
-      const letter = String.fromCharCode(65 + (i % 26)); // A-Z
-      imports += `import { Item${i} } from './module${letter}';\n`;
+      imports += `import { Item${i} } from './module${i}';\n`;
+      usages.push(`Item${i}`);
     }
-    const content = imports + '\nconst x = Item0;\n';
+    const content = imports + `\nconst x = ${usages.join(' + ')};\n`;
 
     const doc = await createTempDocument(content, 'ts');
     try {
@@ -759,6 +785,9 @@ const x = A + Z;
       const result2 = doc.getText();
 
       assert.strictEqual(result1, result2, 'Large file must be idempotent (second run produces same output)');
+      // Verify all 50 imports are still present (none removed)
+      const importLines = result1.split('\n').filter(l => l.startsWith('import'));
+      assert.strictEqual(importLines.length, 50, 'All 50 imports must be preserved');
     } finally {
       await deleteTempDocument(doc);
     }

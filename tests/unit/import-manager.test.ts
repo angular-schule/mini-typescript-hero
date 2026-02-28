@@ -3261,20 +3261,24 @@ export class MyComponent {
 export { Helper } from './helpers';
 `;
 
+    // Re-exports NOT adjacent to imports must be left in place (code between them preserved)
+    const expected = `import { Component } from '@angular/core';
+
+export class MyComponent {
+  constructor(private comp: Component) {}
+}
+
+export { Helper } from './helpers';
+`;
+
     const doc = await createTempDocument(content);
     try {
       const manager = new ImportManager(doc, config);
       const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
-      assert.ok(result.includes('export class MyComponent'),
-        'Code between imports and re-exports must NOT be deleted');
-      assert.ok(result.includes('constructor'),
-        'Class body must be preserved');
-      assert.ok(result.includes("from '@angular/core'"),
-        'Used import must be kept');
-      assert.ok(result.includes("export { Helper } from './helpers'"),
-        'Re-export must be preserved');
+      assert.strictEqual(result, expected,
+        'Code between imports and non-adjacent re-exports must NOT be deleted');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -3317,6 +3321,11 @@ import { unused } from './other';
 console.log(Z, A, M);
 `;
 
+    const expected = `import { A, M, Z } from 'my-protected-lib';
+
+console.log(Z, A, M);
+`;
+
     const customConfig = new MockImportsConfig();
     customConfig.setConfig('ignoredFromRemoval', ['my-protected-lib']);
 
@@ -3326,13 +3335,8 @@ console.log(Z, A, M);
       const edits = await manager.organizeImports();
       const result = await applyEditsToDocument(doc, edits);
 
-      // Verify specifiers are sorted alphabetically even though library is protected
-      assert.ok(result.includes("import { A, M, Z } from 'my-protected-lib';"),
-        'Protected library specifiers must be sorted alphabetically');
-
-      // Verify unused import from other library was removed
-      assert.ok(!result.includes('./other'),
-        'Non-protected unused import should be removed');
+      assert.strictEqual(result, expected,
+        'Protected library specifiers must be sorted; non-protected unused import removed');
     } finally {
       await deleteTempDocument(doc);
     }

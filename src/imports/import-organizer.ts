@@ -83,6 +83,12 @@ export class ImportOrganizer implements Disposable {
       return;
     }
 
+    // Only process file:// and untitled: schemes (skip git diffs, SCM views, etc.)
+    const scheme = editor.document.uri.scheme;
+    if (scheme !== 'file' && scheme !== 'untitled') {
+      return;
+    }
+
     if (!this.isSupportedLanguage(editor.document.languageId)) {
       window.showWarningMessage(
         `Mini TypeScript Hero: Organize imports is not supported for ${editor.document.languageId} files`,

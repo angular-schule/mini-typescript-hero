@@ -288,7 +288,7 @@ export class BatchOrganizer {
       }
 
       const fileUri = files[i];
-      const fileName = fileUri.fsPath.split('/').pop() || fileUri.fsPath;
+      const fileName = fileUri.path.split('/').pop() || fileUri.fsPath;
 
       try {
         const doc = await workspace.openTextDocument(fileUri);

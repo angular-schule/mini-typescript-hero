@@ -245,11 +245,20 @@
                 "type": "object",
                 "properties": {
                   "identifier": {
-                    "enum": [
-                      "Modules",
-                      "Plains",
-                      "Workspace",
-                      "Remaining"
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "Modules",
+                          "Plains",
+                          "Workspace",
+                          "Remaining"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^/.+/$",
+                        "description": "Regex pattern (e.g., '/^@angular/')"
+                      }
                     ]
                   },
                   "order": {

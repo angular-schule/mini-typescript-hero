@@ -734,13 +734,14 @@ async function action() {
   // ============================================================================
 
   test('B18: Large file with 50+ imports remains stable', async () => {
-    // Generate 50 imports
+    // Generate 50 imports with UNIQUE module names and USE all of them so none are removed
     let imports = '';
+    const usages: string[] = [];
     for (let i = 0; i < 50; i++) {
-      const letter = String.fromCharCode(65 + (i % 26)); // A-Z
-      imports += `import { Item${i} } from './module${letter}';\n`;
+      imports += `import { Item${i} } from './module${i}';\n`;
+      usages.push(`Item${i}`);
     }
-    const content = imports + '\nconst x = Item0;\n';
+    const content = imports + `\nconst x = ${usages.join(' + ')};\n`;
 
     const doc = await createTempDocument(content, 'ts');
     try {
@@ -759,8 +760,11 @@ async function action() {
 
       assert.strictEqual(result2, result1, 'Large file must be idempotent (same output after 2 runs)');
 
-      // Verify imports are sorted
+      // Verify all 50 imports are still present (none removed)
       const lines = result1.split('\n').filter(l => l.startsWith('import'));
+      assert.strictEqual(lines.length, 50, 'All 50 imports must be preserved');
+
+      // Verify imports are sorted
       const sorted = [...lines].sort();
       assert.deepStrictEqual(lines, sorted, 'Imports must be sorted');
     } finally {
