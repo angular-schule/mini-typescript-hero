@@ -536,7 +536,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
     }
   });
 
-  // TODO: Convert to stub-based test (uses workspace.updateWorkspaceFolders which crashes CI)
+  // SKIPPED: workspace.updateWorkspaceFolders() corrupts workspace state for subsequent tests
   test.skip('organizeWorkspace() should show warning when no workspace folder open', async function() {
     this.timeout(5000);
 
@@ -683,7 +683,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
     }
   });
 
-  // TODO: Convert to stub-based test (uses workspace.updateWorkspaceFolders which crashes CI)
+  // SKIPPED: workspace.updateWorkspaceFolders() corrupts workspace state for subsequent tests
   test.skip('organizeFolder() should handle symlink edge case (VS Code bug #44964)', async function() {
     this.timeout(15000);
 
@@ -764,7 +764,7 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
     }
   });
 
-  // TODO: Convert to stub-based test (uses workspace.updateWorkspaceFolders which crashes CI)
+  // SKIPPED: workspace.updateWorkspaceFolders() corrupts workspace state for subsequent tests
   test.skip('organizeWorkspace() should respect per-root excludePatterns in multi-root workspace', async function() {
     this.timeout(20000);
 
