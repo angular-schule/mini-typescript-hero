@@ -783,7 +783,7 @@ import { Y } from './m';
 const foo = Y;
 `;
 
-    // Expected: Re-exports are moved AFTER imports (matching old TypeScript Hero behavior)
+    // Expected: Re-exports are placed AFTER organized imports (old extension doesn't touch re-exports at all)
     const expected = `import { Y } from './m';
 
 export { X } from './m';

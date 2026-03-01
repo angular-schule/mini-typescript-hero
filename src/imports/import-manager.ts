@@ -367,7 +367,8 @@ export class ImportManager {
         const rest = leadingBlockMatch[2];
 
         // Extract specifier name from rest (might be "A," or "A as B," etc.)
-        const specMatch = rest.match(/^(?:type\s+)?([$\w]+)/);
+        // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
+        const specMatch = rest.match(/^(?:type\s+)?([\p{ID_Continue}$]+)/u);
         if (specMatch) {
           const specName = specMatch[1];
           if (specifierNames.includes(specName)) {
@@ -380,7 +381,8 @@ export class ImportManager {
       }
 
       // Check for trailing line comment: specifier // comment
-      const trailingLineMatch = trimmed.match(/^(?:type\s+)?([$\w]+)(?:\s+as\s+[$\w]+)?\s*,?\s*(\/\/.*?)$/);
+      // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
+      const trailingLineMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)(?:\s+as\s+[\p{ID_Continue}$]+)?\s*,?\s*(\/\/.*?)$/u);
       if (trailingLineMatch) {
         const specName = trailingLineMatch[1];
         const comment = trailingLineMatch[2];
@@ -394,7 +396,8 @@ export class ImportManager {
       }
 
       // Regular specifier without comments
-      const regularMatch = trimmed.match(/^(?:type\s+)?([$\w]+)/);
+      // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
+      const regularMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)/u);
       if (regularMatch) {
         const specName = regularMatch[1];
         if (specifierNames.includes(specName) && !result.has(specName)) {

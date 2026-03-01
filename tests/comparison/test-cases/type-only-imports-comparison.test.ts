@@ -1,19 +1,24 @@
 /**
- * Type-Only Import Handling - Legacy vs Modern Mode Comparison
+ * Type-Only Import Handling - Legacy vs Modern Mode (NEW EXTENSION ONLY)
+ *
+ * NOTE: Despite being in the comparison test directory, this file does NOT run the
+ * old TypeScript Hero extension. It only tests the new extension's behavior in both
+ * legacy and modern modes. The old extension cannot be tested here because its
+ * typescript-parser predates TypeScript 3.8 and cannot parse `import type` syntax.
+ *
+ * For VERIFIED old extension behavior with `import type`, see:
+ * - tests/comparison/test-cases/06-edge-cases.test.ts (test 086)
+ * - tests/comparison/test-cases/11-true-compatibility.test.ts (TC7a, TC7b)
  *
  * This test demonstrates the key difference in type-only import handling between:
  * - Legacy mode (legacyMode: true): Strips `import type` keywords, allows merging with value imports
  * - Modern mode (legacyMode: false): Preserves `import type` keywords, keeps type/value imports separate
- *
- * **Why the difference?**
- * - Old extension: Pre-TypeScript 3.8, before `import type` was introduced
- * - Modern mode: Respects TypeScript 3.8+ semantics for type-only imports
  */
 
 import * as assert from 'assert';
 import { organizeImportsNew } from '../new-extension/adapter';
 
-suite('Type-Only Import Handling: Legacy vs Modern', () => {
+suite('Type-Only Import Handling: Legacy vs Modern (new extension only)', () => {
 
   test('LEGACY MODE: Strips import type keywords', async () => {
     // SCENARIO: import type statement

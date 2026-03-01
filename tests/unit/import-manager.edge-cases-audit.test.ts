@@ -223,7 +223,7 @@ const x = A + B + Z;
 `;
 
     // LEGACY MODE: Strip comments to match old TypeScript Hero extension
-    // (Proven in tests/comparison/test-cases/999-manual-proof.test.ts)
+    // (Verified in tests/comparison/test-cases/00-shared-behavior.test.ts and 11-indentation-behavior.test.ts L4)
     const expected = `import { A, B, Z } from 'lib';
 
 const x = A + B + Z;
@@ -349,6 +349,46 @@ const x = A + a + B + b + Ä + ä + α + β + Ω;
 
       const result = doc.getText();
       assert.strictEqual(result, expected, 'Specifiers must be sorted case-insensitively (matching typescript-parser)');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  // ============================================================================
+  // B6c: Unicode specifiers WITH comments (regression test for \p{ID_Continue} regex)
+  // ============================================================================
+
+  test('B6c: Unicode specifiers with trailing comments are preserved', async () => {
+    // This tests that the extractSpecifierComments regex handles Unicode identifier
+    // characters (not just ASCII [$\w]). ECMAScript allows Unicode letters in identifiers.
+    const content = `import {
+  Ω, // Greek capital letter omega
+  α, // Greek small letter alpha
+  café, // French word with accent
+} from 'lib';
+
+const x = Ω + α + café;
+`;
+
+    // Sorted alphabetically (case-insensitive), comments must travel with their specifiers
+    const expected = `import {
+  café, // French word with accent
+  α, // Greek small letter alpha
+  Ω, // Greek capital letter omega
+} from 'lib';
+
+const x = Ω + α + café;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Unicode specifier comments must be preserved when sorting');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -804,7 +844,7 @@ import { Y } from './m';
 const foo = Y;
 `;
 
-    // Expected: Re-exports are moved AFTER imports (matching old TypeScript Hero behavior)
+    // Expected: Re-exports are placed AFTER organized imports (old extension doesn't touch re-exports at all)
     const expected = `import { Y } from './m';
 
 export { X } from './m';

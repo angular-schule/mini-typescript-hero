@@ -7,14 +7,14 @@ import { createTempDocument, deleteTempDocument } from './test-helpers';
  * ImportManager - Indentation Tests
  *
  * These tests verify that our indentation implementation:
- * 1. Legacy mode: Matches old TypeScript Hero (always spaces, 4-space default)
+ * 1. Legacy mode: Matches old TypeScript Hero (always spaces, reads from editor.tabSize)
  * 2. Modern mode: Enhanced UX (supports tabs, 2-space default)
  * 3. useOnlyExtensionSettings: Provides full control
  */
 
 suite('ImportManager - Indentation - Legacy Mode', () => {
 
-  test('INDENT-L1: Default 4 spaces in legacy mode', async () => {
+  test('INDENT-L1: Uses editor.tabSize in legacy mode (VS Code default is 4)', async () => {
     const content = `import { VeryLongComponentName, AnotherLongName, ThirdName, FourthName, FifthName } from 'library';
 
 const x = VeryLongComponentName;
@@ -56,7 +56,7 @@ const b = FifthName;
       await (await import('vscode')).workspace.applyEdit(edit);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Legacy mode must use 4-space indentation by default');
+      assert.strictEqual(result, expected, 'Legacy mode uses editor.tabSize for indentation (VS Code general default is 4)');
     } finally {
       await deleteTempDocument(doc);
     }
