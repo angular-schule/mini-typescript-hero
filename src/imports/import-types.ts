@@ -37,11 +37,13 @@ export class NamedImport implements Import {
 
 /**
  * Namespace import (e.g., import * as foo from 'lib')
+ * Also handles combined default + namespace: import Default, * as foo from 'lib'
  */
 export class NamespaceImport implements Import {
   constructor(
     public readonly libraryName: string,
     public readonly alias: string,
+    public readonly defaultAlias?: string,
     public readonly isTypeOnly: boolean = false,
     public readonly attributes?: string,
   ) {}

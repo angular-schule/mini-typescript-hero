@@ -14,7 +14,7 @@ export class RegexImportGroup implements ImportGroup {
   private readonly compiledRegex: RegExp;
 
   public get sortedImports(): Import[] {
-    const sorted = this.imports.sort((i1, i2) =>
+    const sorted = [...this.imports].sort((i1, i2) =>
       importSort(i1, i2, this.order),
     );
     return [

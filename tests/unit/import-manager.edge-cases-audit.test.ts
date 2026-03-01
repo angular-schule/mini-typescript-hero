@@ -928,4 +928,152 @@ const y = <MyType>bar;
     }
   });
 
+  // ============================================================================
+  // B21: Default + namespace import (import Default, * as ns from 'lib')
+  // ============================================================================
+
+  test('B21a: Default + namespace import — both used', async () => {
+    const content = `import React, * as ReactAll from 'react';
+
+const el = React.createElement('div');
+const version = ReactAll.version;
+`;
+
+    const expected = `import React, * as ReactAll from 'react';
+
+const el = React.createElement('div');
+const version = ReactAll.version;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Both default and namespace must be preserved when both used');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('B21b: Default + namespace import — only namespace used', async () => {
+    const content = `import Default, * as ns from 'lib';
+
+const x = ns.foo;
+`;
+
+    // Default is unused, should be stripped; namespace kept
+    const expected = `import * as ns from 'lib';
+
+const x = ns.foo;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Unused default must be stripped, namespace kept');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('B21c: Default + namespace import — only default used', async () => {
+    const content = `import Default, * as ns from 'lib';
+
+const x = Default;
+`;
+
+    // Namespace is unused but can't be removed (TypeScript syntax requires it)
+    // Keep the full import since the default is used
+    const expected = `import Default, * as ns from 'lib';
+
+const x = Default;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Default kept, namespace stays because syntax requires it');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('B21d: Default + namespace import — neither used', async () => {
+    const content = `import Default, * as ns from 'lib';
+
+const x = 42;
+`;
+
+    // Both unused — entire import removed
+    const expected = `const x = 42;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Entire import removed when neither default nor namespace is used');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  // ============================================================================
+  // B22: Header block comment without * continuation lines
+  // ============================================================================
+
+  test('B22: Block comment header with non-* continuation lines', async () => {
+    // Block comment where continuation lines don't start with *
+    const content = `/*
+  License: MIT
+  Author: Test
+*/
+import { B } from './b';
+import { A } from './a';
+
+const x = A + B;
+`;
+
+    const expected = `/*
+  License: MIT
+  Author: Test
+*/
+import { A } from './a';
+import { B } from './b';
+
+const x = A + B;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Block comment header with non-* lines must be preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
 });

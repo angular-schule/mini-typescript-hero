@@ -299,15 +299,20 @@ export class ImportsConfig {
       .get<ImportGroupSetting[]>('grouping');
     let importGroups: ImportGroup[] = [];
 
-    try {
-      if (groups) {
-        importGroups = groups.map(g =>
-          ImportGroupSettingParser.parseSetting(g),
-        );
-      } else {
+    if (groups) {
+      // Parse each group individually so one bad regex doesn't discard all groups
+      for (const g of groups) {
+        try {
+          importGroups.push(ImportGroupSettingParser.parseSetting(g));
+        } catch {
+          // Skip invalid group (e.g., malformed regex) — valid groups are preserved
+        }
+      }
+      // Fall back to defaults only if ALL groups failed
+      if (importGroups.length === 0) {
         importGroups = ImportGroupSettingParser.default;
       }
-    } catch (e) {
+    } else {
       importGroups = ImportGroupSettingParser.default;
     }
     if (!importGroups.some(i => i instanceof RemainImportGroup)) {

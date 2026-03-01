@@ -110,12 +110,15 @@ export class ImportManager {
       }
 
       // Namespace import (e.g., import * as foo from 'lib')
+      // Also handles combined: import Default, * as foo from 'lib'
       const namespaceImport = importDecl.getNamespaceImport();
       if (namespaceImport) {
         const isTypeOnly = importDecl.isTypeOnly();
+        const defaultImportForNs = importDecl.getDefaultImport();
         this.imports.push(new NamespaceImport(
           moduleSpecifier,
           namespaceImport.getText(),
+          defaultImportForNs?.getText(),
           isTypeOnly,
           attributes,
         ));
@@ -424,7 +427,7 @@ export class ImportManager {
       if (imp instanceof NamedImport) {
         return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
       } else if (imp instanceof NamespaceImport) {
-        return new NamespaceImport(newLibraryName, imp.alias, imp.isTypeOnly, imp.attributes);
+        return new NamespaceImport(newLibraryName, imp.alias, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
       } else if (imp instanceof ExternalModuleImport) {
         return new ExternalModuleImport(newLibraryName, imp.alias, imp.attributes);
       } else if (imp instanceof StringImport) {
@@ -482,10 +485,27 @@ export class ImportManager {
           continue;
         }
 
-        // Check namespace/external module imports
-        if (imp instanceof NamespaceImport || imp instanceof ExternalModuleImport) {
+        // Check external module imports
+        if (imp instanceof ExternalModuleImport) {
           if (this.usedIdentifiers.has(imp.alias)) {
             keep.push(imp);
+          }
+          continue;
+        }
+
+        // Check namespace imports (may also have a default alias)
+        if (imp instanceof NamespaceImport) {
+          const nsUsed = this.usedIdentifiers.has(imp.alias);
+          const defaultUsed = !!imp.defaultAlias && this.usedIdentifiers.has(imp.defaultAlias);
+          if (nsUsed || defaultUsed) {
+            // Strip unused default if only namespace is used
+            if (imp.defaultAlias && !defaultUsed) {
+              keep.push(new NamespaceImport(
+                imp.libraryName, imp.alias, undefined, imp.isTypeOnly, imp.attributes,
+              ));
+            } else {
+              keep.push(imp);
+            }
           }
           continue;
         }
@@ -742,10 +762,12 @@ export class ImportManager {
     // This prevents accidentally deleting code between imports and distant re-exports.
     const adjacentExports = this.findAdjacentExports(actualImports, exportDeclarations);
 
-    // Filter this.reExports to only include adjacent ones (non-adjacent stay in place)
+    // Filter re-exports to only include adjacent ones (non-adjacent stay in place)
+    // Use a local variable to avoid mutating this.reExports (safe for repeated calls)
+    let reExportsToOutput = this.reExports;
     if (adjacentExports.length < exportDeclarations.length) {
       const adjacentTexts = new Set(adjacentExports.map(e => e.getText()));
-      this.reExports = this.reExports.filter(text => adjacentTexts.has(text));
+      reExportsToOutput = this.reExports.filter(text => adjacentTexts.has(text));
     }
 
     // Combine imports and adjacent re-exports for range calculation
@@ -942,8 +964,8 @@ export class ImportManager {
       }
 
       // Add re-export statements after imports (preserves export { X } from './m')
-      if (this.reExports.length > 0) {
-        importText += this.reExports.join(this.eol);
+      if (reExportsToOutput.length > 0) {
+        importText += reExportsToOutput.join(this.eol);
         importText += this.eol;
       }
 
@@ -953,15 +975,15 @@ export class ImportManager {
         this.document.lineAt(importSectionEndLine).rangeIncludingLineBreak.end,
       );
       edits.push(TextEdit.replace(replaceRange, importText));
-    } else if (this.reExports.length > 0 || commentsBetweenImports.length > 0) {
+    } else if (reExportsToOutput.length > 0 || commentsBetweenImports.length > 0) {
       // No imports, but re-exports and/or comments need to be preserved
       let replacementText = '';
       if (commentsBetweenImports.length > 0) {
         replacementText += commentsBetweenImports.join(this.eol);
         replacementText += this.eol;
       }
-      if (this.reExports.length > 0) {
-        replacementText += this.reExports.join(this.eol);
+      if (reExportsToOutput.length > 0) {
+        replacementText += reExportsToOutput.join(this.eol);
         replacementText += this.eol;
       }
       if (finalBlankLinesAfter > 0) {
@@ -1062,7 +1084,8 @@ export class ImportManager {
       // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
       const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
       const typeKeyword = useTypeKeyword ? 'type ' : '';
-      return `import ${typeKeyword}* as ${imp.alias} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
+      const defaultPart = imp.defaultAlias ? `${imp.defaultAlias}, ` : '';
+      return `import ${typeKeyword}${defaultPart}* as ${imp.alias} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 
     if (imp instanceof ExternalModuleImport) {
@@ -1196,10 +1219,26 @@ export class ImportManager {
     let hasLeadingBlanks = false;
     let lastHeaderLine = -1;
     let headerStartLine = -1;
+    let insideBlockComment = false;
 
     // Step 1: Find the end of the header section
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      const trimmed = line.trim();
+
+      // Track block comment state: lines inside /* ... */ are header lines
+      // even if they don't start with * (e.g., plain text continuation lines)
+      if (insideBlockComment) {
+        if (!hasHeader) {
+          headerStartLine = i;
+        }
+        hasHeader = true;
+        lastHeaderLine = i;
+        if (trimmed.includes('*/')) {
+          insideBlockComment = false;
+        }
+        continue;
+      }
 
       // Check for header lines (comments, shebang, 'use strict')
       if (REGEX_IGNORED_LINE.test(line)) {
@@ -1208,13 +1247,17 @@ export class ImportManager {
         }
         hasHeader = true;
         lastHeaderLine = i;
+        // Detect block comment start without close on the same line
+        if (trimmed.includes('/*') && !trimmed.includes('*/')) {
+          insideBlockComment = true;
+        }
         continue;
       }
 
       // Blank line handling:
       // - Leading blank lines (before any header): count them, will be removed
       // - Blank lines after header: skip, will be counted separately
-      if (line.trim() === '') {
+      if (trimmed === '') {
         // Track if we see blank lines before any header
         if (!hasHeader) {
           hasLeadingBlanks = true;

@@ -11,7 +11,7 @@ export class KeywordImportGroup implements ImportGroup {
   public readonly imports: Import[] = [];
 
   public get sortedImports(): Import[] {
-    return this.imports.sort((i1, i2) => importSort(i1, i2, this.order));
+    return [...this.imports].sort((i1, i2) => importSort(i1, i2, this.order));
   }
 
   constructor(
