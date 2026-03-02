@@ -39,10 +39,10 @@ class MockImportsConfig extends ImportsConfig {
 suite('ImportManager - Edge Cases (Third Audit - Task B)', () => {
 
   // ============================================================================
-  // B1: Import assertions and attributes
+  // Import assertions and attributes
   // ============================================================================
 
-  test('B1: Import assertions preserved', async () => {
+  test('Import assertions preserved', async () => {
     const content = `import data from './data.json' assert { type: 'json' };
 import { config } from './config.json' assert { type: 'json' };
 
@@ -72,10 +72,10 @@ const y = config;
   });
 
   // ============================================================================
-  // B2: Namespace type-only import
+  // Namespace type-only import
   // ============================================================================
 
-  test('B2a: Namespace type-only import in modern mode', async () => {
+  test('Namespace type-only import in modern mode', async () => {
     const content = `import type * as Types from './types';
 import { getValue } from './types';
 
@@ -102,7 +102,7 @@ const x: Types.MyType = getValue();
     }
   });
 
-  test('B2b: Namespace type-only import in legacy mode', async () => {
+  test('Namespace type-only import in legacy mode', async () => {
     const content = `import type * as Types from './types';
 import { getValue } from './types';
 
@@ -132,10 +132,10 @@ const x: Types.MyType = getValue();
   });
 
   // ============================================================================
-  // B3: Side-effect import grouping
+  // Side-effect import grouping
   // ============================================================================
 
-  test('B3: Side-effect imports in Plains group', async () => {
+  test('Side-effect imports in Plains group', async () => {
     const content = `import { A } from './a';
 import 'zone.js';
 import 'reflect-metadata';
@@ -171,10 +171,10 @@ const y = Component;
   });
 
   // ============================================================================
-  // B4: Specifier comments preservation
+  // Specifier comments preservation
   // ============================================================================
 
-  test('B4: Multi-line import with inline comments preserved (modern mode)', async () => {
+  test('Multi-line import with inline comments preserved (modern mode)', async () => {
     const content = `import {
   Z, // keep this
   A,
@@ -212,7 +212,7 @@ const x = A + B + Z;
     }
   });
 
-  test('B4b: Inline comments stripped in legacy mode', async () => {
+  test('Inline comments stripped in legacy mode', async () => {
     const content = `import {
   Z, // keep this
   A,
@@ -245,10 +245,10 @@ const x = A + B + Z;
   });
 
   // ============================================================================
-  // B5: Trailing commas in multi-line
+  // Trailing commas in multi-line
   // ============================================================================
 
-  test('B5a: Trailing comma enabled for multiline imports', async () => {
+  test('Trailing comma enabled for multiline imports', async () => {
     const content = `import { Component, useState, useEffect } from 'lib';
 
 const x = Component;
@@ -285,7 +285,7 @@ const z = useEffect;
     }
   });
 
-  test('B5b: Trailing comma disabled', async () => {
+  test('Trailing comma disabled', async () => {
     const content = `import { Component, useState, useEffect } from 'lib';
 
 const x = Component;
@@ -323,10 +323,10 @@ const z = useEffect;
   });
 
   // ============================================================================
-  // B6: Unicode and case ordering
+  // Unicode and case ordering
   // ============================================================================
 
-  test('B6: Unicode and mixed case specifiers (case-insensitive)', async () => {
+  test('Unicode and mixed case specifiers (case-insensitive)', async () => {
     // typescript-parser uses toLowerCase() for case-insensitive sorting.
     // Order: A/a, B/b, Ä/ä, α, β, Ω (grouped by lowercase, then by original case within ties)
     const content = `import { Ω, α, β, A, a, B, b, Ä, ä } from 'lib';
@@ -355,10 +355,10 @@ const x = A + a + B + b + Ä + ä + α + β + Ω;
   });
 
   // ============================================================================
-  // B6c: Unicode specifiers WITH comments (regression test for \p{ID_Continue} regex)
+  // Unicode specifiers WITH comments (regression test for \p{ID_Continue} regex)
   // ============================================================================
 
-  test('B6c: Unicode specifiers with trailing comments are preserved', async () => {
+  test('Unicode specifiers with trailing comments are preserved', async () => {
     // This tests that the extractSpecifierComments regex handles Unicode identifier
     // characters (not just ASCII [$\w]). ECMAScript allows Unicode letters in identifiers.
     const content = `import {
@@ -395,10 +395,10 @@ const x = Ω + α + café;
   });
 
   // ============================================================================
-  // B7: Path case sensitivity
+  // Path case sensitivity
   // ============================================================================
 
-  test('B7: Path case collisions on case-sensitive filesystem', async () => {
+  test('Path case collisions on case-sensitive filesystem', async () => {
     const content = `import { X } from './Foo';
 import { Y } from './foo';
 
@@ -427,10 +427,10 @@ const x = X + Y;
   });
 
   // ============================================================================
-  // B8: Index removal with file extension
+  // Index removal with file extension
   // ============================================================================
 
-  test('B8: Remove /index with file extension', async () => {
+  test('Remove /index with file extension', async () => {
     const content = `import { A } from './foo/index.js';
 import { B } from './bar.js';
 
@@ -461,10 +461,10 @@ const x = A + B;
   });
 
   // ============================================================================
-  // B9: Duplicate import deduplication
+  // Duplicate import deduplication
   // ============================================================================
 
-  test('B9: Duplicate imports collapsed to one', async () => {
+  test('Duplicate imports collapsed to one', async () => {
     const content = `import { A } from './lib';
 import { A } from './lib';
 import { B } from './lib';
@@ -492,10 +492,10 @@ const x = A + B;
   });
 
   // ============================================================================
-  // B10: Export-then-import patterns
+  // Export-then-import patterns
   // ============================================================================
 
-  test('B10: Re-exported symbols must keep imports', async () => {
+  test('Re-exported symbols must keep imports', async () => {
     const content = `import { A } from './a';
 import { B } from './b';
 
@@ -525,10 +525,10 @@ const x = B;
   });
 
   // ============================================================================
-  // B11: Shadowing safety
+  // Shadowing safety
   // ============================================================================
 
-  test('B11: Local variable shadows imported name', async () => {
+  test('Local variable shadows imported name', async () => {
     const content = `import { A } from './a';
 
 function test() {
@@ -564,10 +564,10 @@ const x = A;
   });
 
   // ============================================================================
-  // B12: satisfies and as const type-position usage
+  // satisfies and as const type-position usage
   // ============================================================================
 
-  test('B12: satisfies and as const count as type usage', async () => {
+  test('satisfies and as const count as type usage', async () => {
     const content = `import { MyType } from './types';
 
 const x = {} satisfies MyType;
@@ -595,10 +595,10 @@ const y = { foo: 'bar' } as const satisfies MyType;
   });
 
   // ============================================================================
-  // B13: import = require and export =
+  // import = require and export =
   // ============================================================================
 
-  test('B13: CommonJS interop forms preserved', async () => {
+  test('CommonJS interop forms preserved', async () => {
     const content = `import lib = require('./lib');
 import { A } from './a';
 
@@ -623,10 +623,10 @@ const y = A;
   });
 
   // ============================================================================
-  // B14: Module specifiers with query strings
+  // Module specifiers with query strings
   // ============================================================================
 
-  test('B14: Module specifiers with query strings', async () => {
+  test('Module specifiers with query strings', async () => {
     const content = `import raw from './file?raw';
 import url from './file?url';
 import { A } from './a';
@@ -660,10 +660,10 @@ const z = A;
   });
 
   // ============================================================================
-  // B15: Files with only imports
+  // Files with only imports
   // ============================================================================
 
-  test('B15: File with only imports and no code after', async () => {
+  test('File with only imports and no code after', async () => {
     const content = `import { Z } from './z';
 import { A } from './a';
 `;
@@ -692,10 +692,10 @@ import { Z } from './z';
   });
 
   // ============================================================================
-  // B16: Header detection expansion
+  // Header detection expansion
   // ============================================================================
 
-  test('B16a: use client directive treated as header', async () => {
+  test('use client directive treated as header', async () => {
     const content = `'use client';
 
 import { Z } from './z';
@@ -726,7 +726,7 @@ const x = A + Z;
     }
   });
 
-  test('B16b: use server directive treated as header', async () => {
+  test('use server directive treated as header', async () => {
     const content = `'use server';
 
 import { Z } from './z';
@@ -761,7 +761,7 @@ async function action() {
     }
   });
 
-  test('B16c: Shebang treated as header', async () => {
+  test('Shebang treated as header', async () => {
     const content = `#!/usr/bin/env node
 
 import { Z } from './z';
@@ -793,10 +793,10 @@ const x = A + Z;
   });
 
   // ============================================================================
-  // B17: Idempotency and stability for large files
+  // Idempotency and stability for large files
   // ============================================================================
 
-  test('B17: Large file with 50+ imports remains stable', async () => {
+  test('Large file with 50+ imports remains stable', async () => {
     // Generate 50 imports with UNIQUE module names and USE all of them so none are removed
     let imports = '';
     const usages: string[] = [];
@@ -834,10 +834,10 @@ const x = A + Z;
   });
 
   // ============================================================================
-  // B18: Re-exports plus named imports from same module
+  // Re-exports plus named imports from same module
   // ============================================================================
 
-  test('B18: Re-export and import from same module not merged', async () => {
+  test('Re-export and import from same module not merged', async () => {
     const content = `export { X } from './m';
 import { Y } from './m';
 
@@ -866,10 +866,10 @@ const foo = Y;
   });
 
   // ============================================================================
-  // B19: Specifiers with default and named in one line
+  // Specifiers with default and named in one line
   // ============================================================================
 
-  test('B19: Default and named imports merged correctly', async () => {
+  test('Default and named imports merged correctly', async () => {
     const content = `import Default from 'lib';
 import { A, B } from 'lib';
 
@@ -898,10 +898,10 @@ const y = A + B;
   });
 
   // ============================================================================
-  // B20: Type assertions in expressions
+  // Type assertions in expressions
   // ============================================================================
 
-  test('B20: Type assertions count as type usage', async () => {
+  test('Type assertions count as type usage', async () => {
     const content = `import { MyType } from './types';
 
 const x = foo as MyType;
@@ -929,10 +929,10 @@ const y = <MyType>bar;
   });
 
   // ============================================================================
-  // B21: Default + namespace import (import Default, * as ns from 'lib')
+  // Default + namespace import (import Default, * as ns from 'lib')
   // ============================================================================
 
-  test('B21a: Default + namespace import — both used', async () => {
+  test('Default + namespace import — both used', async () => {
     const content = `import React, * as ReactAll from 'react';
 
 const el = React.createElement('div');
@@ -959,7 +959,7 @@ const version = ReactAll.version;
     }
   });
 
-  test('B21b: Default + namespace import — only namespace used', async () => {
+  test('Default + namespace import — only namespace used', async () => {
     const content = `import Default, * as ns from 'lib';
 
 const x = ns.foo;
@@ -985,7 +985,7 @@ const x = ns.foo;
     }
   });
 
-  test('B21c: Default + namespace import — only default used', async () => {
+  test('Default + namespace import — only default used', async () => {
     const content = `import Default, * as ns from 'lib';
 
 const x = Default;
@@ -1012,7 +1012,7 @@ const x = Default;
     }
   });
 
-  test('B21d: Default + namespace import — neither used', async () => {
+  test('Default + namespace import — neither used', async () => {
     const content = `import Default, * as ns from 'lib';
 
 const x = 42;
@@ -1037,10 +1037,10 @@ const x = 42;
   });
 
   // ============================================================================
-  // B22: Header block comment without * continuation lines
+  // Header block comment without * continuation lines
   // ============================================================================
 
-  test('B22: Block comment header with non-* continuation lines', async () => {
+  test('Block comment header with non-* continuation lines', async () => {
     // Block comment where continuation lines don't start with *
     const content = `/*
   License: MIT

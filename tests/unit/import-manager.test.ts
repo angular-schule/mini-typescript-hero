@@ -177,7 +177,7 @@ suite('ImportManager Tests', () => {
     config = new MockImportsConfig();
   });
 
-  test('1. Remove unused imports', async () => {
+  test('Remove unused imports', async () => {
     // SCENARIO: Two imports, only one is used in the code
     // EXPECTED: Unused import should be completely removed
     const content = `import { Unused } from 'lib';
@@ -198,7 +198,7 @@ const x = Used;
     }
   });
 
-  test('2. Remove unused specifiers from partial imports', async () => {
+  test('Remove unused specifiers from partial imports', async () => {
     // SCENARIO: Import has 4 specifiers (A, B, C, D) but only A and C are used
     // EXPECTED: Keep only A and C, remove B and D (partial import cleanup)
     // BONUS: Remaining specifiers should be alphabetically sorted (A, C)
@@ -222,7 +222,7 @@ const y = C;
     }
   });
 
-  test('3. Keep excluded library even if unused', async () => {
+  test('Keep excluded library even if unused', async () => {
     config.setConfig('ignoredFromRemoval', ['react']);
     const content = `import React from 'react';
 import { Unused } from 'other';
@@ -242,7 +242,7 @@ import { Unused } from 'other';
     }
   });
 
-  test('4. Keep type-only imports', async () => {
+  test('Keep type-only imports', async () => {
     // SCENARIO: MyType is only used in a type annotation, not in runtime code
     // EXPECTED: Type annotations count as usage, import should be kept
     // WHY: TypeScript needs the type for compile-time checking
@@ -262,7 +262,7 @@ let x: MyType;
     }
   });
 
-  test('5. Handle local shadowing correctly', async () => {
+  test('Handle local shadowing correctly', async () => {
     // SCENARIO: Import { Component } but also declare a local class Component
     // EXPECTED: Import should be removed (local declaration shadows the import)
     // WHY: When names conflict, TypeScript uses the local declaration
@@ -289,7 +289,7 @@ class Component {
     }
   });
 
-  test('6. Handle aliased imports', async () => {
+  test('Handle aliased imports', async () => {
     const content = `import { Component as AngularComponent } from '@angular/core';
 
 const x = AngularComponent;
@@ -306,7 +306,7 @@ const x = AngularComponent;
     }
   });
 
-  test('7. Handle namespace imports', async () => {
+  test('Handle namespace imports', async () => {
     const content = `import * as React from 'react';
 import * as Unused from 'unused-lib';
 
@@ -325,7 +325,7 @@ const element = React.createElement('div');
     }
   });
 
-  test('8. Handle default imports', async () => {
+  test('Handle default imports', async () => {
     const content = `import React from 'react';
 import Vue from 'vue';
 
@@ -344,7 +344,7 @@ const x = React;
     }
   });
 
-  test('9. Handle mixed default and named imports', async () => {
+  test('Handle mixed default and named imports', async () => {
     const content = `import React, { useState } from 'react';
 import Vue, { ref } from 'vue';
 
@@ -367,7 +367,7 @@ const z = ref;
     }
   });
 
-  test('10. Group imports correctly (Plains -> Modules -> Workspace)', async () => {
+  test('Group imports correctly (Plains -> Modules -> Workspace)', async () => {
     // SCENARIO: Mixed import types in random order
     // EXPECTED: Organized into groups with blank lines between them:
     //   1. Plains: String-only imports (import 'zone.js')
@@ -400,7 +400,7 @@ const y = LocalClass;
     }
   });
 
-  test('11. Sort imports alphabetically within groups', async () => {
+  test('Sort imports alphabetically within groups', async () => {
     const content = `import { map } from 'rxjs/operators';
 import { Component } from '@angular/core';
 
@@ -422,7 +422,7 @@ const y = map;
     }
   });
 
-  test('12. Sort specifiers alphabetically', async () => {
+  test('Sort specifiers alphabetically', async () => {
     const content = `import { map, filter, tap } from 'rxjs/operators';
 
 const x = filter;
@@ -445,7 +445,7 @@ const y = map;
     }
   });
 
-  test('12a. Sort specifiers case-insensitively (Component, inject, OnInit)', async () => {
+  test('Sort specifiers case-insensitively (Component, inject, OnInit)', async () => {
     // typescript-parser code generator uses case-insensitive sorting (toLowerCase)
     // even though old TypeScript Hero source uses stringSort (ASCII).
     // We match what users actually see: case-insensitive alphabetical order.
@@ -479,7 +479,7 @@ const z: OnInit = {};
     }
   });
 
-  test('13. Format with configured quote style', async () => {
+  test('Format with configured quote style', async () => {
     config.setConfig('stringQuoteStyle', '"');
     const content = `import { Used } from 'lib';
 
@@ -497,7 +497,7 @@ const x = Used;
     }
   });
 
-  test('14. Format with configured semicolons', async () => {
+  test('Format with configured semicolons', async () => {
     config.setConfig('insertSemicolons', false);
     const content = `import { Used } from 'lib';
 
@@ -516,7 +516,7 @@ const x = Used;
     }
   });
 
-  test('15. Format with configured spaces in braces', async () => {
+  test('Format with configured spaces in braces', async () => {
     config.setConfig('insertSpaceBeforeAndAfterImportBraces', false);
     const content = `import { Used } from 'lib';
 
@@ -534,7 +534,7 @@ const x = Used;
     }
   });
 
-  test('16. Respect blank lines between import groups', async () => {
+  test('Respect blank lines between import groups', async () => {
     const content = `import { Component } from '@angular/core';
 import { LocalClass } from './local';
 import 'zone.js';
@@ -561,7 +561,7 @@ const y = LocalClass;
     }
   });
 
-  test('17. Remove trailing /index when configured', async () => {
+  test('Remove trailing /index when configured', async () => {
     config.setConfig('removeTrailingIndex', true);
     const content = `import { Used } from './lib/index';
 
@@ -580,7 +580,7 @@ const x = Used;
     }
   });
 
-  test('18. Keep all imports when removal is disabled', async () => {
+  test('Keep all imports when removal is disabled', async () => {
     config.setConfig('disableImportRemovalOnOrganize', true);
     const content = `import { Unused } from 'lib';
 import { AlsoUnused } from 'other';
@@ -600,7 +600,7 @@ import { AlsoUnused } from 'other';
     }
   });
 
-  test('19. Skip sorting when disabled', async () => {
+  test('Skip sorting when disabled', async () => {
     // SCENARIO: Sorting disabled, imports in non-alphabetical order
     // EXPECTED: Original order preserved (rxjs before @angular/core)
     //
@@ -629,7 +629,7 @@ const y = map;
     }
   });
 
-  test('20. Handle string-only imports (always kept)', async () => {
+  test('Handle string-only imports (always kept)', async () => {
     const content = `import 'zone.js';
 import 'reflect-metadata';
 
@@ -648,7 +648,7 @@ import 'reflect-metadata';
     }
   });
 
-  test('21. Keep imports used in named re-exports', async () => {
+  test('Keep imports used in named re-exports', async () => {
     const content = `import { Foo, Bar, Unused } from './lib';
 
 export { Foo, Bar };
@@ -669,7 +669,7 @@ export { Foo, Bar };
     }
   });
 
-  test('22. Keep imports used in default re-export', async () => {
+  test('Keep imports used in default re-export', async () => {
     const content = `import MyClass from './my-class';
 
 export default MyClass;
@@ -686,7 +686,7 @@ export default MyClass;
     }
   });
 
-  test('23. Keep namespace imports used in re-exports', async () => {
+  test('Keep namespace imports used in re-exports', async () => {
     const content = `import * as Utils from './utils';
 import * as Unused from './unused';
 
@@ -705,7 +705,7 @@ export { Utils };
     }
   });
 
-  test('24. Handle functions used in JSX/TSX', async () => {
+  test('Handle functions used in JSX/TSX', async () => {
     const content = `import { helper } from './helpers';
 import { unused } from './unused';
 import * as React from 'react';
@@ -731,7 +731,7 @@ export const MyComponent = () => {
     }
   });
 
-  test('25. Keep default imports re-exported as named exports', async () => {
+  test('Keep default imports re-exported as named exports', async () => {
     const content = `import MyDefault from './my-default';
 import UnusedDefault from './unused';
 
@@ -752,7 +752,7 @@ export { MyDefault };
     }
   });
 
-  test('26. Support JavaScript files (.js)', async () => {
+  test('Support JavaScript files (.js)', async () => {
     const content = `import { used } from './helpers';
 import { unused } from './unused';
 
@@ -774,7 +774,7 @@ function myFunction() {
     }
   });
 
-  test('27. Support JSX files (.jsx)', async () => {
+  test('Support JSX files (.jsx)', async () => {
     const content = `import React from 'react';
 import { Button } from './components';
 import { unused } from './unused';
@@ -798,7 +798,7 @@ export default function MyComponent() {
     }
   });
 
-  test('28. Support complex JavaScript with destructuring and arrow functions', async () => {
+  test('Support complex JavaScript with destructuring and arrow functions', async () => {
     const content = `import { map, filter, unused } from 'lodash';
 import { UsedClass } from './classes';
 
@@ -822,7 +822,7 @@ const instance = new UsedClass();
     }
   });
 
-  test('29. Multiline wrapping when threshold exceeded', async () => {
+  test('Multiline wrapping when threshold exceeded', async () => {
     const content = `import { VeryLongSymbolName, AnotherLongSymbol, YetAnotherSymbol, FourthSymbol, FifthSymbol } from './helpers';
 
 const a = VeryLongSymbolName;
@@ -846,7 +846,7 @@ const e = FifthSymbol;
     }
   });
 
-  test('30. Multiline trailing comma configuration', async () => {
+  test('Multiline trailing comma configuration', async () => {
     const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
 
 const a = VeryLongSymbolNameOne;
@@ -869,7 +869,7 @@ const c = VeryLongSymbolNameThree;
     }
   });
 
-  test('31. No trailing comma when multiLineTrailingComma is false', async () => {
+  test('No trailing comma when multiLineTrailingComma is false', async () => {
     const content = `import { VeryLongSymbolNameOne, VeryLongSymbolNameTwo, VeryLongSymbolNameThree } from './helpers';
 
 const a = VeryLongSymbolNameOne;
@@ -892,7 +892,7 @@ const c = VeryLongSymbolNameThree;
     }
   });
 
-  test('32. organizeSortsByFirstSpecifier sorts by first specifier, not library name', async () => {
+  test('organizeSortsByFirstSpecifier sorts by first specifier, not library name', async () => {
     // Scenario: Two imports with different first specifiers
     // When sorted by first specifier: bar < foo (alphabetical)
     // When sorted by library name: ./a < ./z (alphabetical)
@@ -922,7 +922,7 @@ console.log(foo, bar);
     }
   });
 
-  test('33. Single-line import stays single-line when under threshold', async () => {
+  test('Single-line import stays single-line when under threshold', async () => {
     const content = `import { short, names } from './helpers';
 
 const a = short;
@@ -943,7 +943,7 @@ const b = names;
     }
   });
 
-  test('34. Empty file produces no edits', async () => {
+  test('Empty file produces no edits', async () => {
     const content = '';
     const doc = await createTempDocument(content);
     try {
@@ -956,7 +956,7 @@ const b = names;
     }
   });
 
-  test('35. File with no imports produces no edits', async () => {
+  test('File with no imports produces no edits', async () => {
     const content = `const x = 42;
 console.log(x);
 `;
@@ -971,7 +971,7 @@ console.log(x);
     }
   });
 
-  test('36. All imports unused - removes everything', async () => {
+  test('All imports unused - removes everything', async () => {
     const content = `import { Unused1 } from './a';
 import { Unused2 } from './b';
 import { Unused3 } from './c';
@@ -992,7 +992,7 @@ const x = 42;
     }
   });
 
-  test('37. TypeScript type-only imports are preserved when used', async () => {
+  test('TypeScript type-only imports are preserved when used', async () => {
     // TypeScript 3.8+ syntax: import type { Foo }
     const content = `import type { MyType } from './types';
 
@@ -1011,7 +1011,7 @@ const x: MyType = { value: 42 };
     }
   });
 
-  test('38. TypeScript type-only imports are removed when unused', async () => {
+  test('TypeScript type-only imports are removed when unused', async () => {
     const content = `import type { UnusedType } from './types';
 
 const x = 42;
@@ -1029,7 +1029,7 @@ const x = 42;
     }
   });
 
-  test('39. Multiple custom regex groups work together', async () => {
+  test('Multiple custom regex groups work together', async () => {
     // Scenario: Custom grouping with multiple regex patterns
     const content = `import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -1069,7 +1069,7 @@ MyHelper;
     }
   });
 
-  test('40. File with only whitespace produces no edits', async () => {
+  test('File with only whitespace produces no edits', async () => {
     const content = '\n\n  \n\t\n';
     const doc = await createTempDocument(content);
     try {
@@ -1082,7 +1082,7 @@ MyHelper;
     }
   });
 
-  test('41. Imports from same module are merged by default', async () => {
+  test('Imports from same module are merged by default', async () => {
     // Scenario: Multiple imports from the same library
     // With mergeImportsFromSameModule: true (default for new users)
     const content = `import { A } from './lib';
@@ -1108,7 +1108,7 @@ console.log(A, B);
     }
   });
 
-  test('42. Merging can be disabled with mergeImportsFromSameModule: false', async () => {
+  test('Merging can be disabled with mergeImportsFromSameModule: false', async () => {
     // Scenario: Multiple imports from same library with merging disabled
     // With mergeImportsFromSameModule: false (for migrated users who had disableImportRemovalOnOrganize: true)
     const content = `import { A } from './lib';
@@ -1135,7 +1135,7 @@ console.log(A, B);
     }
   });
 
-  test('43. Merging and removal are independent settings', async () => {
+  test('Merging and removal are independent settings', async () => {
     // Scenario: Merging disabled but removal enabled
     // Show that mergeImportsFromSameModule and disableImportRemovalOnOrganize are independent
     const content = `import { A, Unused } from './lib';
@@ -1164,7 +1164,7 @@ console.log(A, B);
     }
   });
 
-  test('44. Merge default and named imports from same module', async () => {
+  test('Merge default and named imports from same module', async () => {
     // Scenario: Default import + named import from same module
     const content = `import DefaultExport from './lib';
 import { Named } from './lib';
@@ -1189,7 +1189,7 @@ console.log(DefaultExport, Named);
     }
   });
 
-  test('45. Namespace imports cannot be merged', async () => {
+  test('Namespace imports cannot be merged', async () => {
     // Scenario: Namespace import + named import from same module
     const content = `import * as Lib from './lib';
 import { Named } from './lib';
@@ -1213,7 +1213,7 @@ console.log(Lib, Named);
     }
   });
 
-  test('46. String imports never merge', async () => {
+  test('String imports never merge', async () => {
     // Scenario: Multiple string imports from same module (side effects)
     const content = `import './lib';
 import './lib';
@@ -1235,7 +1235,7 @@ console.log('side effects');
     }
   });
 
-  test('42. TypeScript default type-only imports work correctly', async () => {
+  test('TypeScript default type-only imports work correctly', async () => {
     // TS 3.8+: import type Foo from 'lib' (default type import)
     const content = `import type MyClass from './types';
 
@@ -1254,7 +1254,7 @@ const x: typeof MyClass = {};
     }
   });
 
-  test('47. Duplicate specifiers are removed when merging', async () => {
+  test('Duplicate specifiers are removed when merging', async () => {
     // Scenario: Same specifier imported twice (shouldn't happen but we handle it)
     const content = `import { A } from './lib';
 import { A, B } from './lib';
@@ -1282,7 +1282,7 @@ console.log(A, B);
     }
   });
 
-  test('48. Aliased imports merge correctly', async () => {
+  test('Aliased imports merge correctly', async () => {
     // Scenario: Mix of aliased and non-aliased imports
     const content = `import { A as AliasA } from './lib';
 import { B } from './lib';
@@ -1306,7 +1306,7 @@ console.log(AliasA, B);
     }
   });
 
-  test('49. Three or more imports from same module merge correctly', async () => {
+  test('Three or more imports from same module merge correctly', async () => {
     // Scenario: Multiple imports that should all merge
     const content = `import { A } from './lib';
 import { B } from './lib';
@@ -1335,7 +1335,7 @@ console.log(A, B, C, Default);
     }
   });
 
-  test('50. Merging preserves alphabetical order of specifiers', async () => {
+  test('Merging preserves alphabetical order of specifiers', async () => {
     // Scenario: Imports in random order should be sorted after merge
     const content = `import { Z } from './lib';
 import { A } from './lib';
@@ -1359,7 +1359,7 @@ console.log(Z, A, M);
     }
   });
 
-  test('51. Merging works with multiline formatting', async () => {
+  test('Merging works with multiline formatting', async () => {
     // Scenario: Merged import exceeds multiline threshold
     const content = `import { VeryLongNameOne } from './lib';
 import { VeryLongNameTwo } from './lib';
@@ -1384,7 +1384,7 @@ console.log(VeryLongNameOne, VeryLongNameTwo);
     }
   });
 
-  test('52. Merging works with custom import grouping', async () => {
+  test('Merging works with custom import grouping', async () => {
     // Scenario: Ensure merging happens before grouping
     const content = `import { A } from '@angular/core';
 import { B } from '@angular/core';
@@ -1413,7 +1413,7 @@ console.log(A, B, C, D);
     }
   });
 
-  test('53. Sorting by first specifier works correctly', async () => {
+  test('Sorting by first specifier works correctly', async () => {
     // Scenario: Different modules sorted by first specifier
     const content = `import { Z } from './z';
 import { A } from './a';
@@ -1438,7 +1438,7 @@ console.log(Z, A);
     }
   });
 
-  test('54. Same specifier with different aliases are both preserved', async () => {
+  test('Same specifier with different aliases are both preserved', async () => {
     // Scenario: Import same symbol with different aliases (valid TypeScript!)
     const content = `import { Component as Comp1 } from '@angular/core';
 import { Component as Comp2 } from '@angular/core';
@@ -1462,7 +1462,7 @@ console.log(Comp1, Comp2);
     }
   });
 
-  test('55. Multiple defaults from same module - first one wins', async () => {
+  test('Multiple defaults from same module - first one wins', async () => {
     // Scenario: Invalid TypeScript but we handle gracefully
     const content = `import Default1 from './lib';
 import Default2 from './lib';
@@ -1489,7 +1489,7 @@ console.log(Default1, Named);
     }
   });
 
-  test('56. FIXED: Merging + removeTrailingIndex order of operations', async () => {
+  test('FIXED: Merging + removeTrailingIndex order of operations', async () => {
     // Previously this was a bug: /index removal happened AFTER merging
     // Fixed: /index removal now happens BEFORE merging
     const content = `import { A } from './lib/index';
@@ -1516,7 +1516,7 @@ console.log(A, B);
     }
   });
 
-  test('57. Type-only imports merge together', async () => {
+  test('Type-only imports merge together', async () => {
     // Scenario: TypeScript 3.8+ type-only imports
     const content = `import type { TypeA } from './types';
 import type { TypeB } from './types';
@@ -1541,7 +1541,7 @@ const b: TypeB = {};
     }
   });
 
-  test('58. String import + Named import from same module kept separate', async () => {
+  test('String import + Named import from same module kept separate', async () => {
     // Scenario: String import (side effects) cannot merge with named import
     const content = `import './lib';
 import { Named } from './lib';
@@ -1565,7 +1565,7 @@ console.log(Named);
     }
   });
 
-  test('59. String + Namespace + Named from same module all kept separate', async () => {
+  test('String + Namespace + Named from same module all kept separate', async () => {
     // Scenario: Mix of all three types - none can merge with each other
     const content = `import './lib';
 import * as Lib from './lib';
@@ -1591,7 +1591,7 @@ console.log(Lib, Named);
     }
   });
 
-  test('60. Case-sensitive module names NOT merged', async () => {
+  test('Case-sensitive module names NOT merged', async () => {
     // Scenario: Different casing = different modules
     const content = `import { A } from './Lib';
 import { B } from './lib';
@@ -1615,7 +1615,7 @@ console.log(A, B);
     }
   });
 
-  test('61. Multiple namespace imports from same module kept separate', async () => {
+  test('Multiple namespace imports from same module kept separate', async () => {
     // Scenario: Multiple namespace imports cannot merge
     const content = `import * as Lib1 from './lib';
 import * as Lib2 from './lib';
@@ -1639,7 +1639,7 @@ console.log(Lib1, Lib2);
     }
   });
 
-  test('62. /index removal disabled - imports NOT merged', async () => {
+  test('/index removal disabled - imports NOT merged', async () => {
     // Scenario: When /index removal is OFF, './lib/index' and './lib' are different modules
     const content = `import { A } from './lib/index';
 import { B } from './lib';
@@ -1664,7 +1664,7 @@ console.log(A, B);
     }
   });
 
-  test('63. Duplicate defaults from same module - last wins (matches old extension)', async () => {
+  test('Duplicate defaults from same module - last wins (matches old extension)', async () => {
     // Scenario: Invalid TypeScript (can't have two default imports from same module)
     // Both defaults are used in code, but TypeScript only allows one default per module
     //
@@ -1709,7 +1709,7 @@ console.log(Default1, Default2);
     }
   });
 
-  test('64. Property access should not count as import usage', async () => {
+  test('Property access should not count as import usage', async () => {
     // Scenario: import { reduce } from 'lodash' but only use arr.reduce() (Array method)
     // The identifier "reduce" appears in .reduce() but is NOT using the import
     const content = `import { filter, map, reduce } from 'lodash';
@@ -1737,7 +1737,7 @@ const result = filter(doubled, x => x > 5)
     }
   });
 
-  test('65. Old TypeScript syntax: import = require (used)', async () => {
+  test('Old TypeScript syntax: import = require (used)', async () => {
     // Scenario: Old TypeScript syntax that's still used in legacy codebases
     // This is import foo = require('lib') syntax (deprecated but must not break)
     const content = `import foo = require('old-lib');
@@ -1762,7 +1762,7 @@ console.log(foo, bar);
     }
   });
 
-  test('66. Old TypeScript syntax: import = require (unused)', async () => {
+  test('Old TypeScript syntax: import = require (unused)', async () => {
     // Scenario: Unused import equals should be removed like any other unused import
     const content = `import foo = require('old-lib');
 import { bar } from 'new-lib';
@@ -1786,7 +1786,7 @@ console.log(bar);
     }
   });
 
-  test('67. Old TypeScript syntax: Mixed with grouping', async () => {
+  test('Old TypeScript syntax: Mixed with grouping', async () => {
     // Scenario: import equals should be grouped like namespace imports
     const content = `import { Component } from '@angular/core';
 import oldLib = require('old-lib');
@@ -1825,7 +1825,7 @@ const local = MyClass;
     }
   });
 
-  test('68. Old TypeScript syntax: Formatting matches config', async () => {
+  test('Old TypeScript syntax: Formatting matches config', async () => {
     // Scenario: import equals should respect quote and semicolon settings
     const content = `import foo = require("old-lib");
 
@@ -1855,7 +1855,7 @@ console.log(foo);
   // CRITICAL EDGE CASES - File Headers & Special Syntax
   // =============================================================================
 
-  test('69. Shebang: Imports inserted AFTER shebang', async () => {
+  test('Shebang: Imports inserted AFTER shebang', async () => {
     // CRITICAL: Shebang MUST be first line or script won't execute
     // Scenario: Node.js executable script with shebang
     const content = `#!/usr/bin/env node
@@ -1886,7 +1886,7 @@ console.log(used);
     }
   });
 
-  test('70. Use strict: Imports inserted AFTER use strict', async () => {
+  test('Use strict: Imports inserted AFTER use strict', async () => {
     // CRITICAL: 'use strict' changes JavaScript behavior, must be first statement
     // Scenario: Strict mode file
     const content = `'use strict';
@@ -1917,7 +1917,7 @@ console.log(used);
     }
   });
 
-  test('71. Use strict (double quotes): Imports inserted AFTER use strict', async () => {
+  test('Use strict (double quotes): Imports inserted AFTER use strict', async () => {
     // Scenario: "use strict" with double quotes (also valid)
     const content = `"use strict";
 import { used } from './lib';
@@ -1942,7 +1942,7 @@ console.log(used);
     }
   });
 
-  test('72. Triple-slash directives: Imports inserted AFTER directives', async () => {
+  test('Triple-slash directives: Imports inserted AFTER directives', async () => {
     // CRITICAL: /// <reference /> directives configure TypeScript compiler
     // Scenario: TypeScript file with reference directives
     const content = `/// <reference path="./types.d.ts" />
@@ -1974,7 +1974,7 @@ console.log(used);
     }
   });
 
-  test('73. Leading comments: Preserved before imports', async () => {
+  test('Leading comments: Preserved before imports', async () => {
     // CRITICAL: License headers, file comments must not be deleted
     // Scenario: File with copyright header
     const content = `/**
@@ -2009,7 +2009,7 @@ console.log(used);
     }
   });
 
-  test('74. Combined headers: Shebang + comments + use strict', async () => {
+  test('Combined headers: Shebang + comments + use strict', async () => {
     // CRITICAL: All headers preserved in correct order
     // Scenario: Complete header with all elements
     const content = `#!/usr/bin/env node
@@ -2047,7 +2047,7 @@ console.log(used);
     }
   });
 
-  test('74a. Blank line between comment and imports: Single blank line preserved', async () => {
+  test('Blank line between comment and imports: Single blank line preserved', async () => {
     // CRITICAL: Blank lines between comments and imports must be preserved
     // Scenario: File with comment followed by ONE blank line before imports
     const content = `// Demo file for video
@@ -2079,7 +2079,7 @@ console.log(UserDetail);
     }
   });
 
-  test('74b. Blank line between comment and imports: TWO blank lines preserved', async () => {
+  test('Blank line between comment and imports: TWO blank lines preserved', async () => {
     // CRITICAL: Multiple blank lines between comments and imports must be preserved
     // Scenario: File with comment followed by TWO blank lines before imports
     const content = `// Copyright notice
@@ -2110,7 +2110,7 @@ console.log(used);
     }
   });
 
-  test('74c. Blank line between comment and imports: Block comment with blank line', async () => {
+  test('Blank line between comment and imports: Block comment with blank line', async () => {
     // CRITICAL: Block comments with trailing blank line
     // Scenario: JSDoc/block comment followed by blank line
     const content = `/**
@@ -2141,7 +2141,7 @@ console.log(used);
     }
   });
 
-  test('74d. Blank line between comment and imports: Mixed comment types', async () => {
+  test('Blank line between comment and imports: Mixed comment types', async () => {
     // CRITICAL: Mixed comment types (block + line) with blank lines
     // Scenario: Block comment, then line comments, then blank line
     const content = `/**
@@ -2173,7 +2173,7 @@ console.log(used);
     }
   });
 
-  test('74e. No blank line between comment and imports: Should not add one', async () => {
+  test('No blank line between comment and imports: Should not add one', async () => {
     // CRITICAL: If there's NO blank line, don't add one
     // Scenario: Comment immediately followed by imports
     const content = `// Quick comment
@@ -2199,7 +2199,7 @@ console.log(used);
     }
   });
 
-  test('74f. Blank lines before imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
+  test('Blank lines before imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
     // Test ZERO blank lines before imports
     const content0 = `// Comment
 import { used } from './lib';
@@ -2279,7 +2279,7 @@ console.log(used);
   // CRITICAL EDGE CASES - Dynamic Imports & Modern Syntax
   // =============================================================================
 
-  test('75. Dynamic imports: Not confused with static imports', async () => {
+  test('Dynamic imports: Not confused with static imports', async () => {
     // CRITICAL: Dynamic import() calls must NOT be removed or modified
     // Scenario: Code with both static and dynamic imports
     const content = `import { helper } from './helper';
@@ -2314,7 +2314,7 @@ console.log(helper);
     }
   });
 
-  test('76. import.meta: Not confused with imports', async () => {
+  test('import.meta: Not confused with imports', async () => {
     // CRITICAL: import.meta usage must NOT be removed
     // Scenario: ES module using import.meta
     const content = `import { helper } from './helper';
@@ -2339,7 +2339,7 @@ console.log(helper, currentUrl);
     }
   });
 
-  test('77. Empty import specifiers: Should be removed', async () => {
+  test('Empty import specifiers: Should be removed', async () => {
     // Scenario: Malformed import with no specifiers
     const content = `import {} from './lib';
 import { used } from './used';
@@ -2360,7 +2360,7 @@ console.log(used);
     }
   });
 
-  test('78. Whitespace-only import specifiers: Should be removed', async () => {
+  test('Whitespace-only import specifiers: Should be removed', async () => {
     // Scenario: Malformed import with only whitespace
     const content = `import {   } from './lib';
 import { used } from './used';
@@ -2385,7 +2385,7 @@ console.log(used);
   // CRITICAL EDGE CASES - Malformed Code
   // =============================================================================
 
-  test('79. File with only imports (all unused): All removed safely', async () => {
+  test('File with only imports (all unused): All removed safely', async () => {
     // CRITICAL: Must handle files that become empty
     // Scenario: File that only had imports, all unused
     const content = `import { A } from './a';
@@ -2406,7 +2406,7 @@ import { C } from './c';
     }
   });
 
-  test('80. Imports after code: Malformed but should not crash', async () => {
+  test('Imports after code: Malformed but should not crash', async () => {
     // CRITICAL: Extension must handle malformed code gracefully
     // Scenario: Invalid TypeScript with imports after code (shouldn't exist but might)
     const content = `const x = 5;
@@ -2437,7 +2437,7 @@ console.log(x, foo);
     }
   });
 
-  test('81. Comments between imports: Preserved', async () => {
+  test('Comments between imports: Preserved', async () => {
     // CRITICAL: Don't lose important comments
     // Scenario: Comments explaining imports
     const content = `import { A } from './a';
@@ -2467,7 +2467,7 @@ console.log(A, B);
     }
   });
 
-  test('82. Very long import line: Multiline wrapping works', async () => {
+  test('Very long import line: Multiline wrapping works', async () => {
     // Scenario: Import with many specifiers exceeding threshold
     const content = `import { SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentifierName3, UnusedName } from './lib';
 
@@ -2496,7 +2496,7 @@ console.log(SuperLongIdentifierName1, SuperLongIdentifierName2, SuperLongIdentif
     }
   });
 
-  test('83. BOM (Byte Order Mark): Handled gracefully (known limitation)', async () => {
+  test('BOM (Byte Order Mark): Handled gracefully (known limitation)', async () => {
     // NOTE: ts-morph strips BOM during parsing (this is a known limitation)
     // This test verifies the extension doesn't crash on BOM files
     // Scenario: File starting with BOM
@@ -2529,7 +2529,7 @@ console.log(used);
     }
   });
 
-  test('84. Template strings with import keyword: Not confused', async () => {
+  test('Template strings with import keyword: Not confused', async () => {
     // CRITICAL: String literals containing "import" must not be confused
     // Scenario: Template string with import keyword
     const content = `import { helper } from './helper';
@@ -2560,7 +2560,7 @@ console.log(helper, message);
   // EDGE CASE - Configuration Error Handling
   // =============================================================================
 
-  test('85. Invalid grouping config: Falls back to defaults gracefully', async () => {
+  test('Invalid grouping config: Falls back to defaults gracefully', async () => {
     // CRITICAL: Bad config must not crash extension
     // Scenario: User provides invalid grouping configuration
     const content = `import { A } from './a';
@@ -2596,7 +2596,7 @@ console.log(A, B);
     }
   });
 
-  test('86. Blank lines after imports: ONE blank line preserved', async () => {
+  test('Blank lines after imports: ONE blank line preserved', async () => {
     // CRITICAL: Should preserve exactly ONE blank line after imports
     // Scenario: Remove some imports, check spacing preserved
     const content = `import { UsedClass } from './used-class';
@@ -2633,7 +2633,7 @@ console.log(instance);
     }
   });
 
-  test('86a. Blank lines after imports: TWO blank lines preserved', async () => {
+  test('Blank lines after imports: TWO blank lines preserved', async () => {
     // CRITICAL: Should preserve exactly TWO blank lines after imports
     // Scenario: Two blank lines after imports
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2663,7 +2663,7 @@ console.log(used);
     }
   });
 
-  test('86b. Blank lines after imports: THREE blank lines preserved', async () => {
+  test('Blank lines after imports: THREE blank lines preserved', async () => {
     // CRITICAL: Should preserve exactly THREE blank lines after imports
     // Scenario: Three blank lines after imports
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2695,7 +2695,7 @@ console.log(used);
     }
   });
 
-  test('86c. Blank lines after imports: ZERO blank lines preserved', async () => {
+  test('Blank lines after imports: ZERO blank lines preserved', async () => {
     // CRITICAL: Should preserve ZERO blank lines when there aren't any
     // Scenario: Import immediately followed by code
     const content = `import { used } from './lib';
@@ -2720,7 +2720,7 @@ console.log(used);
     }
   });
 
-  test('86e. Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
+  test('Blank lines after imports: Comprehensive test (0, 1, 2, 3 blank lines)', async () => {
     // NOTE: Requires blankLinesAfterImports="preserve" mode
     config.override('blankLinesAfterImports', 'preserve');
 
@@ -2791,7 +2791,7 @@ console.log(used);
     }
   });
 
-  test('86d. Combined spacing: THREE blank lines before, TWO blank lines after', async () => {
+  test('Combined spacing: THREE blank lines before, TWO blank lines after', async () => {
     // CRITICAL: Both before and after blank lines preserved independently
     // Scenario: Multiple blank lines on both sides
     // NOTE: Requires blankLinesAfterImports="preserve" mode
@@ -2827,7 +2827,7 @@ console.log(used);
     }
   });
 
-  test('88. Windows line endings (CRLF): Respected in generated imports', async () => {
+  test('Windows line endings (CRLF): Respected in generated imports', async () => {
     // CRITICAL: Windows uses CRLF (\r\n), not LF (\n)
     // Scenario: Document with CRLF line endings (actual \r\n in content)
     const content = `import { Component } from '@angular/core';\r\nimport { used } from '@angular/core';\r\n\r\nconsole.log(Component, used);\r\n`;
@@ -2865,7 +2865,7 @@ console.log(used);
     }
   });
 
-  test('89. ignoredFromRemoval: Specifiers must be sorted', async () => {
+  test('ignoredFromRemoval: Specifiers must be sorted', async () => {
     // BUG FIX (Session 13): ignoredFromRemoval imports were keeping specifiers in original order
     // ROOT CAUSE: Line 270-272 in import-manager.ts pushed ignored imports directly without sorting
     // EXPECTED: Even ignored imports should have alphabetically sorted specifiers for consistency
@@ -2902,7 +2902,7 @@ const r = React;
     }
   });
 
-  test('90. Comments between imports: Indentation preserved', async () => {
+  test('Comments between imports: Indentation preserved', async () => {
     // CRITICAL: Comments between imports should preserve their indentation
     // Scenario: Comments with 2-space indentation between imports
     // Expected: Comments moved after imports WITH their original indentation
@@ -2932,7 +2932,7 @@ console.log(A, B);
     }
   });
 
-  test('91. removeTrailingIndex + mergeImportsFromSameModule=false keeps imports separate', async () => {
+  test('removeTrailingIndex + mergeImportsFromSameModule=false keeps imports separate', async () => {
     // When removeTrailingIndex=true and mergeImportsFromSameModule=false:
     // - removeTrailingIndex removes /index (always)
     // - mergeImportsFromSameModule=false keeps imports separate (always)
@@ -2974,7 +2974,7 @@ console.log(A, B);
     }
   });
 
-  test('92. Commented-out imports must be preserved (GOLDEN RULE)', async () => {
+  test('Commented-out imports must be preserved (GOLDEN RULE)', async () => {
     // BUG: Comments containing "import" keyword were filtered out and deleted.
     // This violates the GOLDEN RULE: NEVER DELETE USER CONTENT
     //
@@ -3018,7 +3018,7 @@ console.log(A, B);
     }
   });
 
-  test('93. ignoredFromRemoval works with custom library names', async () => {
+  test('ignoredFromRemoval works with custom library names', async () => {
     // Verify that custom libraries can be added to ignoredFromRemoval list
     // The logic uses exact string matching (no wildcards or sub-paths)
 
@@ -3052,7 +3052,7 @@ const y = computed;
     }
   });
 
-  test('94. ignoredFromRemoval uses exact matching (no wildcards)', async () => {
+  test('ignoredFromRemoval uses exact matching (no wildcards)', async () => {
     // Document that ignoredFromRemoval only supports exact matches
     // Sub-paths and wildcards are NOT supported
 
@@ -3085,7 +3085,7 @@ const x = A; // Only use A
     }
   });
 
-  test('95. Invalid grouping config falls back to default grouping', async () => {
+  test('Invalid grouping config falls back to default grouping', async () => {
     // Verify that invalid grouping identifiers don't crash the extension
     // Instead, they should fall back to default grouping: ['Plains', 'Modules', 'Workspace']
 
@@ -3123,7 +3123,7 @@ console.log(Component, readFileSync, MyService);
     }
   });
 
-  test('96. Selective dedup: non-affected duplicates remain separate', async () => {
+  test('Selective dedup: non-affected duplicates remain separate', async () => {
     // Verify selective dedup only affects imports changed by /index removal
     // Two duplicate imports from './lib' (NOT from /index) should stay separate
     // when mergeImportsFromSameModule=false
@@ -3154,7 +3154,7 @@ console.log(A, B);
     }
   });
 
-  test('97. Import attributes are preserved unchanged', async () => {
+  test('Import attributes are preserved unchanged', async () => {
     // Verify import attributes (with { ... }) survive organize unchanged
     // TypeScript 4.5+ and ECMAScript import assertions/attributes
 
@@ -3178,7 +3178,7 @@ console.log(data, Component);
     }
   });
 
-  test('98. Comment preservation stress test', async () => {
+  test('Comment preservation stress test', async () => {
     // Stress test: multiple comments with "import" keyword in various positions
     // All must survive organize
 
@@ -3223,7 +3223,7 @@ console.log(A, B, C);
     }
   });
 
-  test('99. Barrel file with only re-exports must NOT be emptied', async () => {
+  test('Barrel file with only re-exports must NOT be emptied', async () => {
     // Bug: When a file has only re-exports and no regular imports,
     // the else branch in generateTextEdits() deletes the entire range
     // without preserving re-exports (importLines is empty → delete all)
@@ -3249,7 +3249,7 @@ export { Baz } from './baz';
     }
   });
 
-  test('100. Re-exports separated from imports by code must NOT delete code between them', async () => {
+  test('Re-exports separated from imports by code must NOT delete code between them', async () => {
     // Bug: allImports includes export declarations, so the range spans from
     // the first import to the last re-export. Code between them is silently deleted.
     const content = `import { Component } from '@angular/core';
@@ -3284,7 +3284,7 @@ export { Helper } from './helpers';
     }
   });
 
-  test('101. Adjacent re-exports preserved when all imports are removed as unused', async () => {
+  test('Adjacent re-exports preserved when all imports are removed as unused', async () => {
     // Bug: When all imports are unused but adjacent re-exports exist,
     // the else branch in generateTextEdits() deletes the entire range
     // without preserving re-exports.
@@ -3311,7 +3311,7 @@ const y = 1;
     }
   });
 
-  test('102. ignoredFromRemoval libraries have sorted specifiers', async () => {
+  test('ignoredFromRemoval libraries have sorted specifiers', async () => {
     // Verify that libraries in ignoredFromRemoval list still get their specifiers sorted
     // This ensures consistent formatting even when imports are protected from removal
 

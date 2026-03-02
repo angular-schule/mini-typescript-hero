@@ -14,7 +14,7 @@ import * as assert from 'assert';
 
 suite('Path Aliases Behavior Test', () => {
 
-  test('87. Path aliases (@app/*, ~/*) are treated as external modules', () => {
+  test('Path aliases (@app/*, ~/*) are treated as external modules', () => {
     // Path aliases defined in tsconfig.json are treated like npm packages
     // because they don't start with '.' or '/'
     //

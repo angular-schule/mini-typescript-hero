@@ -14,7 +14,7 @@ import { createTempDocument, deleteTempDocument } from './test-helpers';
 
 suite('ImportManager - Indentation - Legacy Mode', () => {
 
-  test('INDENT-L1: Uses editor.tabSize in legacy mode (VS Code default is 4)', async () => {
+  test('Uses editor.tabSize in legacy mode (VS Code default is 4)', async () => {
     const content = `import { VeryLongComponentName, AnotherLongName, ThirdName, FourthName, FifthName } from 'library';
 
 const x = VeryLongComponentName;
@@ -62,7 +62,7 @@ const b = FifthName;
     }
   });
 
-  test('INDENT-L2: Always spaces in legacy mode (never tabs)', async () => {
+  test('Always spaces in legacy mode (never tabs)', async () => {
     const content = `import { ComponentA, ComponentB, ComponentC, ComponentD, ComponentE } from 'react';
 
 const x = ComponentA;
@@ -115,7 +115,7 @@ const b = ComponentE;
     }
   });
 
-  test('INDENT-L3: Respects editor.tabSize = 8 in legacy mode', async () => {
+  test('Respects editor.tabSize = 8 in legacy mode', async () => {
     const content = `import { A, B, C, D, E } from 'lib';
 
 const x = A + B + C + D + E;
@@ -157,7 +157,7 @@ const x = A + B + C + D + E;
     }
   });
 
-  test('INDENT-L4: Falls back to 4 when editor.tabSize undefined', async () => {
+  test('Falls back to 4 when editor.tabSize undefined', async () => {
     const content = `import { LongNameA, LongNameB, LongNameC, LongNameD } from 'library';
 
 const x = LongNameA + LongNameB + LongNameC + LongNameD;
@@ -200,7 +200,7 @@ const x = LongNameA + LongNameB + LongNameC + LongNameD;
 
 suite('ImportManager - Indentation - Modern Mode', () => {
 
-  test('INDENT-M1: Default 2 spaces in modern mode', async () => {
+  test('Default 2 spaces in modern mode', async () => {
     const content = `import { VeryLongComponentName, AnotherLongName, ThirdName, FourthName, FifthName } from 'library';
 
 const x = VeryLongComponentName;
@@ -248,7 +248,7 @@ const b = FifthName;
     }
   });
 
-  test('INDENT-M2: Uses tabs when editor.insertSpaces = false', async () => {
+  test('Uses tabs when editor.insertSpaces = false', async () => {
     const content = `import { ComponentA, ComponentB, ComponentC, ComponentD, ComponentE } from 'react';
 
 const x = ComponentA;
@@ -297,7 +297,7 @@ const b = ComponentE;
     }
   });
 
-  test('INDENT-M3: Respects editor.tabSize = 3', async () => {
+  test('Respects editor.tabSize = 3', async () => {
     const content = `import { NameA, NameB, NameC, NameD } from 'lib';
 
 const x = NameA + NameB + NameC + NameD;
@@ -336,7 +336,7 @@ const x = NameA + NameB + NameC + NameD;
     }
   });
 
-  test('INDENT-M4: Respects editor.tabSize = 8', async () => {
+  test('Respects editor.tabSize = 8', async () => {
     const content = `import { A, B, C, D, E } from 'lib';
 
 const x = A + B + C + D + E;
@@ -376,7 +376,7 @@ const x = A + B + C + D + E;
     }
   });
 
-  test('INDENT-M5: Extension config overrides editor.tabSize', async () => {
+  test('Extension config overrides editor.tabSize', async () => {
     const content = `import { VeryLongName, AnotherLong, ThirdLong, FourthLong } from 'lib';
 
 const x = VeryLongName;
@@ -421,7 +421,7 @@ const a = FourthLong;
     }
   });
 
-  test('INDENT-M6: Extension config insertSpaces = false uses tabs', async () => {
+  test('Extension config insertSpaces = false uses tabs', async () => {
     const content = `import { A, B, C, D } from 'lib';
 
 const x = A + B + C + D;
@@ -464,7 +464,7 @@ const x = A + B + C + D;
 
 suite('ImportManager - Indentation - useOnlyExtensionSettings', () => {
 
-  test('INDENT-U1: Ignores editor.tabSize when useOnlyExtensionSettings = true', async () => {
+  test('Ignores editor.tabSize when useOnlyExtensionSettings = true', async () => {
     const content = `import { LongNameA, LongNameB, LongNameC, LongNameD } from 'library';
 
 const x = LongNameA + LongNameB + LongNameC + LongNameD;
@@ -504,7 +504,7 @@ const x = LongNameA + LongNameB + LongNameC + LongNameD;
     }
   });
 
-  test('INDENT-U2: Ignores editor.insertSpaces when useOnlyExtensionSettings = true', async () => {
+  test('Ignores editor.insertSpaces when useOnlyExtensionSettings = true', async () => {
     const content = `import { ComponentA, ComponentB, ComponentC } from 'lib';
 
 const x = ComponentA + ComponentB + ComponentC;
@@ -544,7 +544,7 @@ const x = ComponentA + ComponentB + ComponentC;
     }
   });
 
-  test('INDENT-U3: Works in legacy mode too', async () => {
+  test('Works in legacy mode too', async () => {
     const content = `import { LongNameA, LongNameB, LongNameC, LongNameD } from 'library';
 
 const x = LongNameA + LongNameB + LongNameC + LongNameD;
@@ -587,7 +587,7 @@ const x = LongNameA + LongNameB + LongNameC + LongNameD;
 
 suite('ImportManager - Indentation - Edge Cases', () => {
 
-  test('INDENT-E1: Single-line import unchanged', async () => {
+  test('Single-line import unchanged', async () => {
     const content = `import { A, B } from 'lib';
 
 const x = A + B;
@@ -616,7 +616,7 @@ const x = A + B;
     }
   });
 
-  test('INDENT-E2: Comments preserve indentation', async () => {
+  test('Comments preserve indentation', async () => {
     const content = `import {
   A, // comment
   B
@@ -655,7 +655,7 @@ const x = A + B;
     }
   });
 
-  test('INDENT-E3: Very large tabSize (16) works', async () => {
+  test('Very large tabSize (16) works', async () => {
     const content = `import { A, B, C } from 'lib';
 
 const x = A + B + C;
@@ -693,7 +693,7 @@ const x = A + B + C;
     }
   });
 
-  test('INDENT-E4: tabSize = 1 works', async () => {
+  test('tabSize = 1 works', async () => {
     const content = `import { A, B, C } from 'lib';
 
 const x = A + B + C;

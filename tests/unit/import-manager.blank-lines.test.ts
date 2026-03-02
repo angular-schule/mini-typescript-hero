@@ -83,7 +83,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     config.override('disableImportRemovalOnOrganize', true); // Don't remove unused imports for blank line tests
   });
 
-  test('TC-001: 0 blank lines after → 1 blank line after', async () => {
+  test('0 blank lines after → 1 blank line after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -99,7 +99,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     }
   });
 
-  test('TC-002: 1 blank line after → 1 blank line after (preserved)', async () => {
+  test('1 blank line after → 1 blank line after (preserved)', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -115,7 +115,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     }
   });
 
-  test('TC-003: 2 blank lines after → 1 blank line after (normalized)', async () => {
+  test('2 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -131,7 +131,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     }
   });
 
-  test('TC-004: 3 blank lines after → 1 blank line after (normalized)', async () => {
+  test('3 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -147,7 +147,7 @@ suite('Blank Lines - Mode "one" (default)', () => {
     }
   });
 
-  test('TC-005: 5 blank lines after → 1 blank line after (normalized)', async () => {
+  test('5 blank lines after → 1 blank line after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -173,7 +173,7 @@ suite('Blank Lines - Mode "two"', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-010: 0 blank lines after → 2 blank lines after', async () => {
+  test('0 blank lines after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
@@ -189,7 +189,7 @@ suite('Blank Lines - Mode "two"', () => {
     }
   });
 
-  test('TC-011: 1 blank line after → 2 blank lines after', async () => {
+  test('1 blank line after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
@@ -205,7 +205,7 @@ suite('Blank Lines - Mode "two"', () => {
     }
   });
 
-  test('TC-012: 2 blank lines after → 2 blank lines after (preserved)', async () => {
+  test('2 blank lines after → 2 blank lines after (preserved)', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
@@ -221,7 +221,7 @@ suite('Blank Lines - Mode "two"', () => {
     }
   });
 
-  test('TC-013: 3 blank lines after → 2 blank lines after (normalized)', async () => {
+  test('3 blank lines after → 2 blank lines after (normalized)', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
@@ -247,7 +247,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-020: 0 blank lines after → 0 blank lines after', async () => {
+  test('0 blank lines after → 0 blank lines after', async () => {
     const input = `import { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\nexport class Test {}`;
 
@@ -263,7 +263,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     }
   });
 
-  test('TC-021: 1 blank line after → 1 blank line after', async () => {
+  test('1 blank line after → 1 blank line after', async () => {
     const input = `import { A } from './a';\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -279,7 +279,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     }
   });
 
-  test('TC-022: 2 blank lines after → 2 blank lines after', async () => {
+  test('2 blank lines after → 2 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\nexport class Test {}`;
 
@@ -295,7 +295,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     }
   });
 
-  test('TC-023: 3 blank lines after → 3 blank lines after', async () => {
+  test('3 blank lines after → 3 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\n\nexport class Test {}`;
 
@@ -311,7 +311,7 @@ suite('Blank Lines - Mode "preserve"', () => {
     }
   });
 
-  test('TC-024: 5 blank lines after → 5 blank lines after', async () => {
+  test('5 blank lines after → 5 blank lines after', async () => {
     const input = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
     const expected = `import { A } from './a';\n\n\n\n\n\nexport class Test {}`;
 
@@ -338,7 +338,7 @@ suite('Blank Lines - Header Detection', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-100: Leading blank lines removed (no header)', async () => {
+  test('Leading blank lines removed (no header)', async () => {
     const input = `\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `import { A } from './a';\n\nexport class Test {}`;
 
@@ -354,7 +354,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-101: Leading blank lines before comment removed', async () => {
+  test('Leading blank lines before comment removed', async () => {
     const input = `\n\n// Comment\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -370,7 +370,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-110: Header with no blank lines preserved', async () => {
+  test('Header with no blank lines preserved', async () => {
     const input = `// Comment\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -386,7 +386,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-111: Header with 1 blank line preserved', async () => {
+  test('Header with 1 blank line preserved', async () => {
     const input = `// Comment\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\n\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -402,7 +402,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-112: Header with 2 blank lines preserved', async () => {
+  test('Header with 2 blank lines preserved', async () => {
     const input = `// Comment\n\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Comment\n\n\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -418,7 +418,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-113: Multiple header lines with blank preserved', async () => {
+  test('Multiple header lines with blank preserved', async () => {
     const input = `// Copyright 2025\n// Info\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `// Copyright 2025\n// Info\n\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -434,7 +434,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-120: Shebang with no blank preserved', async () => {
+  test('Shebang with no blank preserved', async () => {
     const input = `#!/usr/bin/env node\nimport { A } from './a';\nexport class Test {}`;
     const expected = `#!/usr/bin/env node\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -450,7 +450,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-121: Shebang with blank preserved', async () => {
+  test('Shebang with blank preserved', async () => {
     const input = `#!/usr/bin/env node\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `#!/usr/bin/env node\n\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -466,7 +466,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-130: use strict with no blank preserved', async () => {
+  test('use strict with no blank preserved', async () => {
     const input = `'use strict';\nimport { A } from './a';\nexport class Test {}`;
     const expected = `'use strict';\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -482,7 +482,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-131: use strict with blank preserved', async () => {
+  test('use strict with blank preserved', async () => {
     const input = `'use strict';\n\nimport { A } from './a';\nexport class Test {}`;
     const expected = `'use strict';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -498,7 +498,7 @@ suite('Blank Lines - Header Detection', () => {
     }
   });
 
-  test('TC-132: double-quoted use strict preserved', async () => {
+  test('double-quoted use strict preserved', async () => {
     const input = `"use strict";\nimport { A } from './a';\nexport class Test {}`;
     const expected = `"use strict";\nimport { A } from './a';\n\nexport class Test {}`;
 
@@ -524,7 +524,7 @@ suite('Blank Lines - Import Group Separation', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-200: Modules only - no group separation', async () => {
+  test('Modules only - no group separation', async () => {
     const input = `import { A } from '@angular/core';\nimport { B } from 'rxjs';\nexport class Test {}`;
     const expected = `import { A } from '@angular/core';\nimport { B } from 'rxjs';\n\nexport class Test {}`;
 
@@ -540,7 +540,7 @@ suite('Blank Lines - Import Group Separation', () => {
     }
   });
 
-  test('TC-201: Workspace only - no group separation', async () => {
+  test('Workspace only - no group separation', async () => {
     const input = `import { A } from './a';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import { A } from './a';\nimport { B } from './b';\n\nexport class Test {}`;
 
@@ -556,7 +556,7 @@ suite('Blank Lines - Import Group Separation', () => {
     }
   });
 
-  test('TC-202: Modules + Workspace - 1 blank between groups', async () => {
+  test('Modules + Workspace - 1 blank between groups', async () => {
     const input = `import { A } from '@angular/core';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
@@ -572,7 +572,7 @@ suite('Blank Lines - Import Group Separation', () => {
     }
   });
 
-  test('TC-203: Plains + Modules + Workspace - 2 blanks total (1 between each)', async () => {
+  test('Plains + Modules + Workspace - 2 blanks total (1 between each)', async () => {
     const input = `import './polyfills';\nimport { A } from '@angular/core';\nimport { B } from './b';\nexport class Test {}`;
     const expected = `import './polyfills';\n\nimport { A } from '@angular/core';\n\nimport { B } from './b';\n\nexport class Test {}`;
 
@@ -597,7 +597,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-300: Mode "one" + Header with blanks', async () => {
+  test('Mode "one" + Header with blanks', async () => {
     config.override('blankLinesAfterImports', 'one');
 
     const input = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
@@ -615,7 +615,7 @@ suite('Blank Lines - Combined Scenarios', () => {
     }
   });
 
-  test('TC-310: Mode "preserve" + Header', async () => {
+  test('Mode "preserve" + Header', async () => {
     config.override('blankLinesAfterImports', 'preserve');
 
     const input = `// Header\n\nimport { A } from './a';\n\n\nexport class Test {}`;
@@ -644,7 +644,7 @@ suite('Blank Lines - Edge Cases', () => {
     config.override('disableImportRemovalOnOrganize', true);
   });
 
-  test('TC-400: File with only imports (no code after)', async () => {
+  test('File with only imports (no code after)', async () => {
     const input = `import { A } from './a';`;
 
     const doc = await createTempDocument(input);
@@ -664,7 +664,7 @@ suite('Blank Lines - Edge Cases', () => {
     }
   });
 
-  test('TC-401: File with no imports', async () => {
+  test('File with no imports', async () => {
     const input = `export class Test {}`;
 
     const doc = await createTempDocument(input);
@@ -679,7 +679,7 @@ suite('Blank Lines - Edge Cases', () => {
     }
   });
 
-  test('TC-402: Empty file', async () => {
+  test('Empty file', async () => {
     const input = ``;
 
     const doc = await createTempDocument(input);
@@ -693,7 +693,7 @@ suite('Blank Lines - Edge Cases', () => {
     }
   });
 
-  test('TC-403: Whitespace-only file becomes empty', async () => {
+  test('Whitespace-only file becomes empty', async () => {
     const input = `\n\n\n`;
 
     const doc = await createTempDocument(input);
@@ -708,7 +708,7 @@ suite('Blank Lines - Edge Cases', () => {
     }
   });
 
-  test('TC-404: CRLF line endings preserved', async () => {
+  test('CRLF line endings preserved', async () => {
     const input = `import { A } from './a';\r\nexport class Test {}`;
     const expected = `import { A } from './a';\r\n\r\nexport class Test {}`;
 
@@ -724,7 +724,7 @@ suite('Blank Lines - Edge Cases', () => {
     }
   });
 
-  test('TC-405: Mixed import types handled correctly', async () => {
+  test('Mixed import types handled correctly', async () => {
     const input = `import './polyfills';\nimport * as React from 'react';\nimport { A } from './a';\nexport class Test {}`;
     const expected = `import './polyfills';\n\nimport * as React from 'react';\n\nimport { A } from './a';\n\nexport class Test {}`;
 
