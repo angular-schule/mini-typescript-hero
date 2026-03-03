@@ -257,9 +257,15 @@ export class ImportManager {
       }
     });
 
-    // Step 2: Handle re-exported symbols (export { Foo } or export default Foo)
-    // These must be kept even if not used in the file itself
+    // Step 2: Handle locally re-exported symbols (export { Foo } or export default Foo)
+    // These must be kept even if not used in the file itself.
+    // Only mark names from LOCAL exports (no moduleSpecifier). Re-exports like
+    // `export { Foo } from './bar'` reference symbols from the other module,
+    // not local identifiers — they must not prevent removal of unrelated local imports.
     this.sourceFile.getExportDeclarations().forEach(exportDecl => {
+      if (exportDecl.getModuleSpecifier()) {
+        return;
+      }
       const namedExports = exportDecl.getNamedExports();
       namedExports.forEach(named => {
         this.usedIdentifiers.add(named.getName());
@@ -289,6 +295,14 @@ export class ImportManager {
 
       // Skip if this identifier is part of an old-style import equals declaration
       if (identifier.getFirstAncestorByKind(SyntaxKind.ImportEqualsDeclaration)) {
+        continue;
+      }
+
+      // Skip if this identifier is part of a re-export (export { ... } from '...')
+      // Re-exports reference symbols from the other module, not local identifiers.
+      // Local exports (export { Foo }) are handled by Step 2.
+      const ancestorExportDecl = identifier.getFirstAncestorByKind(SyntaxKind.ExportDeclaration);
+      if (ancestorExportDecl?.getModuleSpecifier()) {
         continue;
       }
 
@@ -498,10 +512,15 @@ export class ImportManager {
           const nsUsed = this.usedIdentifiers.has(imp.alias);
           const defaultUsed = !!imp.defaultAlias && this.usedIdentifiers.has(imp.defaultAlias);
           if (nsUsed || defaultUsed) {
-            // Strip unused default if only namespace is used
             if (imp.defaultAlias && !defaultUsed) {
+              // Strip unused default, keep namespace
               keep.push(new NamespaceImport(
                 imp.libraryName, imp.alias, undefined, imp.isTypeOnly, imp.attributes,
+              ));
+            } else if (!nsUsed && defaultUsed) {
+              // Strip unused namespace, convert to default-only import
+              keep.push(new NamedImport(
+                imp.libraryName, [], imp.defaultAlias, imp.isTypeOnly, imp.attributes,
               ));
             } else {
               keep.push(imp);

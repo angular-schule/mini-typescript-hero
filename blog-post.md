@@ -28,7 +28,7 @@ import { BookList } from './components/book-list';
 **After** pressing `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS):
 
 ```typescript
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { map, switchMap } from 'rxjs/operators';
 

@@ -38,9 +38,9 @@ export interface ConflictInfo {
 export function detectConflicts(): ConflictInfo {
   const conflicts: string[] = [];
 
-  // Read our own organizeOnSave setting to determine if on-save conflicts are real
-  const ourConfig = workspace.getConfiguration('miniTypescriptHero.imports');
-  const ourOrganizeOnSave = ourConfig.get<boolean>('organizeOnSave', false);
+  // Read our own organizeOnSave setting to determine if on-save conflicts are real.
+  // Check all scopes including workspace folders (unscoped read misses folder-level settings).
+  const ourOrganizeOnSave = isBooleanSettingEnabled('miniTypescriptHero.imports', 'organizeOnSave');
 
   // Check 1: Old TypeScript Hero extension installed
   const oldExtension = extensions.getExtension(OLD_EXTENSION_ID);
@@ -52,8 +52,7 @@ export function detectConflicts(): ConflictInfo {
 
   // Check 2: Old TypeScript Hero organize-on-save enabled
   // Only a conflict if OUR organizeOnSave is also enabled
-  const oldTsHeroConfig = workspace.getConfiguration('typescriptHero.imports');
-  const oldOrganizeOnSave = oldTsHeroConfig.get<boolean>('organizeOnSave', false);
+  const oldOrganizeOnSave = isBooleanSettingEnabled('typescriptHero.imports', 'organizeOnSave');
   const oldOrganizeOnSaveEnabled = oldOrganizeOnSave && ourOrganizeOnSave;
 
   if (oldOrganizeOnSaveEnabled) {
@@ -64,16 +63,7 @@ export function detectConflicts(): ConflictInfo {
 
   // Check 3: VS Code built-in organize imports enabled
   // Only a conflict if OUR organizeOnSave is also enabled
-  // Ignore "never" and false values (explicitly disabled)
-  const editorConfig = workspace.getConfiguration('editor');
-  const codeActionsOnSaveRaw = editorConfig.get('codeActionsOnSave');
-  // Handle different types - codeActionsOnSave could be object, boolean, string, or undefined
-  let organizeImportsValue: boolean | string | undefined;
-  if (codeActionsOnSaveRaw && typeof codeActionsOnSaveRaw === 'object') {
-    organizeImportsValue = (codeActionsOnSaveRaw as Record<string, boolean | string>)['source.organizeImports'];
-  }
-  // If codeActionsOnSave is not an object, organizeImportsValue stays undefined (no conflict)
-  const vsCodeBuiltInEnabled = organizeImportsValue !== false && organizeImportsValue !== 'never' && organizeImportsValue !== undefined;
+  const vsCodeBuiltInEnabled = isOrganizeImportsCodeActionEnabled();
   const vsCodeBuiltInConflict = vsCodeBuiltInEnabled && ourOrganizeOnSave;
 
   if (vsCodeBuiltInConflict) {
@@ -87,4 +77,50 @@ export function detectConflicts(): ConflictInfo {
     ourOrganizeOnSaveEnabled: ourOrganizeOnSave,
     conflicts,
   };
+}
+
+/**
+ * Check if a boolean setting is enabled in any scope (global, workspace, or any workspace folder).
+ * Unscoped getConfiguration().get() misses workspace-folder-level values in multi-root workspaces.
+ */
+function isBooleanSettingEnabled(section: string, key: string): boolean {
+  const config = workspace.getConfiguration(section);
+  const inspect = config.inspect<boolean>(key);
+  if (inspect?.globalValue || inspect?.workspaceValue) {
+    return true;
+  }
+  for (const folder of workspace.workspaceFolders ?? []) {
+    const fi = workspace.getConfiguration(section, folder.uri).inspect<boolean>(key);
+    if (fi?.workspaceFolderValue) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if editor.codeActionsOnSave has source.organizeImports enabled in any scope.
+ */
+function isOrganizeImportsCodeActionEnabled(): boolean {
+  const config = workspace.getConfiguration('editor');
+  const inspect = config.inspect('codeActionsOnSave');
+
+  const checkValue = (value: unknown): boolean => {
+    if (value && typeof value === 'object') {
+      const oi = (value as Record<string, boolean | string>)['source.organizeImports'];
+      return oi !== false && oi !== 'never' && oi !== undefined;
+    }
+    return false;
+  };
+
+  if (checkValue(inspect?.globalValue) || checkValue(inspect?.workspaceValue)) {
+    return true;
+  }
+  for (const folder of workspace.workspaceFolders ?? []) {
+    const fi = workspace.getConfiguration('editor', folder.uri).inspect('codeActionsOnSave');
+    if (checkValue(fi?.workspaceFolderValue)) {
+      return true;
+    }
+  }
+  return false;
 }

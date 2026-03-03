@@ -89,6 +89,12 @@ export class ImportOrganizer implements Disposable {
       return;
     }
 
+    // Re-entrancy guard (same as organize-on-save)
+    const key = editor.document.uri.toString();
+    if (this.runningOrganizes.has(key)) {
+      return;
+    }
+
     if (!this.isSupportedLanguage(editor.document.languageId)) {
       window.showWarningMessage(
         `Mini TypeScript Hero: Organize imports is not supported for ${editor.document.languageId} files`,
@@ -105,6 +111,7 @@ export class ImportOrganizer implements Disposable {
       return;
     }
 
+    this.runningOrganizes.add(key);
     try {
       this.logger.appendLine(`[ImportOrganizer] Organizing imports for ${editor.document.fileName}`);
 
@@ -141,6 +148,8 @@ export class ImportOrganizer implements Disposable {
       if (error instanceof Error && error.stack) {
         this.logger.appendLine(error.stack);
       }
+    } finally {
+      this.runningOrganizes.delete(key);
     }
   }
 

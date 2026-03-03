@@ -50,7 +50,9 @@ export class ImportGroupSettingParser {
       identifier = setting;
     } else {
       identifier = setting.identifier;
-      order = setting.order;
+      // Normalize order to valid enum value (case-insensitive)
+      const rawOrder = String(setting.order || '').toLowerCase();
+      order = rawOrder === ImportGroupOrder.Desc ? ImportGroupOrder.Desc : ImportGroupOrder.Asc;
     }
 
     if (REGEX_REGEX_GROUP.test(identifier)) {

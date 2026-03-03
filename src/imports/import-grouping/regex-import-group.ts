@@ -34,15 +34,13 @@ export class RegexImportGroup implements ImportGroup {
     public readonly order: ImportGroupOrder = ImportGroupOrder.Asc,
   ) {
     // Compile regex once in constructor for performance
-    // Strip surrounding slashes if present (e.g., '/^@angular/' -> '^@angular')
-    let regexString = this.regex;
-    regexString = regexString.startsWith('/')
-      ? regexString.substring(1)
-      : regexString;
-    regexString = regexString.endsWith('/')
-      ? regexString.substring(0, regexString.length - 1)
-      : regexString;
-    this.compiledRegex = new RegExp(regexString);
+    // Parse /pattern/flags syntax (e.g., '/^@angular/i' -> pattern='^@angular', flags='i')
+    const slashMatch = this.regex.match(/^\/(.+)\/([gimsuy]*)$/);
+    if (slashMatch) {
+      this.compiledRegex = new RegExp(slashMatch[1], slashMatch[2]);
+    } else {
+      this.compiledRegex = new RegExp(this.regex);
+    }
   }
 
   public reset(): void {

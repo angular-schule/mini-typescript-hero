@@ -109,17 +109,13 @@ async function performMigration(): Promise<number> {
   let migratedWorkspaceCount = 0;
   let migratedWorkspaceFolderCount = 0;
 
+  // Step 1: Migrate global and workspace-level settings
   for (const setting of SETTINGS_TO_MIGRATE) {
-    // Check if old setting exists (has been configured by user)
     const inspect = oldConfig.inspect(setting);
 
     if (!inspect) {
       continue;
     }
-
-    // Migrate from each configuration level where it was set
-    // Priority: workspace > workspaceFolder > global
-    // Only migrate if the value has the correct type
 
     // Migrate workspace settings
     if (inspect.workspaceValue !== undefined && isValidSettingType(setting, inspect.workspaceValue)) {
@@ -128,18 +124,32 @@ async function performMigration(): Promise<number> {
       migratedWorkspaceCount++;
     }
 
-    // Migrate workspace folder settings
-    if (inspect.workspaceFolderValue !== undefined && isValidSettingType(setting, inspect.workspaceFolderValue)) {
-      await newConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
-      migratedCount++;
-      migratedWorkspaceFolderCount++;
-    }
-
     // Migrate global (user) settings
     if (inspect.globalValue !== undefined && isValidSettingType(setting, inspect.globalValue)) {
       await newConfig.update(setting, inspect.globalValue, ConfigurationTarget.Global);
       migratedCount++;
       migratedGlobalCount++;
+    }
+  }
+
+  // Step 2: Migrate workspace-folder-level settings
+  // getConfiguration() without a URI cannot see workspaceFolderValue in multi-root,
+  // so we iterate over each workspace folder explicitly.
+  for (const folder of workspace.workspaceFolders ?? []) {
+    const oldFolderConfig = workspace.getConfiguration(OLD_SECTION, folder.uri);
+    const newFolderConfig = workspace.getConfiguration(NEW_SECTION, folder.uri);
+
+    for (const setting of SETTINGS_TO_MIGRATE) {
+      const inspect = oldFolderConfig.inspect(setting);
+      if (!inspect || inspect.workspaceFolderValue === undefined) {
+        continue;
+      }
+
+      if (isValidSettingType(setting, inspect.workspaceFolderValue)) {
+        await newFolderConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
+        migratedCount++;
+        migratedWorkspaceFolderCount++;
+      }
     }
   }
 

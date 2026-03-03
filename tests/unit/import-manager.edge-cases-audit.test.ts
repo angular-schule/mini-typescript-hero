@@ -524,6 +524,34 @@ const x = B;
     }
   });
 
+  test('Re-export with from clause does not prevent removal of unrelated local import', async () => {
+    const content = `import { Foo } from './foo';
+export { Foo } from './bar';
+
+const x = 1;
+`;
+
+    // The re-export gets Foo from './bar', not from the local import.
+    // The local import { Foo } from './foo' is unused and should be removed.
+    const expected = `export { Foo } from './bar';
+
+const x = 1;
+`;
+
+    const doc = await createTempDocument(content, 'ts');
+    try {
+      const config = new ImportsConfig();
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Re-export from other module must not keep unrelated local import');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
   // ============================================================================
   // Shadowing safety
   // ============================================================================
@@ -991,9 +1019,8 @@ const x = ns.foo;
 const x = Default;
 `;
 
-    // Namespace is unused but can't be removed (TypeScript syntax requires it)
-    // Keep the full import since the default is used
-    const expected = `import Default, * as ns from 'lib';
+    // Namespace is unused, convert to default-only import
+    const expected = `import Default from 'lib';
 
 const x = Default;
 `;
@@ -1006,7 +1033,7 @@ const x = Default;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Default kept, namespace stays because syntax requires it');
+      assert.strictEqual(result, expected, 'Unused namespace stripped, converted to default-only import');
     } finally {
       await deleteTempDocument(doc);
     }

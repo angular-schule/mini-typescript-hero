@@ -124,38 +124,50 @@ async function checkForConflicts(
         // Automatically disable VSCode's built-in organize imports
         try {
           const editorConfig = workspace.getConfiguration('editor');
-          const currentActions = editorConfig.get('codeActionsOnSave') as Record<string, boolean | string> | undefined;
+          const inspection = editorConfig.inspect('codeActionsOnSave');
+          let updated = false;
 
-          if (currentActions) {
-            // Create new object with source.organizeImports set to false
-            const newActions = { ...currentActions };
-            newActions['source.organizeImports'] = false;
+          // Check each scope individually and update only where source.organizeImports is set.
+          // This avoids clobbering other scopes by writing the merged effective value.
+          type ScopeValue = Record<string, boolean | string> | undefined;
+          const scopes: Array<{ value: ScopeValue; target: ConfigurationTarget }> = [
+            { value: inspection?.globalValue as ScopeValue, target: ConfigurationTarget.Global },
+            { value: inspection?.workspaceValue as ScopeValue, target: ConfigurationTarget.Workspace },
+          ];
 
-            // Determine which scope to update (most specific scope wins)
-            const inspection = editorConfig.inspect('codeActionsOnSave');
-            let target = ConfigurationTarget.Global;
-
-            if (inspection?.workspaceFolderValue) {
-              target = ConfigurationTarget.WorkspaceFolder;
-            } else if (inspection?.workspaceValue) {
-              target = ConfigurationTarget.Workspace;
+          // Also check workspace folders (unscoped inspect misses folder-level values)
+          for (const folder of workspace.workspaceFolders ?? []) {
+            const fi = workspace.getConfiguration('editor', folder.uri).inspect('codeActionsOnSave');
+            if (fi?.workspaceFolderValue && typeof fi.workspaceFolderValue === 'object') {
+              scopes.push({ value: fi.workspaceFolderValue as ScopeValue, target: ConfigurationTarget.WorkspaceFolder });
             }
+          }
 
-            await editorConfig.update('codeActionsOnSave', newActions, target);
+          for (const scope of scopes) {
+            if (scope.value && typeof scope.value === 'object' &&
+                'source.organizeImports' in scope.value &&
+                scope.value['source.organizeImports'] !== false &&
+                scope.value['source.organizeImports'] !== 'never') {
+              const newActions = { ...scope.value, 'source.organizeImports': false };
+              await editorConfig.update('codeActionsOnSave', newActions, scope.target);
+              updated = true;
+            }
+          }
 
+          if (updated) {
             window.showInformationMessage(
               'Mini TypeScript Hero: VSCode built-in organize imports has been disabled. ' +
               'You can re-enable it anytime in Settings.'
             );
             outputChannel.appendLine('Mini TypeScript Hero: Successfully disabled VSCode built-in organize imports');
+            // Mark as warned only after successful fix
+            await context.globalState.update(hasWarnedKey, true);
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           window.showErrorMessage(`Mini TypeScript Hero: Failed to disable VSCode built-in: ${errorMessage}`);
           outputChannel.appendLine(`Mini TypeScript Hero: Error disabling VSCode built-in: ${errorMessage}`);
         }
-        // Mark as warned - conflict resolved
-        await context.globalState.update(hasWarnedKey, true);
       } else if (selection === 'Open Extensions') {
         // Open Extensions sidebar so user can disable old TypeScript Hero manually
         // NOTE: Using 'workbench.view.extensions' instead of 'workbench.extensions.action.showInstalledExtensions'
@@ -367,8 +379,5 @@ export async function activate(context: ExtensionContext): Promise<void> {
  * Deactivate the extension.
  */
 export function deactivate(): void {
-  if (outputChannel) {
-    outputChannel.appendLine('Mini TypeScript Hero: Deactivating extension');
-    outputChannel.dispose();
-  }
+  // outputChannel is disposed automatically via context.subscriptions
 }
