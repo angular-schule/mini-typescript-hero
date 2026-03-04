@@ -540,12 +540,14 @@ TypeScript 3.8+ `import type` syntax affects runtime semantics and bundling. Con
 ## 🎯 Development Commands
 
 ```bash
-# Main extension tests
+# ALL tests (unit + comparison) — use this before pushing!
+npm run test:all
+
+# Main extension tests only
 npm test
 
-# Comparison tests
-cd tests/comparison
-npm test
+# Comparison tests only
+npm run test:comparison
 
 # Watch mode (during development)
 npm run watch
