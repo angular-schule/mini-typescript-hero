@@ -212,7 +212,7 @@ const x = A + B + Z;
     }
   });
 
-  test('Inline comments stripped in legacy mode', async () => {
+  test('Inline comments preserved in legacy mode (planned difference from old extension)', async () => {
     const content = `import {
   Z, // keep this
   A,
@@ -222,9 +222,15 @@ const x = A + B + Z;
 const x = A + B + Z;
 `;
 
-    // LEGACY MODE: Strip comments to match old TypeScript Hero extension
-    // (Verified in tests/comparison/test-cases/00-shared-behavior.test.ts and 11-indentation-behavior.test.ts L4)
-    const expected = `import { A, B, Z } from 'lib';
+    // PLANNED DIFFERENCE: Old extension stripped specifier comments because its parser
+    // (typescript-parser) couldn't parse them. Our extension CAN parse them, so stripping
+    // them would violate the golden rule: never delete user content.
+    // Comments trigger multiline wrapping.
+    const expected = `import {
+    A,
+    B, // end
+    Z, // keep this
+} from 'lib';
 
 const x = A + B + Z;
 `;
@@ -238,7 +244,7 @@ const x = A + B + Z;
       await applyEditsToDocument(doc, edits);
 
       const result = doc.getText();
-      assert.strictEqual(result, expected, 'Comments must be stripped in legacy mode');
+      assert.strictEqual(result, expected, 'Comments must be preserved even in legacy mode');
     } finally {
       await deleteTempDocument(doc);
     }
@@ -1098,6 +1104,106 @@ const x = A + B;
 
       const result = doc.getText();
       assert.strictEqual(result, expected, 'Block comment header with non-* lines must be preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  // ============================================================================
+  // GOLDEN RULE: Never delete user code between imports
+  // ============================================================================
+
+  test('Code between imports is preserved (moved after organized imports)', async () => {
+    const content = `import { B } from './b';
+config.init({ debug: true });
+import { A } from './a';
+
+console.log(A, B);
+`;
+
+    // Code between imports must be preserved — moved after the organized imports
+    // The blank line separator is between imports and preserved code (not after preserved code)
+    const expected = `import { A } from './a';
+import { B } from './b';
+
+config.init({ debug: true });
+console.log(A, B);
+`;
+
+    const config = new ImportsConfig();
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Non-import code between imports must be preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('Mix of comments and code between imports — both preserved', async () => {
+    const content = `import { C } from './c';
+// Section separator
+const initValue = 42;
+import { A } from './a';
+import { B } from './b';
+
+console.log(A, B, C, initValue);
+`;
+
+    const expected = `import { A } from './a';
+import { B } from './b';
+import { C } from './c';
+
+// Section separator
+const initValue = 42;
+console.log(A, B, C, initValue);
+`;
+
+    const config = new ImportsConfig();
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, config);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Both comments and code between imports must be preserved');
+    } finally {
+      await deleteTempDocument(doc);
+    }
+  });
+
+  test('Legacy mode also preserves code between imports (planned difference from old extension)', async () => {
+    const content = `import { B } from './b';
+setupPolyfill();
+import { A } from './a';
+
+console.log(A, B);
+`;
+
+    // Even in legacy mode, code between imports must be preserved
+    const expected = `import { A } from './a';
+import { B } from './b';
+
+setupPolyfill();
+console.log(A, B);
+`;
+
+    const legacyConfig = new MockImportsConfig();
+    legacyConfig.setConfig('legacyMode', true);
+
+    const doc = await createTempDocument(content);
+    try {
+      const manager = new ImportManager(doc, legacyConfig);
+      const edits = await manager.organizeImports();
+      await applyEditsToDocument(doc, edits);
+
+      const result = doc.getText();
+      assert.strictEqual(result, expected, 'Legacy mode must also preserve code between imports');
     } finally {
       await deleteTempDocument(doc);
     }

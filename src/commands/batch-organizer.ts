@@ -133,12 +133,12 @@ export class BatchOrganizer {
    * Find all TypeScript/JavaScript files in the workspace.
    */
   private async findTargetFiles(): Promise<Uri[]> {
-    const include = '**/*.{ts,tsx,js,jsx}';
+    const include = '**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}';
 
     this.logger.appendLine(`[BatchOrganizer] Searching workspace: ${include}`);
 
-    // Find all files (VS Code respects files.exclude by default)
-    const allFiles = await workspace.findFiles(include, null);
+    // Find all files (undefined = VS Code respects files.exclude; null would bypass it)
+    const allFiles = await workspace.findFiles(include, undefined);
 
     // Manually filter files using exclude patterns
     // IMPORTANT: Get excludePatterns per file based on its workspace folder
@@ -167,8 +167,8 @@ export class BatchOrganizer {
       .replace(/\\/g, '/');
     // Handle case where folder IS the workspace root (relative path is empty)
     const includeGlob = relativePath
-      ? `${relativePath}/**/*.{ts,tsx,js,jsx}`
-      : '**/*.{ts,tsx,js,jsx}';
+      ? `${relativePath}/**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}`
+      : '**/*.{ts,tsx,js,jsx,mts,cts,mjs,cjs}';
     const excludePatterns = this.getExcludePatterns(workspaceFolder.uri);
 
     this.logger.appendLine(`[BatchOrganizer] Searching folder: ${includeGlob}`);
@@ -177,7 +177,7 @@ export class BatchOrganizer {
     // Use RelativePattern to scope findFiles to the specific workspace folder
     // (plain string patterns search across ALL workspace roots in multi-root workspaces)
     const include = new RelativePattern(workspaceFolder, includeGlob);
-    const allFiles = await workspace.findFiles(include, null);
+    const allFiles = await workspace.findFiles(include, undefined);
 
     // Manually filter files using exclude patterns
     const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));

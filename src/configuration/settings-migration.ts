@@ -1,4 +1,4 @@
-import { ExtensionContext, workspace, ConfigurationTarget, window, extensions } from 'vscode';
+import { ExtensionContext, workspace, ConfigurationTarget, window, extensions, Uri } from 'vscode';
 
 const OLD_SECTION = 'typescriptHero.imports';
 const NEW_SECTION = 'miniTypescriptHero.imports';
@@ -108,6 +108,7 @@ async function performMigration(): Promise<number> {
   let migratedGlobalCount = 0;
   let migratedWorkspaceCount = 0;
   let migratedWorkspaceFolderCount = 0;
+  const migratedFolderUris: Uri[] = [];
 
   // Step 1: Migrate global and workspace-level settings
   for (const setting of SETTINGS_TO_MIGRATE) {
@@ -149,6 +150,9 @@ async function performMigration(): Promise<number> {
         await newFolderConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
         migratedCount++;
         migratedWorkspaceFolderCount++;
+        if (!migratedFolderUris.some(u => u.toString() === folder.uri.toString())) {
+          migratedFolderUris.push(folder.uri);
+        }
       }
     }
   }
@@ -174,9 +178,9 @@ async function performMigration(): Promise<number> {
         await newConfig.update('legacyMode', true, ConfigurationTarget.Workspace);
       }
       if (migratedWorkspaceFolderCount > 0) {
-        // WorkspaceFolder scope requires a URI-scoped config — iterate each folder
-        for (const folder of workspace.workspaceFolders ?? []) {
-          const scopedConfig = workspace.getConfiguration(NEW_SECTION, folder.uri);
+        // Only write legacyMode to folders that actually had old settings
+        for (const folderUri of migratedFolderUris) {
+          const scopedConfig = workspace.getConfiguration(NEW_SECTION, folderUri);
           await scopedConfig.update('legacyMode', true, ConfigurationTarget.WorkspaceFolder);
         }
       }

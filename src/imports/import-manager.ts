@@ -59,7 +59,7 @@ export class ImportManager {
     // For untitled documents (no file extension), ts-morph needs a file extension
     // to determine the script kind. Map languageId to the correct extension.
     let fileName = this.document.fileName;
-    if (!/\.(tsx?|jsx?)$/i.test(fileName)) {
+    if (!/\.(m?tsx?|[cm]?jsx?|cts)$/i.test(fileName)) {
       const extMap: Record<string, string> = {
         'typescript': '.ts',
         'typescriptreact': '.tsx',
@@ -372,8 +372,8 @@ export class ImportManager {
   ): Map<string, { leading?: string; trailing?: string }> {
     const result = new Map<string, { leading?: string; trailing?: string }>();
 
-    // Extract the part between first { and last } (greedy to handle } in comments)
-    const match = fullImportText.match(/\{(.+)\}/s);
+    // Extract the part between first { and first } (non-greedy to avoid matching import attributes)
+    const match = fullImportText.match(/\{(.+?)\}/s);
     if (!match) {
       return result;
     }
@@ -637,22 +637,13 @@ export class ImportManager {
           // BUT: In legacy mode, strip type-only flag from NamedImports
           const imp = imports[0];
           if (isLegacy && imp instanceof NamedImport && imp.isTypeOnly) {
-            // Strip isTypeOnly flag, individual specifier flags, and comments (legacy mode)
+            // Strip isTypeOnly flag and individual specifier type flags (legacy mode)
+            // BUT: Preserve comments — GOLDEN RULE: never delete user content
             const specs = imp.specifiers.map(s => ({
               ...s,
               isTypeOnly: false,
-              leadingComment: undefined,
-              trailingComment: undefined,
             }));
             merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false, imp.attributes));
-          } else if (isLegacy && imp instanceof NamedImport) {
-            // In legacy mode, strip comments from all named imports
-            const specs = imp.specifiers.map(s => ({
-              ...s,
-              leadingComment: undefined,
-              trailingComment: undefined,
-            }));
-            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, imp.isTypeOnly, imp.attributes));
           } else {
             merged.push(imp);
           }
@@ -669,13 +660,12 @@ export class ImportManager {
           let mergedDefault: string | undefined;
 
           for (const namedImp of namedImports) {
-            // In legacy mode, strip isTypeOnly and comments from individual specifiers
+            // In legacy mode, strip isTypeOnly from individual specifiers
+            // BUT: Preserve comments — GOLDEN RULE: never delete user content
             const specs = isLegacy
               ? namedImp.specifiers.map(s => ({
                   ...s,
                   isTypeOnly: false,
-                  leadingComment: undefined,
-                  trailingComment: undefined,
                 }))
               : namedImp.specifiers;
             allSpecifiers.push(...specs);
@@ -852,14 +842,17 @@ export class ImportManager {
       }
     }
 
-    // Extract comments between imports (old TypeScript Hero moves them after imports)
-    // Only extract standalone comment lines that are BETWEEN import declarations,
-    // not lines that are WITHIN a multi-line import declaration
+    // Extract comments and non-import code between imports.
+    // Old TypeScript Hero deletes imports individually (preserving everything else).
+    // We replace the entire range, so we MUST extract and preserve all non-import content.
+    //
+    // GOLDEN RULE: NEVER delete user code or comments!
     //
     // KNOWN LIMITATION: Comments INSIDE multiline import braces are not preserved.
     // Example: `import { Foo, /* comment */ Bar } from 'lib'` - the comment is lost.
     // This is complex to fix and is an edge case. Standalone comments between imports ARE preserved.
     const commentsBetweenImports: string[] = [];
+    const codeBetweenImports: string[] = [];
     let insideBlockComment = false;
     for (let i = importSectionStartLine; i <= importSectionEndLine; i++) {
       const lineNumber = i + 1; // Convert to 1-indexed for comparison with ts-morph
@@ -871,7 +864,7 @@ export class ImportManager {
         return lineNumber >= start && lineNumber <= end;
       });
 
-      // Only check for standalone comments if the line is NOT within an import
+      // Only check for standalone comments/code if the line is NOT within an import
       if (!isWithinImport) {
         const lineText = this.document.lineAt(i).text;
         const trimmedText = lineText.trim();
@@ -885,9 +878,7 @@ export class ImportManager {
           continue;
         }
 
-        // GOLDEN RULE - NEVER DELETE USER COMMENTS!
-        // We MUST preserve ALL comments, including those with "import" keyword.
-        // This includes commented-out imports like "// import { Foo } from './bar';"
+        // Check for standalone comments
         const isStandaloneComment = trimmedText.startsWith('//') ||
                                      trimmedText.startsWith('/*') ||
                                      trimmedText.startsWith('*');
@@ -897,6 +888,11 @@ export class ImportManager {
           if (trimmedText.startsWith('/*') && !trimmedText.includes('*/')) {
             insideBlockComment = true;
           }
+        } else if (trimmedText.length > 0) {
+          // GOLDEN RULE: Preserve non-import code between imports!
+          // This handles side-effect calls, variable declarations, etc.
+          // The old TypeScript Hero also preserves these (it deletes imports individually).
+          codeBetweenImports.push(lineText);
         }
       }
     }
@@ -1004,6 +1000,13 @@ export class ImportManager {
       // Add comments that were between imports (move them after imports)
       if (commentsBetweenImports.length > 0) {
         importText += commentsBetweenImports.join(this.eol);
+        importText += this.eol;
+      }
+
+      // GOLDEN RULE: Preserve non-import code that was between imports
+      // (e.g., side-effect calls like `config.init()`, variable declarations)
+      if (codeBetweenImports.length > 0) {
+        importText += codeBetweenImports.join(this.eol);
         importText += this.eol;
       }
 
@@ -1139,6 +1142,11 @@ export class ImportManager {
     if (imp instanceof NamedImport) {
       const parts: string[] = [];
 
+      // Add 'type' keyword for type-only imports (TS 3.8+)
+      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
+      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
+      const typeKeyword = useTypeKeyword ? 'type ' : '';
+
       // Default import
       if (imp.defaultAlias) {
         parts.push(imp.defaultAlias);
@@ -1146,26 +1154,21 @@ export class ImportManager {
 
       // Named imports
       if (imp.specifiers.length > 0) {
-        const isLegacy = this.config.legacyMode(this.document.uri);
-
-        // Check if any specifiers have comments (forces multiline in modern mode)
-        const hasComments = !isLegacy && imp.specifiers.some(s => s.leadingComment || s.trailingComment);
+        // Check if any specifiers have comments (forces multiline)
+        const hasComments = imp.specifiers.some(s => s.leadingComment || s.trailingComment);
 
         const specifierStrings = imp.specifiers.map(spec => {
           const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
           const typePrefix = spec.isTypeOnly ? 'type ' : '';
           let result = `${typePrefix}${baseSpec}`;
 
-          // In modern mode, preserve comments
-          if (!isLegacy) {
-            if (spec.leadingComment) {
-              result = `${spec.leadingComment} ${result}`;
-            }
-            if (spec.trailingComment) {
-              result = `${result} ${spec.trailingComment}`;
-            }
+          // Preserve comments (in both modes — GOLDEN RULE: never delete user content)
+          if (spec.leadingComment) {
+            result = `${spec.leadingComment} ${result}`;
           }
-          // In legacy mode, comments are stripped (old extension behavior)
+          if (spec.trailingComment) {
+            result = `${result} ${spec.trailingComment}`;
+          }
 
           return result;
         });
@@ -1175,11 +1178,15 @@ export class ImportManager {
         const braceClose = spaceInBraces ? ' }' : '}';
 
         // Check if it should be multiline
+        // Measure the FULL import line length (not just the brace part) against threshold
         const threshold = this.config.multiLineWrapThreshold(this.document.uri);
-        const singleLine = `${braceOpen}${specifiersText}${braceClose}`;
+        const defaultPart = imp.defaultAlias ? `${imp.defaultAlias}, ` : '';
+        const bracePart = `${braceOpen}${specifiersText}${braceClose}`;
+        const fromPart = ` from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
+        const fullLine = `import ${typeKeyword}${defaultPart}${bracePart}${fromPart}`;
 
         // Force multiline if there are comments
-        if (hasComments || (singleLine.length > threshold && imp.specifiers.length > 1)) {
+        if (hasComments || (fullLine.length > threshold && imp.specifiers.length > 1)) {
           // Multiline
           const trailingComma = this.config.multiLineTrailingComma(this.document.uri) ? ',' : '';
 
@@ -1190,29 +1197,20 @@ export class ImportManager {
             const typePrefix = spec.isTypeOnly ? 'type ' : '';
             let result = `${typePrefix}${baseSpec}`;
 
-            // In modern mode, handle comments with proper comma placement
-            if (!isLegacy) {
-              // Add leading comment before everything
-              if (spec.leadingComment) {
-                result = `${spec.leadingComment} ${result}`;
-              }
+            // Preserve comments with proper comma placement (GOLDEN RULE: never delete user content)
+            if (spec.leadingComment) {
+              result = `${spec.leadingComment} ${result}`;
+            }
 
-              // Add comma before trailing comment (if not the last item or if trailingComma is enabled)
-              const needsComma = index < imp.specifiers.length - 1 || trailingComma;
-              if (needsComma) {
-                result = `${result},`;
-              }
+            // Add comma before trailing comment
+            const needsComma = index < imp.specifiers.length - 1 || trailingComma;
+            if (needsComma) {
+              result = `${result},`;
+            }
 
-              // Add trailing comment after the comma
-              if (spec.trailingComment) {
-                result = `${result} ${spec.trailingComment}`;
-              }
-            } else {
-              // Legacy mode: no comments, just add comma
-              const needsComma = index < imp.specifiers.length - 1 || trailingComma;
-              if (needsComma) {
-                result = `${result},`;
-              }
+            // Add trailing comment after the comma
+            if (spec.trailingComment) {
+              result = `${result} ${spec.trailingComment}`;
             }
 
             return result;
@@ -1221,14 +1219,10 @@ export class ImportManager {
           const namedPart = `{${this.eol}${indent}${formattedSpecifiers.join(this.eol + indent)}${this.eol}}`;
           parts.push(namedPart);
         } else {
-          parts.push(singleLine);
+          parts.push(bracePart);
         }
       }
 
-      // Add 'type' keyword for type-only imports (TS 3.8+)
-      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
-      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
-      const typeKeyword = useTypeKeyword ? 'type ' : '';
       return `import ${typeKeyword}${parts.join(', ')} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
 

@@ -67,8 +67,12 @@ import { organizeImportsNew } from '../new-extension/adapter';
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-suite('Shared Behavior - Comment Deletion', () => {
-  test('Both extensions strip trailing line comments', async () => {
+suite('Planned Difference - Comment Preservation', () => {
+  // PLANNED DIFFERENCE: Old extension stripped specifier comments because its parser
+  // (typescript-parser) couldn't parse them. Our new extension CAN parse them via ts-morph,
+  // so we PRESERVE them. This is intentional: the golden rule says never delete user content.
+
+  test('Old extension strips trailing line comments, new extension preserves them', async () => {
     const input = `import {
   Z, // comment after Z
   A,
@@ -78,7 +82,17 @@ suite('Shared Behavior - Comment Deletion', () => {
 const x = A + B + Z;
 `;
 
-    const expected = `import { A, B, Z } from 'lib';
+    const expectedOld = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // New extension preserves comments (causes multiline wrapping)
+    const expectedNew = `import {
+    A,
+    B, // comment after B
+    Z, // comment after Z
+} from 'lib';
 
 const x = A + B + Z;
 `;
@@ -87,13 +101,11 @@ const x = A + B + Z;
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
     const newResult = await organizeImportsNew(input, { disableImportRemovalOnOrganize: true });
 
-    // ACTUAL BEHAVIOR: Both extensions STRIP trailing line comments
-    // We didn't implement comment preservation (not a parser limitation)
-    assert.strictEqual(oldResult, expected, 'Old extension strips trailing line comments');
-    assert.strictEqual(newResult, expected, 'New extension also strips trailing line comments');
+    assert.strictEqual(oldResult, expectedOld, 'Old extension strips trailing line comments (parser limitation)');
+    assert.strictEqual(newResult, expectedNew, 'New extension preserves trailing line comments');
   });
 
-  test('Both extensions strip leading block comments', async () => {
+  test('Old extension strips leading block comments, new extension preserves them', async () => {
     const input = `import {
   Z,
   /* block comment */ A,
@@ -103,7 +115,17 @@ const x = A + B + Z;
 const x = A + B + Z;
 `;
 
-    const expected = `import { A, B, Z } from 'lib';
+    const expectedOld = `import { A, B, Z } from 'lib';
+
+const x = A + B + Z;
+`;
+
+    // New extension preserves comments (causes multiline wrapping)
+    const expectedNew = `import {
+    /* block comment */ A,
+    B,
+    Z,
+} from 'lib';
 
 const x = A + B + Z;
 `;
@@ -112,9 +134,7 @@ const x = A + B + Z;
     const oldResult = await organizeImportsOld(input, { disableImportRemovalOnOrganize: true });
     const newResult = await organizeImportsNew(input, { disableImportRemovalOnOrganize: true });
 
-    // ACTUAL BEHAVIOR: Both extensions STRIP leading block comments
-    // We didn't implement comment preservation (not a parser limitation)
-    assert.strictEqual(oldResult, expected, 'Old extension strips leading block comments');
-    assert.strictEqual(newResult, expected, 'New extension also strips leading block comments');
+    assert.strictEqual(oldResult, expectedOld, 'Old extension strips leading block comments (parser limitation)');
+    assert.strictEqual(newResult, expectedNew, 'New extension preserves leading block comments');
   });
 });

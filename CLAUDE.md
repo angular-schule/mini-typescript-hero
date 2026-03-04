@@ -501,6 +501,24 @@ All commands are prefixed with `miniTypescriptHero`:
 **New Users**: Get `legacyMode: false` by default for modern best practices (1 blank line, correct sorting, proper merge timing)
 **Note**: See README for specific behaviors replicated and exceptions. Both old and new extensions merge imports by default; legacy mode preserves the old merge-before-removeTrailingIndex timing that can create duplicates.
 
+### 5. Planned Differences from Old Extension (Golden Rule: Never Delete User Content)
+
+Legacy mode replicates old formatting behaviors, but we **intentionally diverge** where the old behavior is harmful. The golden rule is: **never silently delete user code or comments**.
+
+| Old Extension Behavior | Our Behavior (ALL modes) | Reason |
+|---|---|---|
+| Specifier comments lost (`// comment`, `/* comment */` next to specifiers) | **Preserved** — comments stay with their specifiers, trigger multiline wrapping | Old parser (typescript-parser) couldn't parse specifier comments; our parser (ts-morph) can, so stripping is unnecessary deletion of user content |
+| Non-comment code between import statements silently deleted during reorganization | **Preserved** — code is moved after the organized import block | Old extension deletes imports individually (preserving gaps), our whole-range replacement is a regression without this fix |
+| Crashes on certain edge cases (shebangs, directives, empty files) | **Gracefully handled** | Already documented — crash prevention is always correct |
+
+**Legacy mode DOES replicate these formatting-only behaviors:**
+- Strip `import type` keywords (matches old output format, TypeScript 3.8+ wasn't supported)
+- Strip specifier-level `type` modifiers (matches old output format)
+- Within-group sorting always by library name (never by first specifier)
+- Blank line preservation mode (special handling for headers and leading blanks)
+- Merge timing: merge before removeTrailingIndex (matches old quirk)
+- 4-space indentation from VS Code editor.tabSize default
+
 ---
 
 ## 💡 Important Development Lessons
