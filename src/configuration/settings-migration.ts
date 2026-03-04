@@ -75,23 +75,29 @@ export async function migrateSettings(context: Pick<ExtensionContext, 'globalSta
   }
 
   // Try to migrate settings
-  const migratedCount = await performMigration();
+  // CRITICAL: Always set migration flag in finally block to prevent retry loop
+  // if any config.update() call fails during migration
+  try {
+    const migratedCount = await performMigration();
 
-  // Mark migration as attempted (always, even if no settings found)
-  await context.globalState.update(MIGRATION_KEY, true);
+    // Show notification if settings were migrated
+    if (migratedCount > 0) {
+      const oldExtension = extensions.getExtension(OLD_EXTENSION_ID);
+      const isOldExtensionInstalled = oldExtension !== undefined;
 
-  // Show notification if settings were migrated
-  if (migratedCount > 0) {
-    const oldExtension = extensions.getExtension(OLD_EXTENSION_ID);
-    const isOldExtensionActive = oldExtension !== undefined;
-
-    if (isOldExtensionActive) {
-      const message = `Mini TypeScript Hero: Migrated ${migratedCount} setting(s) from TypeScript Hero. You can now disable the old extension if you want.`;
-      window.showInformationMessage(message);
-    } else {
-      const message = `Mini TypeScript Hero: Migrated ${migratedCount} setting(s) from TypeScript Hero.`;
-      window.showInformationMessage(message);
+      if (isOldExtensionInstalled) {
+        const message = `Mini TypeScript Hero: Migrated ${migratedCount} setting(s) from TypeScript Hero. You can now disable the old extension if you want.`;
+        window.showInformationMessage(message);
+      } else {
+        const message = `Mini TypeScript Hero: Migrated ${migratedCount} setting(s) from TypeScript Hero.`;
+        window.showInformationMessage(message);
+      }
     }
+  } catch {
+    // Migration failed — swallow silently, finally block sets the flag to prevent retry loop
+  } finally {
+    // Mark migration as attempted (always, even if migration failed)
+    await context.globalState.update(MIGRATION_KEY, true);
   }
 }
 
@@ -165,10 +171,21 @@ async function performMigration(): Promise<number> {
     // - Blank line preservation (uses 'preserve' mode, keeps existing blank lines from source)
     // - Merge timing: When mergeImportsFromSameModule is true, merges BEFORE removeTrailingIndex (matches old bug)
     // - Type-only merging: Strips 'import type' keywords and allows merging type-only with value imports (old behavior)
+    // Check if legacyMode is already set at any scope
+    // NOTE: unscoped inspect() can't see workspaceFolderValue in multi-root workspaces,
+    // so we must iterate each folder individually to detect folder-level settings
     const legacyModeInspect = newConfig.inspect('legacyMode');
+    let folderLevelLegacyModeExists = false;
+    for (const folder of workspace.workspaceFolders ?? []) {
+      const scopedInspect = workspace.getConfiguration(NEW_SECTION, folder.uri).inspect('legacyMode');
+      if (scopedInspect?.workspaceFolderValue !== undefined) {
+        folderLevelLegacyModeExists = true;
+        break;
+      }
+    }
     if (legacyModeInspect?.globalValue === undefined &&
         legacyModeInspect?.workspaceValue === undefined &&
-        legacyModeInspect?.workspaceFolderValue === undefined) {
+        !folderLevelLegacyModeExists) {
 
       // Write legacyMode to the scopes where old settings were migrated
       if (migratedGlobalCount > 0) {

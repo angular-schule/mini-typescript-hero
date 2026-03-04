@@ -56,9 +56,8 @@ export function detectConflicts(): ConflictInfo {
   const oldOrganizeOnSaveEnabled = oldOrganizeOnSave && ourOrganizeOnSave;
 
   if (oldOrganizeOnSaveEnabled) {
-    if (!conflicts.some(c => c.includes('Old TypeScript Hero extension'))) {
-      conflicts.push('• Old TypeScript Hero "organizeOnSave" is enabled (will run on save alongside this extension)');
-    }
+    // Always add on-save conflict (separate from keyboard conflict — both can coexist)
+    conflicts.push('• Old TypeScript Hero "organizeOnSave" is enabled (will run on save alongside this extension)');
   }
 
   // Check 3: VS Code built-in organize imports enabled

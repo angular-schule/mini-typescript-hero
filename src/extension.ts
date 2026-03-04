@@ -61,7 +61,7 @@ async function checkForConflicts(
     ).length;
 
     const hasKeyboardConflict = conflicts.some(c => c.includes('Ctrl+Alt+O'));
-    const hasVSCodeBuiltIn = vsCodeBuiltInEnabled;
+    const hasVSCodeBuiltIn = vsCodeBuiltInEnabled && ourOrganizeOnSaveEnabled;
     const hasOldExtension = oldExtensionInstalled || oldOrganizeOnSaveEnabled;
 
     if (conflicts.length === 1 && hasKeyboardConflict && !onSaveCount) {
@@ -102,8 +102,8 @@ async function checkForConflicts(
     // Determine which buttons to show based on conflict type
     const buttons: string[] = [];
 
-    // Can we auto-fix VSCode built-in?
-    const canAutoFixVSCode = vsCodeBuiltInEnabled;
+    // Can we auto-fix VSCode built-in? Only offer if it's an actual conflict (not just enabled)
+    const canAutoFixVSCode = vsCodeBuiltInEnabled && ourOrganizeOnSaveEnabled;
 
     if (canAutoFixVSCode) {
       buttons.push('Disable for Me');

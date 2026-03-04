@@ -3,7 +3,6 @@
  */
 export class ImportGroupIdentifierInvalidError extends Error {
   constructor(identifier: string) {
-    super();
-    this.message = `The identifier "${identifier}" does not match a keyword or a regex pattern (/ .. /).`;
+    super(`The identifier "${identifier}" does not match a keyword or a regex pattern (/ .. /).`);
   }
 }

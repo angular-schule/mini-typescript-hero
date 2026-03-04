@@ -879,9 +879,12 @@ export class ImportManager {
         }
 
         // Check for standalone comments
+        // Match block comment continuation lines (* or */) but not code starting with * (e.g., generator calls)
+        const isBlockCommentContinuation = trimmedText.startsWith('*') &&
+          (trimmedText.length === 1 || trimmedText[1] === ' ' || trimmedText[1] === '/' || trimmedText[1] === '*');
         const isStandaloneComment = trimmedText.startsWith('//') ||
                                      trimmedText.startsWith('/*') ||
-                                     trimmedText.startsWith('*');
+                                     isBlockCommentContinuation;
 
         if (isStandaloneComment) {
           commentsBetweenImports.push(lineText);
@@ -1159,7 +1162,9 @@ export class ImportManager {
 
         const specifierStrings = imp.specifiers.map(spec => {
           const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
-          const typePrefix = spec.isTypeOnly ? 'type ' : '';
+          // In legacy mode, strip specifier-level type modifiers (old extension doesn't support them)
+          const isSpecTypeOnly = spec.isTypeOnly && !this.config.legacyMode(this.document.uri);
+          const typePrefix = isSpecTypeOnly ? 'type ' : '';
           let result = `${typePrefix}${baseSpec}`;
 
           // Preserve comments (in both modes — GOLDEN RULE: never delete user content)
@@ -1194,7 +1199,9 @@ export class ImportManager {
           // e.g., "B, // end" not "B // end,"
           const formattedSpecifiers = imp.specifiers.map((spec, index) => {
             const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
-            const typePrefix = spec.isTypeOnly ? 'type ' : '';
+            // In legacy mode, strip specifier-level type modifiers
+            const isSpecTypeOnly = spec.isTypeOnly && !this.config.legacyMode(this.document.uri);
+            const typePrefix = isSpecTypeOnly ? 'type ' : '';
             let result = `${typePrefix}${baseSpec}`;
 
             // Preserve comments with proper comma placement (GOLDEN RULE: never delete user content)

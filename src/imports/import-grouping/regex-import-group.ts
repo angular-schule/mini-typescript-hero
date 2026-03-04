@@ -35,11 +35,16 @@ export class RegexImportGroup implements ImportGroup {
   ) {
     // Compile regex once in constructor for performance
     // Parse /pattern/flags syntax (e.g., '/^@angular/i' -> pattern='^@angular', flags='i')
-    const slashMatch = this.regex.match(/^\/(.+)\/([gimsuy]*)$/);
-    if (slashMatch) {
-      this.compiledRegex = new RegExp(slashMatch[1], slashMatch[2]);
-    } else {
-      this.compiledRegex = new RegExp(this.regex);
+    try {
+      const slashMatch = this.regex.match(/^\/(.+)\/([dgimsuyv]*)$/);
+      if (slashMatch) {
+        this.compiledRegex = new RegExp(slashMatch[1], slashMatch[2]);
+      } else {
+        this.compiledRegex = new RegExp(this.regex);
+      }
+    } catch {
+      // Invalid regex pattern from user config — use a never-matching regex as fallback
+      this.compiledRegex = /(?!)/;
     }
   }
 
