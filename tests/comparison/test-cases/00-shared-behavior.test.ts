@@ -87,11 +87,11 @@ const x = A + B + Z;
 const x = A + B + Z;
 `;
 
-    // New extension preserves comments (causes multiline wrapping)
+    // New extension preserves comments (causes multiline wrapping, 2-space indent in legacy mode)
     const expectedNew = `import {
-    A,
-    B, // comment after B
-    Z, // comment after Z
+  A,
+  B, // comment after B
+  Z, // comment after Z
 } from 'lib';
 
 const x = A + B + Z;
@@ -120,11 +120,11 @@ const x = A + B + Z;
 const x = A + B + Z;
 `;
 
-    // New extension preserves comments (causes multiline wrapping)
+    // New extension preserves comments (causes multiline wrapping, 2-space indent in legacy mode)
     const expectedNew = `import {
-    /* block comment */ A,
-    B,
-    Z,
+  /* block comment */ A,
+  B,
+  Z,
 } from 'lib';
 
 const x = A + B + Z;

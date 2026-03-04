@@ -156,11 +156,11 @@ const y = useState;
 const z = useEffect;
 `;
 
-    // New extension: comments PRESERVED (planned difference), uses 4-space indent (legacy default)
+    // New extension: comments PRESERVED (planned difference), uses 2-space indent (adapter legacy default)
     const expectedNew = `import {
-    Component, // main
-    useEffect, // lifecycle
-    useState,
+  Component, // main
+  useEffect, // lifecycle
+  useState,
 } from 'react';
 
 const x = Component;
