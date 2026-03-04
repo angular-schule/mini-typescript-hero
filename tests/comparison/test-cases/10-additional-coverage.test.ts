@@ -68,7 +68,8 @@ const user: User = getUser();
 const user: User = getUser();
 `;
 
-    const newResult = await organizeImportsNew(input);
+    // Must use legacyMode: false for modern mode (default adapter config uses legacyMode: true)
+    const newResult = await organizeImportsNew(input, { legacyMode: false, blankLinesAfterImports: 'one' });
 
     assert.strictEqual(newResult, expected, 'Specifier-level type modifier preserved and sorted');
   });
