@@ -166,20 +166,24 @@ async function performMigration(): Promise<number> {
         legacyModeInspect?.workspaceValue === undefined &&
         legacyModeInspect?.workspaceFolderValue === undefined) {
 
-      // Collect the scopes where we migrated settings
-      const scopesToSet: ConfigurationTarget[] = [];
-      if (migratedWorkspaceCount > 0) {scopesToSet.push(ConfigurationTarget.Workspace);}
-      if (migratedWorkspaceFolderCount > 0) {scopesToSet.push(ConfigurationTarget.WorkspaceFolder);}
-      if (migratedGlobalCount > 0) {scopesToSet.push(ConfigurationTarget.Global);}
-
-      // If no scopes detected (shouldn't happen), default to Global
-      if (scopesToSet.length === 0) {
-        scopesToSet.push(ConfigurationTarget.Global);
+      // Write legacyMode to the scopes where old settings were migrated
+      if (migratedGlobalCount > 0) {
+        await newConfig.update('legacyMode', true, ConfigurationTarget.Global);
+      }
+      if (migratedWorkspaceCount > 0) {
+        await newConfig.update('legacyMode', true, ConfigurationTarget.Workspace);
+      }
+      if (migratedWorkspaceFolderCount > 0) {
+        // WorkspaceFolder scope requires a URI-scoped config — iterate each folder
+        for (const folder of workspace.workspaceFolders ?? []) {
+          const scopedConfig = workspace.getConfiguration(NEW_SECTION, folder.uri);
+          await scopedConfig.update('legacyMode', true, ConfigurationTarget.WorkspaceFolder);
+        }
       }
 
-      // Write legacyMode to all scopes where old settings existed
-      for (const target of scopesToSet) {
-        await newConfig.update('legacyMode', true, target);
+      // If no scopes detected (shouldn't happen), default to Global
+      if (migratedGlobalCount === 0 && migratedWorkspaceCount === 0 && migratedWorkspaceFolderCount === 0) {
+        await newConfig.update('legacyMode', true, ConfigurationTarget.Global);
       }
     }
   }

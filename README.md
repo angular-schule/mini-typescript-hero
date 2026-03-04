@@ -131,14 +131,14 @@ External imports (node_modules) automatically separated from internal imports (l
 **VS Code built-in** without manual blank lines:
 
 ```typescript
+import { BookList } from './components/book-list';
+import { UserDetail } from './components/user-detail';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { BookList } from './components/book-list';
 import { map, switchMap } from 'rxjs/operators';
-import { UserDetail } from './components/user-detail';
 ```
 
-Everything sorted alphabetically as one flat list. To separate them, you'd manually add a blank line and maintain it every time you add imports.
+Everything sorted alphabetically as one flat list (by module specifier). To separate them, you'd manually add a blank line and maintain it every time you add imports.
 
 ## Migrating from TypeScript Hero
 

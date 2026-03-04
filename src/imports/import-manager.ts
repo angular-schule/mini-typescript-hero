@@ -56,8 +56,21 @@ export class ImportManager {
       },
     });
 
+    // For untitled documents (no file extension), ts-morph needs a file extension
+    // to determine the script kind. Map languageId to the correct extension.
+    let fileName = this.document.fileName;
+    if (!/\.(tsx?|jsx?)$/i.test(fileName)) {
+      const extMap: Record<string, string> = {
+        'typescript': '.ts',
+        'typescriptreact': '.tsx',
+        'javascript': '.js',
+        'javascriptreact': '.jsx',
+      };
+      fileName += extMap[this.document.languageId] ?? '.ts';
+    }
+
     this.sourceFile = project.createSourceFile(
-      this.document.fileName,
+      fileName,
       this.document.getText(),
     );
 
@@ -359,8 +372,8 @@ export class ImportManager {
   ): Map<string, { leading?: string; trailing?: string }> {
     const result = new Map<string, { leading?: string; trailing?: string }>();
 
-    // Extract the part between { and }
-    const match = fullImportText.match(/\{([^}]+)\}/s);
+    // Extract the part between first { and last } (greedy to handle } in comments)
+    const match = fullImportText.match(/\{(.+)\}/s);
     if (!match) {
       return result;
     }
@@ -606,7 +619,10 @@ export class ImportManager {
           (imp instanceof NamespaceImport && imp.isTypeOnly)
         );
         const typePrefix = isTypeOnlyImport ? 'type:' : '';
-        const groupKey = typePrefix + imp.libraryName;
+        // Include attributes in grouping key so imports with different attributes
+        // (e.g., `with { type: 'json' }` vs no attributes) are NOT merged together
+        const attrSuffix = imp.attributes ? `|${imp.attributes}` : '';
+        const groupKey = typePrefix + imp.libraryName + attrSuffix;
 
         if (!byLibrary.has(groupKey)) {
           byLibrary.set(groupKey, []);
@@ -678,11 +694,20 @@ export class ImportManager {
           // BUT: In legacy mode, keep duplicates (old extension behavior)
           let finalSpecifiers = allSpecifiers;
           if (!isLegacy) {
-            finalSpecifiers = allSpecifiers.filter((spec, index, self) =>
-              index === self.findIndex(s =>
-                s.specifier === spec.specifier && s.alias === spec.alias
-              )
-            );
+            // Deduplicate by name+alias. When the same specifier exists as both
+            // `type X` and `X`, keep the value (non-type) version since it subsumes the type import.
+            const specMap = new Map<string, SymbolSpecifier>();
+            for (const spec of allSpecifiers) {
+              const key = spec.specifier + (spec.alias ? `:${spec.alias}` : '');
+              const existing = specMap.get(key);
+              if (!existing) {
+                specMap.set(key, spec);
+              } else if (existing.isTypeOnly && !spec.isTypeOnly) {
+                // Value import subsumes type import — keep the value version
+                specMap.set(key, spec);
+              }
+            }
+            finalSpecifiers = Array.from(specMap.values());
           }
 
           // Sort specifiers

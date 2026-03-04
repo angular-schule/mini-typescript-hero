@@ -48,6 +48,8 @@ export class RegexImportGroup implements ImportGroup {
   }
 
   public processImport(tsImport: Import): boolean {
+    // Reset lastIndex to avoid stateful behavior with g/y flags
+    this.compiledRegex.lastIndex = 0;
     if (this.compiledRegex.test(tsImport.libraryName)) {
       this.imports.push(tsImport);
       return true;

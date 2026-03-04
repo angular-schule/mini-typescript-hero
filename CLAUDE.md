@@ -46,12 +46,13 @@ extension.ts
 ### Mini TypeScript Hero (Simplified)
 ```
 extension.ts
-  └─> ImportOrganizer
-      ├─> Configuration (simple wrapper)
-      ├─> Logger (OutputChannel)
-      └─> ImportManager
-          ├─> ts-morph (modern parser)
-          └─> Import Groups
+  ├─> ImportOrganizer
+  │   ├─> Configuration (simple wrapper)
+  │   ├─> Logger (OutputChannel)
+  │   └─> ImportManager
+  │       ├─> ts-morph (modern parser)
+  │       └─> Import Groups
+  └─> BatchOrganizer (workspace/folder operations)
 ```
 
 **Key Simplifications**:
@@ -163,7 +164,17 @@ mini-typescript-hero/                     ← Project root
 │   │   ├── import-types.ts               ← Import model types (NamedImport, etc.)
 │   │   ├── import-utilities.ts           ← Sorting and helper functions
 │   │   └── import-grouping/              ← Group definitions (Plains, Modules, etc.)
+│   │       ├── index.ts                  ← Re-exports
+│   │       ├── import-group.ts           ← ImportGroup interface
+│   │       ├── import-group-keyword.ts   ← Keyword enum (Plains, Modules, etc.)
+│   │       ├── import-group-order.ts     ← Order enum (asc/desc)
+│   │       ├── import-group-setting-parser.ts ← Parses settings into groups
+│   │       ├── import-group-identifier-invalid-error.ts ← Error class
+│   │       ├── keyword-import-group.ts   ← Keyword-based group (Plains/Modules/Workspace)
+│   │       ├── regex-import-group.ts     ← Regex-based group (custom patterns)
+│   │       └── remain-import-group.ts    ← Catch-all group for unmatched imports
 │   └── configuration/
+│       ├── index.ts                      ← Re-exports
 │       ├── imports-config.ts             ← Config options wrapper
 │       ├── settings-migration.ts         ← Migrates old TypeScript Hero settings
 │       └── conflict-detector.ts          ← Detects conflicts with Prettier/ESLint
@@ -171,7 +182,7 @@ mini-typescript-hero/                     ← Project root
 ├── tests/                                ← All test-related folders
 │   ├── unit/                             ← Main extension tests (run with npm test)
 │   │   ├── import-manager.test.ts        ← Core import manager tests (~100 tests)
-│   │   ├── import-manager.*.test.ts      ← Additional: blank-lines, edge-cases, indentation, etc.
+│   │   ├── import-manager.*.test.ts      ← Additional: blank-lines, edge-cases, indentation, path-aliases, settings-matrix
 │   │   ├── import-grouping.test.ts       ← Grouping logic tests
 │   │   ├── import-organizer.test.ts      ← Orchestrator/command tests
 │   │   ├── import-utilities.test.ts      ← Sorting utility tests
@@ -182,7 +193,7 @@ mini-typescript-hero/                     ← Project root
 │   │   │   └── batch-organizer.integration.test.ts  ← Batch operation tests
 │   │   ├── test-helpers.ts               ← Shared test utilities
 │   │   ├── test-types.ts                 ← Test type definitions
-│   │   └── *.test.ts                     ← Additional: manifest, perf, vscode defaults, etc.
+│   │   └── *.test.ts                     ← Additional: manifest, perf, file-structure, vscode defaults, etc.
 │   ├── comparison/                       ← Old vs new comparison tests
 │   │   ├── old-extension/adapter.ts      ← Adapter for old TypeScript Hero
 │   │   ├── new-extension/adapter.ts      ← Adapter for new Mini TypeScript Hero

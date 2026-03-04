@@ -130,7 +130,7 @@ async function checkForConflicts(
           // Check each scope individually and update only where source.organizeImports is set.
           // This avoids clobbering other scopes by writing the merged effective value.
           type ScopeValue = Record<string, boolean | string> | undefined;
-          const scopes: Array<{ value: ScopeValue; target: ConfigurationTarget }> = [
+          const scopes: Array<{ value: ScopeValue; target: ConfigurationTarget; folderUri?: Uri }> = [
             { value: inspection?.globalValue as ScopeValue, target: ConfigurationTarget.Global },
             { value: inspection?.workspaceValue as ScopeValue, target: ConfigurationTarget.Workspace },
           ];
@@ -139,7 +139,7 @@ async function checkForConflicts(
           for (const folder of workspace.workspaceFolders ?? []) {
             const fi = workspace.getConfiguration('editor', folder.uri).inspect('codeActionsOnSave');
             if (fi?.workspaceFolderValue && typeof fi.workspaceFolderValue === 'object') {
-              scopes.push({ value: fi.workspaceFolderValue as ScopeValue, target: ConfigurationTarget.WorkspaceFolder });
+              scopes.push({ value: fi.workspaceFolderValue as ScopeValue, target: ConfigurationTarget.WorkspaceFolder, folderUri: folder.uri });
             }
           }
 
@@ -149,7 +149,11 @@ async function checkForConflicts(
                 scope.value['source.organizeImports'] !== false &&
                 scope.value['source.organizeImports'] !== 'never') {
               const newActions = { ...scope.value, 'source.organizeImports': false };
-              await editorConfig.update('codeActionsOnSave', newActions, scope.target);
+              // WorkspaceFolder scope requires a URI-scoped config
+              const scopedConfig = scope.folderUri
+                ? workspace.getConfiguration('editor', scope.folderUri)
+                : editorConfig;
+              await scopedConfig.update('codeActionsOnSave', newActions, scope.target);
               updated = true;
             }
           }
@@ -291,7 +295,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // Register command: Toggle legacy mode
     const toggleLegacyModeCommand = commands.registerCommand('miniTypescriptHero.toggleLegacyMode', async () => {
       try {
-        const importsConfig = workspace.getConfiguration('miniTypescriptHero.imports');
+        // Determine folder URI from active editor (needed for multi-root scoping)
+        const activeUri = window.activeTextEditor?.document.uri;
+        const folderUri = activeUri ? workspace.getWorkspaceFolder(activeUri)?.uri : undefined;
+        const importsConfig = workspace.getConfiguration('miniTypescriptHero.imports', folderUri);
         const currentValue = importsConfig.get<boolean>('legacyMode', false);
         const newValue = !currentValue;
 

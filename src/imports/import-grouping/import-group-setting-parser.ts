@@ -14,7 +14,7 @@ export type ImportGroupSetting =
   | string
   | { identifier: ImportGroupKeyword | string; order: ImportGroupOrder };
 
-const REGEX_REGEX_GROUP = /^\/.+\/$/;
+const REGEX_REGEX_GROUP = /^\/.+\/[gimsuy]*$/;
 
 /**
  * Parser that takes the vscode - setting and creates import groups out of it.
