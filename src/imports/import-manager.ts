@@ -796,12 +796,12 @@ export class ImportManager {
     // This prevents accidentally deleting code between imports and distant re-exports.
     const adjacentExports = this.findAdjacentExports(actualImports, exportDeclarations);
 
-    // Filter re-exports to only include adjacent ones (non-adjacent stay in place)
-    // Use a local variable to avoid mutating this.reExports (safe for repeated calls)
+    // Filter re-exports to only include adjacent ones (non-adjacent stay in place).
+    // Derive directly from adjacentExports by position to avoid duplicating
+    // non-adjacent re-exports that happen to have identical text.
     let reExportsToOutput = this.reExports;
     if (adjacentExports.length < exportDeclarations.length) {
-      const adjacentTexts = new Set(adjacentExports.map(e => e.getText()));
-      reExportsToOutput = this.reExports.filter(text => adjacentTexts.has(text));
+      reExportsToOutput = adjacentExports.map(e => e.getText());
     }
 
     // Combine imports and adjacent re-exports for range calculation
@@ -827,18 +827,28 @@ export class ImportManager {
     let importSectionStartLine = firstImport.getStartLineNumber() - 1; // Convert to 0-indexed
     let importSectionEndLine = lastImport.getEndLineNumber() - 1;
 
-    // Delete leading blank lines before header or imports (if any) as a separate edit
-    // When hasLeadingBlanks is true:
-    //   - If headerStartLine > 0: There's a header, delete blanks from line 0 to headerStartLine
-    //   - If headerStartLine === -1: No header, delete blanks from line 0 to importSectionStartLine
+    // Delete leading blank lines before header or imports (if any) as a separate edit.
+    // IMPORTANT: Only delete actual blank lines! Non-header content between leading blanks
+    // and imports (e.g., 'use client', 'use server') must be preserved.
     if (hasLeadingBlanks) {
       const deleteToLine = headerStartLine > 0 ? headerStartLine : importSectionStartLine;
       if (deleteToLine > 0) {
-        const leadingBlanksRange = new Range(
-          new Position(0, 0),
-          new Position(deleteToLine, 0),
-        );
-        edits.push(TextEdit.delete(leadingBlanksRange));
+        // Find the contiguous block of blank lines starting from line 0
+        let lastBlankLine = -1;
+        for (let i = 0; i < deleteToLine; i++) {
+          if (this.document.lineAt(i).text.trim() === '') {
+            lastBlankLine = i;
+          } else {
+            break; // Stop at first non-blank line
+          }
+        }
+        if (lastBlankLine >= 0) {
+          const leadingBlanksRange = new Range(
+            new Position(0, 0),
+            new Position(lastBlankLine + 1, 0),
+          );
+          edits.push(TextEdit.delete(leadingBlanksRange));
+        }
       }
     }
 
@@ -995,9 +1005,17 @@ export class ImportManager {
       // Add one newline to end the last import line
       importText += this.eol;
 
-      // Add blank lines after imports according to the configured mode
-      if (finalBlankLinesAfter > 0) {
-        importText += this.eol.repeat(finalBlankLinesAfter);
+      // Determine if there's inter-import content (comments or code between imports).
+      // When there IS inter-import content, blank lines must go AFTER all preserved content
+      // (including re-exports) to prevent re-exports from being glued to subsequent code.
+      // When there's NO inter-import content, keep blank lines BEFORE re-exports (old behavior).
+      const hasInterImportContent = codeBetweenImports.length > 0;
+
+      if (!hasInterImportContent) {
+        // Standard case: blank lines between imports and re-exports (matches old extension)
+        if (finalBlankLinesAfter > 0) {
+          importText += this.eol.repeat(finalBlankLinesAfter);
+        }
       }
 
       // Add comments that were between imports (move them after imports)
@@ -1017,6 +1035,14 @@ export class ImportManager {
       if (reExportsToOutput.length > 0) {
         importText += reExportsToOutput.join(this.eol);
         importText += this.eol;
+      }
+
+      if (hasInterImportContent) {
+        // Inter-import content present: blank lines AFTER all preserved content.
+        // This ensures re-exports aren't glued to subsequent code.
+        if (finalBlankLinesAfter > 0) {
+          importText += this.eol.repeat(finalBlankLinesAfter);
+        }
       }
 
       // Create the replace edit

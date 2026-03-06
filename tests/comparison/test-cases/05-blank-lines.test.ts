@@ -12,7 +12,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Blank Lines', () => {
-  test('058. Two blank lines after imports preserved (legacy mode)', async () => {
+  test('Two blank lines after imports preserved (legacy mode)', async () => {
     const input = `import { A } from './lib';
 
 
@@ -33,7 +33,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('059. Blank line before imports preserved', async () => {
+  test('Blank line before imports preserved', async () => {
     const input = `// Header comment
 
 import { A } from './lib';
@@ -56,7 +56,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('060. Blank lines between groups', async () => {
+  test('Blank lines between groups', async () => {
     const input = `import { Component } from '@angular/core';
 import { MyService } from './my-service';
 
@@ -79,7 +79,7 @@ const y = MyService;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('061. Leading blank lines removed', async () => {
+  test('Leading blank lines removed', async () => {
     const input = `
 
 import { A } from './lib';
@@ -102,7 +102,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('062. File with only imports (no code after)', async () => {
+  test('File with only imports (no code after)', async () => {
     const input = `import { A } from './lib';
 import { B } from './other';
 
@@ -124,7 +124,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('063. Shebang preserved', async () => {
+  test('Shebang preserved', async () => {
     const input = `#!/usr/bin/env node
 import { A } from './lib';
 
@@ -144,7 +144,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('064. Use strict preserved', async () => {
+  test('Use strict preserved', async () => {
     const input = `'use strict';
 import { A } from './lib';
 
@@ -164,7 +164,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('065. Copyright header preserved', async () => {
+  test('Copyright header preserved', async () => {
     const input = `// Copyright 2025
 // Author: Test
 import { A } from './lib';
@@ -187,7 +187,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('066. Multiple blank lines collapsed (legacy behavior)', async () => {
+  test('Multiple blank lines collapsed (legacy behavior)', async () => {
     const input = `import { A } from './lib';
 
 
@@ -212,7 +212,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('067. No blank before first import (no header)', async () => {
+  test('No blank before first import (no header)', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -230,7 +230,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('068. Block comment preserved', async () => {
+  test('Block comment preserved', async () => {
     const input = `/**
  * Module description
  */
@@ -254,7 +254,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('069. Three import groups with blank lines', async () => {
+  test('Three import groups with blank lines', async () => {
     const input = `import 'zone.js';
 import { Component } from '@angular/core';
 import { MyService } from './my-service';
@@ -280,7 +280,7 @@ const y = MyService;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('070. Blank line after header comment', async () => {
+  test('Blank line after header comment', async () => {
     const input = `// Header
 
 import { A } from './lib';

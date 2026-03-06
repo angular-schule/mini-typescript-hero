@@ -8,7 +8,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Real-World', () => {
-  test('101. Angular standalone component', async () => {
+  test('Angular standalone component', async () => {
     const input = `import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -62,7 +62,7 @@ export class BooksComponent implements OnInit {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('102. React functional component with hooks', async () => {
+  test('React functional component with hooks', async () => {
     const input = `import React, { useState, useEffect, useMemo } from 'react';
 import { fetchData } from '../api/fetch';
 import { formatDate } from '../utils/date';
@@ -135,7 +135,7 @@ export function UserProfile({ userId }: { userId: string }) {
     assert.equal(newResult, expectedNew, 'New extension must match expected output (preserves import type)');
   });
 
-  test('103. NestJS controller', async () => {
+  test('NestJS controller', async () => {
     const input = `import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BooksService } from './books.service';
@@ -192,7 +192,7 @@ export class BooksController {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('104. Vue 3 composition API', async () => {
+  test('Vue 3 composition API', async () => {
     const input = `import { defineComponent, ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { fetchBooks } from '@/api/books';
@@ -244,7 +244,7 @@ export default defineComponent({
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('105. RxJS operators chain', async () => {
+  test('RxJS operators chain', async () => {
     const input = `import { Observable, of, throwError } from 'rxjs';
 import { map, filter, catchError, switchMap, debounceTime } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
@@ -294,7 +294,7 @@ export class DataService {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('106. Express.js route handler', async () => {
+  test('Express.js route handler', async () => {
     const input = `import express, { Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 import { BookService } from '../services/book.service';
@@ -355,7 +355,7 @@ export default router;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('107. Node.js module with built-ins', async () => {
+  test('Node.js module with built-ins', async () => {
     const input = `import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
@@ -406,7 +406,7 @@ export class FileProcessor {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('108. Monorepo with workspace packages', async () => {
+  test('Monorepo with workspace packages', async () => {
     const input = `import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Button } from '@my-org/ui-components';
@@ -465,7 +465,7 @@ export class AppComponent {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('109. Mixed framework imports (edge case)', async () => {
+  test('Mixed framework imports (edge case)', async () => {
     const input = `import { Component } from '@angular/core';
 import React from 'react';
 import { createApp } from 'vue';
@@ -497,7 +497,7 @@ const w = express;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('110. Large file with many imports (performance)', async () => {
+  test('Large file with many imports (performance)', async () => {
     const input = `import { A1, A2, A3, A4, A5 } from '@lib/a';
 import { B1, B2, B3, B4, B5 } from '@lib/b';
 import { C1, C2, C3, C4, C5 } from '@lib/c';

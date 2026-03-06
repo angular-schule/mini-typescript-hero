@@ -120,9 +120,9 @@ async function checkForConflicts(
       message,
       ...buttons
     ).then(async selection => {
-      if (selection === 'Disable for Me') {
-        // Automatically disable VSCode's built-in organize imports
-        try {
+      try {
+        if (selection === 'Disable for Me') {
+          // Automatically disable VSCode's built-in organize imports
           const editorConfig = workspace.getConfiguration('editor');
           const inspection = editorConfig.inspect('codeActionsOnSave');
           let updated = false;
@@ -166,22 +166,25 @@ async function checkForConflicts(
             outputChannel.appendLine('Mini TypeScript Hero: Successfully disabled VSCode built-in organize imports');
             // Mark as warned only after successful fix
             await context.globalState.update(hasWarnedKey, true);
+          } else {
+            window.showInformationMessage(
+              'Mini TypeScript Hero: No changes needed — setting was already disabled.'
+            );
           }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          window.showErrorMessage(`Mini TypeScript Hero: Failed to disable VSCode built-in: ${errorMessage}`);
-          outputChannel.appendLine(`Mini TypeScript Hero: Error disabling VSCode built-in: ${errorMessage}`);
+        } else if (selection === 'Open Extensions') {
+          // Open Extensions sidebar so user can disable old TypeScript Hero manually
+          // NOTE: Using 'workbench.view.extensions' instead of 'workbench.extensions.action.showInstalledExtensions'
+          // because the latter silently fails in some contexts.
+          await commands.executeCommand('workbench.view.extensions');
+        } else if (selection === 'Don\'t Show Again') {
+          // User explicitly wants to suppress warning
+          await context.globalState.update(hasWarnedKey, true);
         }
-      } else if (selection === 'Open Extensions') {
-        // Open Extensions sidebar so user can disable old TypeScript Hero manually
-        // NOTE: Using 'workbench.view.extensions' instead of 'workbench.extensions.action.showInstalledExtensions'
-        // because the latter silently fails in some contexts.
-        await commands.executeCommand('workbench.view.extensions');
-      } else if (selection === 'Don\'t Show Again') {
-        // User explicitly wants to suppress warning
-        await context.globalState.update(hasWarnedKey, true);
+        // else: "Remind on Next Restart" or dismissed (undefined) -> Don't set flag, will warn on next activation
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        outputChannel.appendLine(`Mini TypeScript Hero: Error handling conflict dialog: ${errorMessage}`);
       }
-      // else: "Remind on Next Restart" or dismissed (undefined) -> Don't set flag, will warn on next activation
     });
   }
 }

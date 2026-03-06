@@ -15,7 +15,7 @@ suite('Additional Coverage', () => {
   // Type-only + value imports from same module (must NOT merge)
   // ============================================================================
 
-  test('130. Type-only + value imports: both extensions merge', async () => {
+  test('Type-only + value imports: both extensions merge', async () => {
     const input = `import type { User } from './types';
 import { getUser } from './types';
 
@@ -36,7 +36,7 @@ const user: User = getUser();
     assert.strictEqual(newResult, expected, 'New extension matches old behavior (legacy mode backward compatibility)');
   });
 
-  test('131. Type-only + value imports merge in legacy mode', async () => {
+  test('Type-only + value imports merge in legacy mode', async () => {
     const input = `import type { User } from './types';
 import { getUser } from './types';
 
@@ -56,7 +56,7 @@ const user: User = getUser();
     assert.strictEqual(newResult, expected, 'New extension in legacy mode matches old behavior');
   });
 
-  test('132. Specifier-level type modifier preserved in modern mode', async () => {
+  test('Specifier-level type modifier preserved in modern mode', async () => {
     const input = `import { type User, getUser } from './types';
 
 const user: User = getUser();
@@ -78,7 +78,7 @@ const user: User = getUser();
   // Side-effect + normal import from same module
   // ============================================================================
 
-  test('133. Side-effect import + named import stay separate', async () => {
+  test('Side-effect import + named import stay separate', async () => {
     const input = `import { polyfill } from './polyfills';
 import './polyfills';
 
@@ -101,7 +101,7 @@ polyfill();
     assert.strictEqual(newResult, expected, 'New extension keeps side-effect and named imports separate');
   });
 
-  test('134. Multiple side-effect imports ordering', async () => {
+  test('Multiple side-effect imports ordering', async () => {
     const input = `import { config } from './config';
 import './polyfills/dom';
 import './polyfills/fetch';
@@ -132,7 +132,7 @@ config.init();
   // Import assertions on side-effect imports
   // ============================================================================
 
-  test('135. Side-effect import with assert syntax', async () => {
+  test('Side-effect import with assert syntax', async () => {
     const input = `import './data.json' assert { type: 'json' };
 import { config } from './config';
 
@@ -146,7 +146,7 @@ config.init();
     assert.ok(newResult.includes("assert { type: 'json' }"), 'Assertions preserved in side-effect import');
   });
 
-  test('136. Side-effect import with "with" syntax', async () => {
+  test('Side-effect import with "with" syntax', async () => {
     const input = `import './styles.css' with { type: 'css' };
 import { Component } from './component';
 
@@ -164,7 +164,7 @@ const c = Component;
   // Default + named + namespace combinations
   // ============================================================================
 
-  test('137. Default + named from same module', async () => {
+  test('Default + named from same module', async () => {
     const input = `import { helper } from './utils';
 import utils from './utils';
 
@@ -184,7 +184,7 @@ const x = utils.foo(helper());
     assert.strictEqual(newResult, expected, 'New extension merges default + named');
   });
 
-  test('138. Default + named with aliases', async () => {
+  test('Default + named with aliases', async () => {
     const input = `import { util as u } from './utils';
 import utils from './utils';
 
@@ -204,7 +204,7 @@ const x = utils.foo(u());
     assert.strictEqual(newResult, expected, 'New extension merges default + aliased named');
   });
 
-  test('139. Namespace import stays separate from named', async () => {
+  test('Namespace import stays separate from named', async () => {
     const input = `import { helper } from './utils';
 import * as Utils from './utils';
 
@@ -226,7 +226,7 @@ const x = Utils.foo(helper());
     assert.strictEqual(newResult, expected, 'New extension keeps namespace separate');
   });
 
-  test('140. Default + namespace from same module', async () => {
+  test('Default + namespace from same module', async () => {
     const input = `import * as Utils from './utils';
 import utils from './utils';
 
@@ -261,7 +261,7 @@ const x = utils.foo(Utils.bar());
   // Scoped packages with trailing /index
   // ============================================================================
 
-  test('141. Scoped package with trailing index (removeTrailingIndex enabled)', async () => {
+  test('Scoped package with trailing index (removeTrailingIndex enabled)', async () => {
     const input = `import { helper } from '@company/utils/index';
 import { config } from '@company/config';
 
@@ -282,7 +282,7 @@ const x = helper(config);
     assert.strictEqual(newResult, expected, 'New extension removes /index from scoped packages');
   });
 
-  test('142. Scoped package: /index and no /index with merging disabled', async () => {
+  test('Scoped package: /index and no /index with merging disabled', async () => {
     const input = `import { a } from '@company/utils/index';
 import { b } from '@company/utils';
 
@@ -307,7 +307,7 @@ const x = a + b;
     assert.strictEqual(newResult, expected, 'New extension removes /index and keeps imports separate');
   });
 
-  test('143. Scoped package: /index timing in legacy mode', async () => {
+  test('Scoped package: /index timing in legacy mode', async () => {
     const input = `import { a } from '@company/utils/index';
 import { b } from '@company/utils';
 
@@ -338,7 +338,7 @@ const x = a + b;
   // Property access false positives
   // ============================================================================
 
-  test('144. Property names in object literals: both extensions keep import', async () => {
+  test('Property names in object literals: both extensions keep import', async () => {
     const input = `import { map, filter, reduce } from 'rxjs/operators';
 
 const obj = {
@@ -376,7 +376,7 @@ const z = reduce([1, 2, 3], (a, b) => a + b);
   // Shadowing and scope detection (tests usage detection limits)
   // ============================================================================
 
-  test('145. Destructuring pattern: both extensions keep import', async () => {
+  test('Destructuring pattern: both extensions keep import', async () => {
     const input = `import { Component, Directive } from '@angular/core';
 
 const { Component: LocalComponent } = someObject;
@@ -400,7 +400,7 @@ const x = Directive;
     assert.strictEqual(newResult, expected, 'New extension matches old behavior (conservative usage detection)');
   });
 
-  test('146. Function parameter: both extensions keep import', async () => {
+  test('Function parameter: both extensions keep import', async () => {
     const input = `import { Service, Component } from '@angular/core';
 
 function createComponent(Component: any) {

@@ -8,7 +8,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Configuration', () => {
-  test('087. Single quotes (default)', async () => {
+  test('Single quotes (default)', async () => {
     const input = `import { A } from "./lib";
 
 const x = A;
@@ -26,7 +26,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('088. Double quotes', async () => {
+  test('Double quotes', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -46,7 +46,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('089. Semicolons enabled (default)', async () => {
+  test('Semicolons enabled (default)', async () => {
     const input = `import { A } from './lib'
 
 const x = A;
@@ -64,7 +64,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('090. Semicolons disabled', async () => {
+  test('Semicolons disabled', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -84,7 +84,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('091. Space in braces enabled (default)', async () => {
+  test('Space in braces enabled (default)', async () => {
     const input = `import {A} from './lib';
 
 const x = A;
@@ -102,7 +102,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('092. Space in braces disabled', async () => {
+  test('Space in braces disabled', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -122,7 +122,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('093. Multiline wrapping with threshold', async () => {
+  test('Multiline wrapping with threshold', async () => {
     const input = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
@@ -151,7 +151,7 @@ const c = VeryLongName3;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('094. Trailing comma in multiline (enabled)', async () => {
+  test('Trailing comma in multiline (enabled)', async () => {
     const input = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
@@ -183,7 +183,7 @@ const c = VeryLongName3;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('095. Trailing comma disabled', async () => {
+  test('Trailing comma disabled', async () => {
     const input = `import { VeryLongName1, VeryLongName2, VeryLongName3 } from './lib';
 
 const a = VeryLongName1;
@@ -215,7 +215,7 @@ const c = VeryLongName3;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('096. Combined config options', async () => {
+  test('Combined config options', async () => {
     const input = `import {A,B} from "./lib"
 
 const x = A;
@@ -242,7 +242,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('097. disableImportsSorting', async () => {
+  test('disableImportsSorting', async () => {
     const input = `import { Z } from './z';
 import { A } from './a';
 
@@ -267,7 +267,7 @@ const y = Z;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('098. disableImportRemovalOnOrganize', async () => {
+  test('disableImportRemovalOnOrganize', async () => {
     const input = `import { Unused } from './lib';
 import { Used } from './other';
 
@@ -289,7 +289,7 @@ const x = Used;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('099. organizeSortsByFirstSpecifier', async () => {
+  test('organizeSortsByFirstSpecifier', async () => {
     const input = `import { zoo } from './a';
 import { ant } from './z';
 
@@ -314,7 +314,7 @@ const y = zoo;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('100. All config options together', async () => {
+  test('All config options together', async () => {
     const input = `import {zoo,ant} from "./a"
 import {Unused} from "./unused"
 
@@ -345,7 +345,7 @@ const y = zoo;
   });
 
   // NEW TESTS: removeTrailingIndex configuration
-  test('111. removeTrailingIndex enabled (default)', async () => {
+  test('removeTrailingIndex enabled (default)', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './other/index';
 
@@ -367,7 +367,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('112. removeTrailingIndex disabled', async () => {
+  test('removeTrailingIndex disabled', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './other/index';
 
@@ -391,7 +391,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('113. removeTrailingIndex interaction with merging', async () => {
+  test('removeTrailingIndex interaction with merging', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -415,7 +415,7 @@ const y = B;
   });
 
   // NEW TESTS: ignoredFromRemoval configuration
-  test('114. ignoredFromRemoval with empty array', async () => {
+  test('ignoredFromRemoval with empty array', async () => {
     const input = `import React from 'react';
 import { A } from './lib';
 
@@ -436,7 +436,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('115. ignoredFromRemoval with multiple libraries', async () => {
+  test('ignoredFromRemoval with multiple libraries', async () => {
     const input = `import React from 'react';
 import Vue from 'vue';
 import { A } from './lib';
@@ -461,7 +461,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('116. ignoredFromRemoval should still sort specifiers', async () => {
+  test('ignoredFromRemoval should still sort specifiers', async () => {
     const input = `import React, { useState, useEffect } from 'react';
 
 const x = React;

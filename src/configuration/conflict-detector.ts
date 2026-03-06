@@ -107,7 +107,7 @@ function isOrganizeImportsCodeActionEnabled(): boolean {
   const checkValue = (value: unknown): boolean => {
     if (value && typeof value === 'object') {
       const oi = (value as Record<string, boolean | string>)['source.organizeImports'];
-      return oi !== false && oi !== 'never' && oi !== undefined;
+      return oi !== false && oi !== 'never' && oi !== undefined && oi !== null;
     }
     return false;
   };

@@ -15,7 +15,7 @@ suite('Sorting', () => {
    * Expected behavior: Component, inject, OnInit (case-insensitive alphabetical)
    * Bug behavior: Component, OnInit, inject (capitals before lowercase)
    */
-  test('001. Mixed-case specifiers (Component, inject, OnInit)', async () => {
+  test('Mixed-case specifiers (Component, inject, OnInit)', async () => {
     const input = `import { OnInit, Component, inject } from '@angular/core';
 
 const x = Component;
@@ -37,7 +37,7 @@ const z: OnInit = { ngOnInit: () => {} };
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('002. All capitals specifiers (Component, OnInit)', async () => {
+  test('All capitals specifiers (Component, OnInit)', async () => {
     const input = `import { OnInit, Component } from '@angular/core';
 
 const x = Component;
@@ -57,7 +57,7 @@ const z: OnInit = { ngOnInit: () => {} };
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('003. All lowercase specifiers (map, filter, tap)', async () => {
+  test('All lowercase specifiers (map, filter, tap)', async () => {
     const input = `import { tap, map, filter } from 'rxjs/operators';
 
 const x = map;
@@ -79,7 +79,7 @@ const z = tap;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('004. Mixed lower and upper start (inject, Component, map, OnInit)', async () => {
+  test('Mixed lower and upper start (inject, Component, map, OnInit)', async () => {
     const input = `import { map, OnInit, inject, Component } from '@angular/core';
 
 const w = Component;
@@ -103,7 +103,7 @@ const z = map;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('005. Library name sorting (alphabetical)', async () => {
+  test('Library name sorting (alphabetical)', async () => {
     const input = `import { z } from 'zebra';
 import { a } from 'aardvark';
 import { m } from 'monkey';
@@ -129,7 +129,7 @@ const w = z;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('006. Sort by first specifier (enabled)', async () => {
+  test('Sort by first specifier (enabled)', async () => {
     const input = `import { zoo } from './a';
 import { ant } from './z';
 
@@ -152,7 +152,7 @@ const y = zoo;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('007. String imports come first', async () => {
+  test('String imports come first', async () => {
     const input = `import { Component } from '@angular/core';
 import 'zone.js';
 import { map } from 'rxjs';
@@ -177,7 +177,7 @@ const y = map;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('008. Multiple string imports sorted', async () => {
+  test('Multiple string imports sorted', async () => {
     const input = `import 'zebra';
 import 'aardvark';
 import 'monkey';
@@ -199,7 +199,7 @@ import 'zebra';
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('009. Specifiers with aliases', async () => {
+  test('Specifiers with aliases', async () => {
     const input = `import { Component as Cmp, inject as inj, OnInit as Init } from '@angular/core';
 
 const x = Cmp;
@@ -221,7 +221,7 @@ const z: Init = { ngOnInit: () => {} };
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('010. Default + named imports', async () => {
+  test('Default + named imports', async () => {
     const input = `import React, { useState, useEffect } from 'react';
 
 const x = React;
@@ -243,7 +243,7 @@ const z = useEffect;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('011. Namespace imports', async () => {
+  test('Namespace imports', async () => {
     const input = `import * as RxJS from 'rxjs';
 import * as React from 'react';
 
@@ -265,7 +265,7 @@ const y = RxJS;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('012. Disable sorting', async () => {
+  test('Disable sorting', async () => {
     const input = `import { z, a, m } from './lib';
 
 const x = a;
@@ -287,7 +287,7 @@ const w = z;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('013. Case-insensitive library sorting', async () => {
+  test('Case-insensitive library sorting', async () => {
     const input = `import { a } from 'Zebra';
 import { b } from 'aardvark';
 import { c } from 'Monkey';
@@ -313,7 +313,7 @@ const z = c;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('014. Numbers in specifier names', async () => {
+  test('Numbers in specifier names', async () => {
     const input = `import { test2, test1, test10, test3 } from './lib';
 
 const a = test1;
@@ -337,7 +337,7 @@ const d = test10;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('015. Special characters in library names', async () => {
+  test('Special characters in library names', async () => {
     const input = `import { a } from '@scope/package';
 import { b } from 'normal-package';
 import { c } from '@angular/core';

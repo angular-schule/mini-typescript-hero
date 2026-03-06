@@ -5,7 +5,7 @@ import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Demo for Video Test Cases', () => {
 
-  test('128. Demo file - EXACT reproduction of manual test case', async () => {
+  test('Demo file - EXACT reproduction of manual test case', async () => {
     // This is the EXACT content from manual-test-cases/demo-for-video.ts
     // Copied byte-for-byte to ensure we test the real scenario
     const input = `// Demo file for video - shows the full power of Mini TypeScript Hero
@@ -184,7 +184,7 @@ export class DemoComponent implements OnInit {
     );
   });
 
-  test('129. Demo file - NEW extension with modern defaults (not legacy)', async () => {
+  test('Demo file - NEW extension with modern defaults (not legacy)', async () => {
     // Same input as test 128
     const input = `// Demo file for video - shows the full power of Mini TypeScript Hero
 // Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports

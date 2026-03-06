@@ -8,7 +8,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Merging', () => {
-  test('016. Same library, different specifiers', async () => {
+  test('Same library, different specifiers', async () => {
     const input = `import { A } from './lib';
 import { B } from './lib';
 
@@ -29,7 +29,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('017. Three imports from same module', async () => {
+  test('Three imports from same module', async () => {
     const input = `import { A } from './lib';
 import { B } from './lib';
 import { C } from './lib';
@@ -53,7 +53,7 @@ const z = C;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('018. Same library, default + named', async () => {
+  test('Same library, default + named', async () => {
     const input = `import Lib from './lib';
 import { A, B } from './lib';
 
@@ -76,7 +76,7 @@ const z = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('019. Duplicate specifiers - graceful error handling', async () => {
+  test('Duplicate specifiers - graceful error handling', async () => {
     const input = `import { A, B } from './lib';
 import { A, C } from './lib';
 
@@ -113,7 +113,7 @@ const z = C;
     assert.strictEqual(newResult, expected, 'New extension keeps duplicate specifiers');
   });
 
-  test('020. Namespace imports cannot merge', async () => {
+  test('Namespace imports cannot merge', async () => {
     const input = `import * as Lib1 from './lib';
 import * as Lib2 from './lib';
 
@@ -135,7 +135,7 @@ const y = Lib2;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('021. String imports cannot merge', async () => {
+  test('String imports cannot merge', async () => {
     const input = `import './lib';
 import './lib';
 `;
@@ -156,7 +156,7 @@ import './lib';
     assert.equal(newResult, expectedNew, 'New extension must match expected output');
   });
 
-  test('022. Merging after removeTrailingIndex', async () => {
+  test('Merging after removeTrailingIndex', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -179,7 +179,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('023. Merging preserves used specifiers only', async () => {
+  test('Merging preserves used specifiers only', async () => {
     const input = `import { A, Unused1 } from './lib';
 import { B, Unused2 } from './lib';
 
@@ -200,7 +200,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('024. Merging sorts specifiers alphabetically', async () => {
+  test('Merging sorts specifiers alphabetically', async () => {
     const input = `import { Z } from './lib';
 import { A } from './lib';
 import { M } from './lib';
@@ -224,7 +224,7 @@ const z = Z;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('025. Default + named with aliases', async () => {
+  test('Default + named with aliases', async () => {
     const input = `import Lib from './lib';
 import { A as AliasA } from './lib';
 
@@ -245,7 +245,7 @@ const y = AliasA;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('026. Multiple modules with merging', async () => {
+  test('Multiple modules with merging', async () => {
     const input = `import { A1 } from './lib1';
 import { B1 } from './lib2';
 import { A2 } from './lib1';
@@ -273,7 +273,7 @@ const d = B2;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('027. Mixed import types from same module', async () => {
+  test('Mixed import types from same module', async () => {
     const input = `import Lib from './lib';
 import * as LibNS from './lib';
 import { A } from './lib';
@@ -299,7 +299,7 @@ const z = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('028. Real Angular example - merges @angular/core imports', async () => {
+  test('Real Angular example - merges @angular/core imports', async () => {
     const input = `import { UserDetail } from './components/user-detail';
 import { Component } from '@angular/core';
 import { UnusedService } from './services/unused';
@@ -346,7 +346,7 @@ const user = UserDetail;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('029. Merging with type imports', async () => {
+  test('Merging with type imports', async () => {
     const input = `import { type A } from './lib';
 import { B } from './lib';
 
@@ -375,7 +375,7 @@ const y = B;
     assert.equal(newResult, expectedNew, 'New extension must match expected output (preserves type)');
   });
 
-  test('030. Merging with multiple aliases', async () => {
+  test('Merging with multiple aliases', async () => {
     const input = `import { A as AliasA } from './lib';
 import { B as AliasB } from './lib';
 

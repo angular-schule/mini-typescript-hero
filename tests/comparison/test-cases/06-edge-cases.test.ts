@@ -8,7 +8,7 @@ import { organizeImportsOld } from '../old-extension/adapter';
 import { organizeImportsNew } from '../new-extension/adapter';
 
 suite('Edge Cases', () => {
-  test('071. Empty file', async () => {
+  test('Empty file', async () => {
     const input = ``;
 
     const expected = ``;
@@ -20,7 +20,7 @@ suite('Edge Cases', () => {
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('072. File with no imports', async () => {
+  test('File with no imports', async () => {
     const input = `const x = 1;
 const y = 2;
 `;
@@ -36,7 +36,7 @@ const y = 2;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('073. Only string imports', async () => {
+  test('Only string imports', async () => {
     const input = `import 'zone.js';
 import 'reflect-metadata';
 `;
@@ -57,7 +57,7 @@ import 'zone.js';
     assert.equal(newResult, expectedNew, 'New extension must match expected output');
   });
 
-  test('074. Only default imports', async () => {
+  test('Only default imports', async () => {
     const input = `import Lib1 from './lib1';
 import Lib2 from './lib2';
 
@@ -79,7 +79,7 @@ const y = Lib2;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('075. Only namespace imports', async () => {
+  test('Only namespace imports', async () => {
     const input = `import * as Lib1 from './lib1';
 import * as Lib2 from './lib2';
 
@@ -101,7 +101,7 @@ const y = Lib2;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('076. Long import line (multiline wrapping)', async () => {
+  test('Long import line (multiline wrapping)', async () => {
     const input = `import { VeryLongSpecifierName1, VeryLongSpecifierName2, VeryLongSpecifierName3, VeryLongSpecifierName4, VeryLongSpecifierName5 } from './lib';
 
 const a = VeryLongSpecifierName1;
@@ -137,7 +137,7 @@ const e = VeryLongSpecifierName5;
     assert.equal(newResult, expected, 'New extension must produce correct multiline wrapped output');
   });
 
-  test('077. Path aliases', async () => {
+  test('Path aliases', async () => {
     const input = `import { Service } from '@app/services/my-service';
 import { Utils } from '@utils/helpers';
 import { Component } from '@angular/core';
@@ -163,7 +163,7 @@ const z = Utils;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('078. removeTrailingIndex enabled', async () => {
+  test('removeTrailingIndex enabled', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -186,7 +186,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('079. removeTrailingIndex disabled', async () => {
+  test('removeTrailingIndex disabled', async () => {
     const input = `import { A } from './lib/index';
 import { B } from './lib';
 
@@ -211,7 +211,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('080. Dynamic import() not confused with static import', async () => {
+  test('Dynamic import() not confused with static import', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -231,7 +231,7 @@ const y = import('./dynamic');
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('081. import.meta not confused with imports', async () => {
+  test('import.meta not confused with imports', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -251,7 +251,7 @@ const url = import.meta.url;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('082. Empty import specifiers', async () => {
+  test('Empty import specifiers', async () => {
     const input = `import {} from './lib';
 import { Used } from './other';
 
@@ -271,7 +271,7 @@ const x = Used;
     assert.equal(newResult, expected, 'New extension removes empty import');
   });
 
-  test('083. Comments between imports', async () => {
+  test('Comments between imports', async () => {
     const input = `import { A } from './a';
 // Important comment
 import { B } from './b';
@@ -296,7 +296,7 @@ const y = B;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('084. Template string with import keyword', async () => {
+  test('Template string with import keyword', async () => {
     const input = `import { A } from './lib';
 
 const x = A;
@@ -316,7 +316,7 @@ const str = \`import { B } from 'fake'\`;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('085. Triple-slash directive', async () => {
+  test('Triple-slash directive', async () => {
     const input = `/// <reference types="node" />
 import { A } from './lib';
 
@@ -336,7 +336,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('086. Type-only import syntax', async () => {
+  test('Type-only import syntax', async () => {
     const input = `import type { MyType } from './lib';
 import { MyValue } from './lib';
 
@@ -368,7 +368,7 @@ let y: MyType;
   });
 
   // NEW TESTS: Critical edge cases from unit suite
-  test('117. Shebang preservation', async () => {
+  test('Shebang preservation', async () => {
     const input = `#!/usr/bin/env node
 import { A } from './lib';
 
@@ -388,7 +388,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('118. use strict directive (single quotes)', async () => {
+  test('use strict directive (single quotes)', async () => {
     const input = `'use strict';
 import { A } from './lib';
 
@@ -408,7 +408,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('119. use strict directive (double quotes)', async () => {
+  test('use strict directive (double quotes)', async () => {
     const input = `"use strict";
 import { A } from './lib';
 
@@ -428,7 +428,7 @@ const x = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('120. Old TypeScript syntax: import = require()', async () => {
+  test('Old TypeScript syntax: import = require()', async () => {
     const input = `import Lib = require('./lib');
 import { A } from './other';
 
@@ -451,7 +451,7 @@ const y = A;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('121. Local shadowing (local class shadows import)', async () => {
+  test('Local shadowing (local class shadows import)', async () => {
     const input = `import { Component, Injectable } from '@angular/core';
 
 class Component {
@@ -478,7 +478,7 @@ const service = Injectable;
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('122. Property access vs function calls', async () => {
+  test('Property access vs function calls', async () => {
     const input = `import { map, filter, reduce } from 'lodash';
 
 const arr = [1, 2, 3];
@@ -501,7 +501,7 @@ const result = filter(doubled, x => x > 2).reduce((acc, val) => acc + val, 0);
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('123. Comments between imports: Indentation preserved', async () => {
+  test('Comments between imports: Indentation preserved', async () => {
     // PROOF: Both extensions preserve comment indentation when moving comments after imports
     // OLD EXTENSION: Puts blank line AFTER imports, BEFORE comments, BEFORE code
     // NEW EXTENSION: Matches old extension exactly (indentation preserved)
@@ -532,7 +532,7 @@ console.log(A, B, C);
     assert.equal(newResult, expected, 'New extension must match expected output');
   });
 
-  test('124. Malformed import (missing closing brace)', async () => {
+  test('Malformed import (missing closing brace)', async () => {
     // Tests robustness with syntax errors
     // Both parsers (typescript-parser and ts-morph) are lenient and can extract imports
     // from malformed code, then remove them as unused.
@@ -552,7 +552,7 @@ console.log('syntax error');
     assert.equal(newResult, expected, 'New extension must remove malformed unused import');
   });
 
-  test('125. Malformed import (missing closing brace) - used identifier', async () => {
+  test('Malformed import (missing closing brace) - used identifier', async () => {
     // Even with syntax error, if the identifier IS used, both parsers should preserve it
     const input = `import { broken from './broken';
 

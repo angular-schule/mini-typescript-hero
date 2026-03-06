@@ -49,7 +49,7 @@ function isValidSettingType(setting: string, value: unknown): boolean {
   if (!expectedType) {
     return true; // Unknown setting, allow migration
   }
-  return typeof value === expectedType;
+  return value !== null && typeof value === expectedType;
 }
 
 /**
@@ -97,7 +97,11 @@ export async function migrateSettings(context: Pick<ExtensionContext, 'globalSta
     // Migration failed — swallow silently, finally block sets the flag to prevent retry loop
   } finally {
     // Mark migration as attempted (always, even if migration failed)
-    await context.globalState.update(MIGRATION_KEY, true);
+    try {
+      await context.globalState.update(MIGRATION_KEY, true);
+    } catch {
+      // Silently ignore — worst case, migration runs again on next activation
+    }
   }
 }
 
