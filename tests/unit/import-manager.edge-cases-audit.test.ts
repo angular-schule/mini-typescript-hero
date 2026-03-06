@@ -1122,11 +1122,11 @@ console.log(A, B);
 `;
 
     // Code between imports must be preserved — moved after the organized imports
-    // The blank line separator is between imports and preserved code (not after preserved code)
+    // The blank line separator goes AFTER preserved code (before the rest of the file)
     const expected = `import { A } from './a';
 import { B } from './b';
-
 config.init({ debug: true });
+
 console.log(A, B);
 `;
 
@@ -1157,9 +1157,9 @@ console.log(A, B, C, initValue);
     const expected = `import { A } from './a';
 import { B } from './b';
 import { C } from './c';
-
 // Section separator
 const initValue = 42;
+
 console.log(A, B, C, initValue);
 `;
 
@@ -1188,8 +1188,8 @@ console.log(A, B);
     // Even in legacy mode, code between imports must be preserved
     const expected = `import { A } from './a';
 import { B } from './b';
-
 setupPolyfill();
+
 console.log(A, B);
 `;
 
