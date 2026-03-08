@@ -15,6 +15,7 @@ import { minimatch } from 'minimatch';
 
 import { ImportsConfig } from '../configuration';
 import { ImportManager } from '../imports/import-manager';
+import { ImportOrganizer } from '../imports/import-organizer';
 
 /**
  * Result of batch organization operation.
@@ -30,15 +31,23 @@ interface BatchResult {
  * Used for workspace-wide and folder-wide operations.
  */
 export class BatchOrganizer {
+  private isRunning = false;
+
   constructor(
     private readonly config: ImportsConfig,
     private readonly logger: OutputChannel,
+    private readonly organizer?: ImportOrganizer,
   ) {}
 
   /**
    * Organize imports in all TypeScript/JavaScript files in the workspace.
    */
   async organizeWorkspace(): Promise<void> {
+    if (this.isRunning) {
+      window.showInformationMessage('Mini TypeScript Hero: An organize operation is already in progress.');
+      return;
+    }
+
     this.logger.appendLine('[BatchOrganizer] Starting workspace-wide organization');
 
     if (!workspace.workspaceFolders || workspace.workspaceFolders.length === 0) {
@@ -47,6 +56,7 @@ export class BatchOrganizer {
       return;
     }
 
+    this.isRunning = true;
     try {
       const files = await this.findTargetFiles();
 
@@ -88,6 +98,8 @@ export class BatchOrganizer {
       const errorMessage = error instanceof Error ? error.message : String(error);
       window.showErrorMessage(`Mini TypeScript Hero: Failed to organize workspace: ${errorMessage}`);
       this.logger.appendLine(`[BatchOrganizer] Error: ${errorMessage}`);
+    } finally {
+      this.isRunning = false;
     }
   }
 
@@ -95,8 +107,14 @@ export class BatchOrganizer {
    * Organize imports in all TypeScript/JavaScript files in a specific folder.
    */
   async organizeFolder(folderUri: Uri): Promise<void> {
+    if (this.isRunning) {
+      window.showInformationMessage('Mini TypeScript Hero: An organize operation is already in progress.');
+      return;
+    }
+
     this.logger.appendLine(`[BatchOrganizer] Starting folder organization: ${folderUri.fsPath}`);
 
+    this.isRunning = true;
     try {
       const files = await this.findTargetFilesInFolder(folderUri);
 
@@ -126,6 +144,8 @@ export class BatchOrganizer {
       const errorMessage = error instanceof Error ? error.message : String(error);
       window.showErrorMessage(`Mini TypeScript Hero: Failed to organize folder: ${errorMessage}`);
       this.logger.appendLine(`[BatchOrganizer] Error: ${errorMessage}`);
+    } finally {
+      this.isRunning = false;
     }
   }
 
@@ -356,6 +376,12 @@ export class BatchOrganizer {
         // has lazy loading behavior - it only contains documents that have been "activated".
         // See: https://github.com/microsoft/vscode/issues/33546
         // See: https://github.com/microsoft/vscode/issues/38665
+        //
+        // Suppress organize-on-save during batch saves to prevent double-parsing.
+        // Each doc.save() triggers onWillSaveTextDocument, which would re-organize.
+        if (this.organizer) {
+          this.organizer.suppressOrganizeOnSave = true;
+        }
         const saveFailed: string[] = [];
         let savedCount = 0;
         for (const [fileUri] of workspaceEdit.entries()) {
@@ -371,6 +397,9 @@ export class BatchOrganizer {
             errors++;
             this.logger.appendLine(`[BatchOrganizer] Failed to save ${fileUri.fsPath}: ${saveError}`);
           }
+        }
+        if (this.organizer) {
+          this.organizer.suppressOrganizeOnSave = false;
         }
         if (saveFailed.length > 0) {
           window.showWarningMessage(`Mini TypeScript Hero: Failed to save ${saveFailed.length} file(s). Check output for details.`);

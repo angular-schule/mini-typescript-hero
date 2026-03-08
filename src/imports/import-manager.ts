@@ -147,11 +147,19 @@ export class ImportManager {
       // ts-morph's getLeadingCommentRanges/getTrailingCommentRanges don't work reliably
       // for import specifiers, so we parse the full text manually
       const fullText = importDecl.getText();
-      const specifierComments = this.extractSpecifierComments(fullText, namedImports.map(n => n.getName()));
+      const specifierComments = this.extractSpecifierComments(
+        fullText,
+        namedImports.map(n => {
+          const alias = n.getAliasNode()?.getText();
+          return alias ? `${n.getName()}:${alias}` : n.getName();
+        }),
+      );
 
       const specifiers: SymbolSpecifier[] = namedImports.map(named => {
         const name = named.getName();
-        const comments = specifierComments.get(name);
+        const alias = named.getAliasNode()?.getText();
+        const commentKey = alias ? `${name}:${alias}` : name;
+        const comments = specifierComments.get(commentKey);
 
         return {
           specifier: name,
@@ -390,21 +398,24 @@ export class ImportManager {
         continue;
       }
 
+      // Helper: build a composite key matching what the caller uses (name or name:alias)
+      const buildKey = (name: string, alias?: string): string => alias ? `${name}:${alias}` : name;
+
       // Check for leading block comment: /* comment */ specifier
       const leadingBlockMatch = trimmed.match(/^(\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\/)\s*(.+)/);
       if (leadingBlockMatch) {
         const comment = leadingBlockMatch[1];
         const rest = leadingBlockMatch[2];
 
-        // Extract specifier name from rest (might be "A," or "A as B," etc.)
+        // Extract specifier name and optional alias from rest
         // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
-        const specMatch = rest.match(/^(?:type\s+)?([\p{ID_Continue}$]+)/u);
+        const specMatch = rest.match(/^(?:type\s+)?([\p{ID_Continue}$]+)(?:\s+as\s+([\p{ID_Continue}$]+))?/u);
         if (specMatch) {
-          const specName = specMatch[1];
-          if (specifierNames.includes(specName)) {
-            const existing = result.get(specName) || {};
+          const key = buildKey(specMatch[1], specMatch[2]);
+          if (specifierNames.includes(key)) {
+            const existing = result.get(key) || {};
             existing.leading = comment;
-            result.set(specName, existing);
+            result.set(key, existing);
           }
         }
         continue;
@@ -412,26 +423,26 @@ export class ImportManager {
 
       // Check for trailing line comment: specifier // comment
       // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
-      const trailingLineMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)(?:\s+as\s+[\p{ID_Continue}$]+)?\s*,?\s*(\/\/.*?)$/u);
+      const trailingLineMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)(?:\s+as\s+([\p{ID_Continue}$]+))?\s*,?\s*(\/\/.*?)$/u);
       if (trailingLineMatch) {
-        const specName = trailingLineMatch[1];
-        const comment = trailingLineMatch[2];
+        const key = buildKey(trailingLineMatch[1], trailingLineMatch[2]);
+        const comment = trailingLineMatch[3];
 
-        if (specifierNames.includes(specName)) {
-          const existing = result.get(specName) || {};
+        if (specifierNames.includes(key)) {
+          const existing = result.get(key) || {};
           existing.trailing = comment;
-          result.set(specName, existing);
+          result.set(key, existing);
         }
         continue;
       }
 
       // Regular specifier without comments
       // Use \p{ID_Continue} to match all valid ECMAScript identifier characters (including Unicode)
-      const regularMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)/u);
+      const regularMatch = trimmed.match(/^(?:type\s+)?([\p{ID_Continue}$]+)(?:\s+as\s+([\p{ID_Continue}$]+))?/u);
       if (regularMatch) {
-        const specName = regularMatch[1];
-        if (specifierNames.includes(specName) && !result.has(specName)) {
-          result.set(specName, {});
+        const key = buildKey(regularMatch[1], regularMatch[2]);
+        if (specifierNames.includes(key) && !result.has(key)) {
+          result.set(key, {});
         }
       }
     }
@@ -483,7 +494,7 @@ export class ImportManager {
             ? imp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
             : imp.specifiers;
           const sortedSpecifiers = [...specs].sort(specifierSort);
-          return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
+          return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, isLegacy ? false : imp.isTypeOnly, imp.attributes);
         }
         return imp;
       });
@@ -911,10 +922,11 @@ export class ImportManager {
     }
 
     // Include blank lines before first import (but not header) in the replace range.
-    // IMPORTANT: Only do this if we did NOT create a separate delete edit for leading blanks!
-    // When hasLeadingBlanks is true, we already deleted lines 0 to importSectionStartLine,
-    // so we must NOT extend importSectionStartLine backwards (would create overlapping ranges).
-    if (blankLinesBefore > 0 && !hasLeadingBlanks) {
+    // When hasLeadingBlanks is true AND there's no header, the leading blank deletion range
+    // goes up to importSectionStartLine, so extending backwards would create overlapping ranges.
+    // But when hasLeadingBlanks is true AND there IS a header, the leading blank deletion only
+    // covers lines before the header, so blanks between header and imports are safe to include.
+    if (blankLinesBefore > 0 && (!hasLeadingBlanks || hasHeader)) {
       importSectionStartLine = Math.max(0, importSectionStartLine - blankLinesBefore);
     }
 

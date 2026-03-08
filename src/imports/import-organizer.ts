@@ -5,6 +5,7 @@ import {
   TextDocument,
   TextDocumentWillSaveEvent,
   TextEdit,
+  TextEditor,
   Uri,
   window,
   workspace,
@@ -22,6 +23,12 @@ export class ImportOrganizer implements Disposable {
   private disposables: Disposable[] = [];
   private runningOrganizes = new Set<string>();
 
+  /**
+   * When true, organize-on-save is suppressed for all files.
+   * Used by BatchOrganizer to prevent double-parsing during batch saves.
+   */
+  public suppressOrganizeOnSave = false;
+
   constructor(
     private readonly config: ImportsConfig,
     private readonly logger: OutputChannel,
@@ -37,8 +44,8 @@ export class ImportOrganizer implements Disposable {
     this.disposables.push(
       commands.registerTextEditorCommand(
         'miniTypescriptHero.imports.organize',
-        async () => {
-          await this.organizeImportsCommand();
+        async (textEditor) => {
+          await this.organizeImportsCommand(textEditor);
         },
       ),
     );
@@ -75,8 +82,8 @@ export class ImportOrganizer implements Disposable {
   /**
    * Execute the organize imports command for the active editor.
    */
-  private async organizeImportsCommand(): Promise<void> {
-    const editor = window.activeTextEditor;
+  private async organizeImportsCommand(providedEditor?: TextEditor): Promise<void> {
+    const editor = providedEditor ?? window.activeTextEditor;
 
     if (!editor) {
       window.showWarningMessage('No active editor found');
@@ -175,6 +182,11 @@ export class ImportOrganizer implements Disposable {
    * Check if organize-on-save is enabled for this document.
    */
   private shouldOrganizeOnSave(document: TextDocument): boolean {
+    // Guard: Suppressed during batch operations to prevent double-parsing
+    if (this.suppressOrganizeOnSave) {
+      return false;
+    }
+
     // Guard: Only process file:// scheme (skip untitled:, vscode-notebook-cell:, etc.)
     if (document.uri.scheme !== 'file') {
       return false;

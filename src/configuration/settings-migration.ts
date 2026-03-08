@@ -128,15 +128,18 @@ async function performMigration(): Promise<number> {
       continue;
     }
 
-    // Migrate workspace settings
-    if (inspect.workspaceValue !== undefined && isValidSettingType(setting, inspect.workspaceValue)) {
+    // Migrate workspace settings (only if new extension doesn't already have a value)
+    const newInspect = newConfig.inspect(setting);
+    if (inspect.workspaceValue !== undefined && isValidSettingType(setting, inspect.workspaceValue)
+        && newInspect?.workspaceValue === undefined) {
       await newConfig.update(setting, inspect.workspaceValue, ConfigurationTarget.Workspace);
       migratedCount++;
       migratedWorkspaceCount++;
     }
 
-    // Migrate global (user) settings
-    if (inspect.globalValue !== undefined && isValidSettingType(setting, inspect.globalValue)) {
+    // Migrate global (user) settings (only if new extension doesn't already have a value)
+    if (inspect.globalValue !== undefined && isValidSettingType(setting, inspect.globalValue)
+        && newInspect?.globalValue === undefined) {
       await newConfig.update(setting, inspect.globalValue, ConfigurationTarget.Global);
       migratedCount++;
       migratedGlobalCount++;
@@ -156,7 +159,9 @@ async function performMigration(): Promise<number> {
         continue;
       }
 
-      if (isValidSettingType(setting, inspect.workspaceFolderValue)) {
+      const newFolderInspect = newFolderConfig.inspect(setting);
+      if (isValidSettingType(setting, inspect.workspaceFolderValue)
+          && newFolderInspect?.workspaceFolderValue === undefined) {
         await newFolderConfig.update(setting, inspect.workspaceFolderValue, ConfigurationTarget.WorkspaceFolder);
         migratedCount++;
         migratedWorkspaceFolderCount++;

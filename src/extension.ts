@@ -339,8 +339,13 @@ export async function activate(context: ExtensionContext): Promise<void> {
     });
     context.subscriptions.push(toggleLegacyModeCommand);
 
+    // Create and activate import organizer (before batch organizer so it can be referenced)
+    organizer = new ImportOrganizer(config, outputChannel);
+    organizer.activate();
+    context.subscriptions.push(organizer);
+
     // Create batch organizer for workspace/folder operations
-    const batchOrganizer = new BatchOrganizer(config, outputChannel);
+    const batchOrganizer = new BatchOrganizer(config, outputChannel, organizer);
 
     // Register command: Organize imports in workspace
     const organizeWorkspaceCommand = commands.registerCommand('miniTypescriptHero.imports.organizeWorkspace', async () => {
@@ -370,12 +375,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
       }
     });
     context.subscriptions.push(organizeFolderCommand);
-
-    // Create and activate import organizer
-    organizer = new ImportOrganizer(config, outputChannel);
-    organizer.activate();
-
-    context.subscriptions.push(organizer);
 
     outputChannel.appendLine('Mini TypeScript Hero: Extension activated successfully');
   } catch (error) {
