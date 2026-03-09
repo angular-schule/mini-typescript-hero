@@ -10,8 +10,11 @@ import {
   StringImport,
   SymbolSpecifier
 } from './import-types';
-import { importSort, importSortByFirstSpecifier, specifierSort, importGroupSortForPrecedence } from './import-utilities';
+import { importGroupSortForPrecedence } from './import-utilities';
 import { ImportGroup } from './import-grouping';
+import { ResolvedConfig, RenderOptions } from './organize-pipeline';
+import { legacyPipeline } from './pipeline-legacy';
+import { modernPipeline } from './pipeline-modern';
 
 /**
  * Management class for the imports of a document.
@@ -451,319 +454,43 @@ export class ImportManager {
   }
 
   /**
-   * Helper method to remove trailing /index from import library names.
-   * Creates new Import objects instead of mutating readonly properties.
-   */
-  private removeTrailingIndexFromImports(imports: Import[]): Import[] {
-    return imports.map(imp => {
-      if (!imp.libraryName.endsWith('/index')) {
-        return imp;
-      }
-      const newLibraryName = imp.libraryName.replace(/\/index$/, '');
-
-      // Create new import object instead of mutating readonly property
-      if (imp instanceof NamedImport) {
-        return new NamedImport(newLibraryName, imp.specifiers, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
-      } else if (imp instanceof NamespaceImport) {
-        return new NamespaceImport(newLibraryName, imp.alias, imp.defaultAlias, imp.isTypeOnly, imp.attributes);
-      } else if (imp instanceof ExternalModuleImport) {
-        return new ExternalModuleImport(newLibraryName, imp.alias, imp.attributes);
-      } else if (imp instanceof StringImport) {
-        return new StringImport(newLibraryName, imp.attributes);
-      }
-      return imp;
-    });
-  }
-
-  /**
    * Organize imports: remove unused, sort, and group.
    * Returns TextEdits to apply the changes.
+   *
+   * Dispatches to the appropriate pipeline (modern or legacy) for filtering,
+   * sorting, and merging. Grouping and text generation are shared.
    */
   public async organizeImports(): Promise<TextEdit[]> {
-    let keep: Import[] = [];
+    const isLegacy = this.config.legacyMode(this.document.uri);
 
-    // Filter unused imports (unless disabled)
-    if (this.config.disableImportRemovalOnOrganize(this.document.uri)) {
-      // Import removal disabled - keep all imports but still sort specifiers
-      // Specifier sorting is independent from import sorting (disableImportsSorting)
-      const isLegacy = this.config.legacyMode(this.document.uri);
-      keep = this.imports.map(imp => {
-        if (imp instanceof NamedImport && imp.specifiers.length > 0) {
-          // In legacy mode, strip isTypeOnly from individual specifiers
-          const specs = isLegacy
-            ? imp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
-            : imp.specifiers;
-          const sortedSpecifiers = [...specs].sort(specifierSort);
-          return new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, isLegacy ? false : imp.isTypeOnly, imp.attributes);
-        }
-        return imp;
-      });
-    } else {
-      for (const imp of this.imports) {
-        // Check if import is in the ignore list
-        if (this.config.ignoredFromRemoval(this.document.uri).includes(imp.libraryName)) {
-          // Still need to sort specifiers for NamedImport to maintain consistent formatting
-          if (imp instanceof NamedImport && imp.specifiers.length > 0) {
-            const isLegacy = this.config.legacyMode(this.document.uri);
-            // In legacy mode, strip specifier-level isTypeOnly (old extension doesn't support it)
-            const specs = isLegacy
-              ? imp.specifiers.map(s => ({ ...s, isTypeOnly: false }))
-              : imp.specifiers;
-            const sortedSpecifiers = [...specs].sort(specifierSort);
-            keep.push(new NamedImport(imp.libraryName, sortedSpecifiers, imp.defaultAlias, isLegacy ? false : imp.isTypeOnly, imp.attributes));
-          } else {
-            keep.push(imp);
-          }
-          continue;
-        }
+    // Resolve config values once (avoid repeated config.xyz(uri) calls in pipeline)
+    const resolvedConfig: ResolvedConfig = {
+      disableImportRemovalOnOrganize: this.config.disableImportRemovalOnOrganize(this.document.uri),
+      ignoredFromRemoval: this.config.ignoredFromRemoval(this.document.uri),
+      disableImportsSorting: this.config.disableImportsSorting(this.document.uri),
+      organizeSortsByFirstSpecifier: this.config.organizeSortsByFirstSpecifier(this.document.uri),
+      removeTrailingIndex: this.config.removeTrailingIndex(this.document.uri),
+      mergeImportsFromSameModule: this.config.mergeImportsFromSameModule(this.document.uri),
+    };
 
-        // String imports are always kept
-        if (imp instanceof StringImport) {
-          keep.push(imp);
-          continue;
-        }
+    const input = {
+      imports: this.imports,
+      usedIdentifiers: this.usedIdentifiers,
+    };
 
-        // Check external module imports
-        if (imp instanceof ExternalModuleImport) {
-          if (this.usedIdentifiers.has(imp.alias)) {
-            keep.push(imp);
-          }
-          continue;
-        }
+    // Dispatch to appropriate pipeline
+    const organized = isLegacy
+      ? legacyPipeline(input, resolvedConfig)
+      : modernPipeline(input, resolvedConfig);
 
-        // Check namespace imports (may also have a default alias)
-        if (imp instanceof NamespaceImport) {
-          const nsUsed = this.usedIdentifiers.has(imp.alias);
-          const defaultUsed = !!imp.defaultAlias && this.usedIdentifiers.has(imp.defaultAlias);
-          if (nsUsed || defaultUsed) {
-            if (imp.defaultAlias && !defaultUsed) {
-              // Strip unused default, keep namespace
-              keep.push(new NamespaceImport(
-                imp.libraryName, imp.alias, undefined, imp.isTypeOnly, imp.attributes,
-              ));
-            } else if (!nsUsed && defaultUsed) {
-              // Strip unused namespace, convert to default-only import
-              keep.push(new NamedImport(
-                imp.libraryName, [], imp.defaultAlias, imp.isTypeOnly, imp.attributes,
-              ));
-            } else {
-              keep.push(imp);
-            }
-          }
-          continue;
-        }
-
-        // Check named imports
-        if (imp instanceof NamedImport) {
-          const usedSpecifiers = imp.specifiers.filter(spec =>
-            this.usedIdentifiers.has(spec.alias || spec.specifier)
-          );
-
-          const defaultUsed = imp.defaultAlias && this.usedIdentifiers.has(imp.defaultAlias);
-
-          if (usedSpecifiers.length || defaultUsed) {
-            // Sort specifiers
-            usedSpecifiers.sort(specifierSort);
-
-            // OLD extension behavior (legacy mode): Keep default even if unused, as long as ANY specifiers exist
-            // NEW extension behavior (modern mode): Only keep default if it's actually used
-            const keepDefault = this.config.legacyMode(this.document.uri)
-              ? (usedSpecifiers.length > 0 && imp.defaultAlias) || defaultUsed  // Legacy: Keep if specifiers OR used
-              : defaultUsed;  // Modern: Keep only if used
-
-            keep.push(new NamedImport(
-              imp.libraryName,
-              usedSpecifiers,
-              keepDefault ? imp.defaultAlias : undefined,
-              imp.isTypeOnly,
-              imp.attributes,
-            ));
-          }
-          // else: Remove the import entirely (no used specifiers or default)
-          // Both old and new extensions remove empty imports like `import {} from './lib'`
-        }
-      }
-    }
-
-    // Sort imports (unless disabled)
-    if (!this.config.disableImportsSorting(this.document.uri)) {
-      const sorter = this.config.organizeSortsByFirstSpecifier(this.document.uri)
-        ? importSortByFirstSpecifier
-        : importSort;
-
-      keep = [
-        ...keep.filter(o => o instanceof StringImport).sort(sorter),
-        ...keep.filter(o => !(o instanceof StringImport)).sort(sorter),
-      ];
-    }
-
-    // Remove trailing /index BEFORE merging (modern mode only)
-    // In modern mode, /index removal happens first so imports like './lib/index' and './lib' can merge
-    // In legacy mode, we do it after merging to replicate the old extension's bug
-    if (this.config.removeTrailingIndex(this.document.uri) && !this.config.legacyMode(this.document.uri)) {
-      keep = this.removeTrailingIndexFromImports(keep);
-    }
-
-    //  Merge imports from same module (configurable)
-    // Default: true (new users) | false (migrated users who had disableImportRemovalOnOrganize: true)
-    //
-    // ORDER MATTERS for removeTrailingIndex:
-    // - OLD extension: merges FIRST, then removes /index (wrong order!)
-    //   Result: './lib/index' and './lib' are different libraries, don't merge
-    // - NEW extension (modern mode): removes /index FIRST, then merges (correct!)
-    //   Result: Both become './lib', DO merge
-    // - NEW extension (legacy mode): merge FIRST to match old extension bug
-    if (this.config.mergeImportsFromSameModule(this.document.uri)) {
-      const merged: Import[] = [];
-      const isLegacy = this.config.legacyMode(this.document.uri);
-
-      // Group imports by library name (and isTypeOnly in modern mode)
-      // In modern mode, type-only and value imports from the same library should NOT be merged
-      const byLibrary = new Map<string, Import[]>();
-
-      for (const imp of keep) {
-        // In modern mode, include isTypeOnly in the grouping key
-        // This prevents merging type-only imports with value imports
-        // Check both NamedImport and NamespaceImport for isTypeOnly flag
-        const isTypeOnlyImport = !isLegacy && (
-          (imp instanceof NamedImport && imp.isTypeOnly) ||
-          (imp instanceof NamespaceImport && imp.isTypeOnly)
-        );
-        const typePrefix = isTypeOnlyImport ? 'type:' : '';
-        // Include attributes in grouping key so imports with different attributes
-        // (e.g., `with { type: 'json' }` vs no attributes) are NOT merged together
-        const attrSuffix = imp.attributes ? `|${imp.attributes}` : '';
-        const groupKey = typePrefix + imp.libraryName + attrSuffix;
-
-        if (!byLibrary.has(groupKey)) {
-          byLibrary.set(groupKey, []);
-        }
-        byLibrary.get(groupKey)!.push(imp);
-      }
-
-      // Merge each group
-      for (const [, imports] of byLibrary) {
-        if (imports.length === 1) {
-          // Single import, keep as-is
-          // BUT: In legacy mode, strip type-only flag from NamedImports
-          const imp = imports[0];
-          if (isLegacy && imp instanceof NamedImport && imp.isTypeOnly) {
-            // Strip isTypeOnly flag and individual specifier type flags (legacy mode)
-            // BUT: Preserve comments — GOLDEN RULE: never delete user content
-            const specs = imp.specifiers.map(s => ({
-              ...s,
-              isTypeOnly: false,
-            }));
-            merged.push(new NamedImport(imp.libraryName, specs, imp.defaultAlias, false, imp.attributes));
-          } else {
-            merged.push(imp);
-          }
-          continue;
-        }
-
-        // Multiple imports from same module (already grouped by isTypeOnly in modern mode)
-        const namedImports = imports.filter(i => i instanceof NamedImport) as NamedImport[];
-
-        // Merge ONLY named imports - keep others in original order
-        let mergedNamed: NamedImport | null = null;
-        if (namedImports.length > 0) {
-          const allSpecifiers: SymbolSpecifier[] = [];
-          let mergedDefault: string | undefined;
-
-          for (const namedImp of namedImports) {
-            // In legacy mode, strip isTypeOnly from individual specifiers
-            // BUT: Preserve comments — GOLDEN RULE: never delete user content
-            const specs = isLegacy
-              ? namedImp.specifiers.map(s => ({
-                  ...s,
-                  isTypeOnly: false,
-                }))
-              : namedImp.specifiers;
-            allSpecifiers.push(...specs);
-
-            // Handle duplicate defaults: Keep LAST default (matches old TypeScript Hero)
-            // If multiple default imports from same module exist (invalid TypeScript),
-            // we merge them into one import and keep the last default encountered.
-            // Earlier defaults are dropped - they would cause TypeScript errors anyway.
-            // This matches old TypeScript Hero behavior exactly (see test 63 and comparison test A10).
-            if (namedImp.defaultAlias) {
-              mergedDefault = namedImp.defaultAlias; // Always overwrite, last wins
-            }
-          }
-
-          // Remove duplicate specifiers (same name and alias)
-          // BUT: In legacy mode, keep duplicates (old extension behavior)
-          let finalSpecifiers = allSpecifiers;
-          if (!isLegacy) {
-            // Deduplicate by name+alias. When the same specifier exists as both
-            // `type X` and `X`, keep the value (non-type) version since it subsumes the type import.
-            const specMap = new Map<string, SymbolSpecifier>();
-            for (const spec of allSpecifiers) {
-              const key = spec.specifier + (spec.alias ? `:${spec.alias}` : '');
-              const existing = specMap.get(key);
-              if (!existing) {
-                specMap.set(key, spec);
-              } else if (existing.isTypeOnly && !spec.isTypeOnly) {
-                // Value import subsumes type import — keep the value version
-                specMap.set(key, spec);
-              }
-            }
-            finalSpecifiers = Array.from(specMap.values());
-          }
-
-          // Sort specifiers
-          finalSpecifiers.sort(specifierSort);
-
-          // Preserve the isTypeOnly flag from the first import in the group
-          // BUT: In legacy mode, always strip the flag (old extension behavior)
-          mergedNamed = new NamedImport(
-            namedImports[0].libraryName,
-            finalSpecifiers,
-            mergedDefault,
-            isLegacy ? false : namedImports[0].isTypeOnly, // Legacy: strip type-only
-            namedImports[0].attributes, // Preserve attributes from first import
-          );
-        }
-
-        // Now go through in ORIGINAL order and add imports
-        // Replace all NamedImports with the merged one (first occurrence)
-        let namedAdded = false;
-        for (const imp of imports) {
-          if (imp instanceof NamedImport) {
-            if (!namedAdded && mergedNamed) {
-              merged.push(mergedNamed);
-              namedAdded = true;
-            }
-            // Skip other NamedImports (already merged)
-          } else {
-            // String or Namespace - cannot merge, keep as-is
-            merged.push(imp);
-          }
-        }
-      }
-
-      keep = merged;
-    }
-    // else: Keep imports as-is (no merging)
-
-    // Remove trailing /index AFTER merging (legacy mode only)
-    // In legacy mode, we replicate the old extension's bug where /index removal happens after merging
-    // This means './lib/index' and './lib' won't merge because they're different at merge time
-    if (this.config.removeTrailingIndex(this.document.uri) && this.config.legacyMode(this.document.uri)) {
-      keep = this.removeTrailingIndexFromImports(keep);
-    }
-
-    // Group imports
+    // Group imports (shared logic)
     const importGroups = this.config.grouping(this.document.uri);
     for (const group of importGroups) {
       group.reset();
     }
 
-    // Sort groups for precedence: regex groups first, then keyword groups
-    // This ensures regex groups can match imports even if they appear later in the config
     const groupsWithPrecedence = importGroupSortForPrecedence(importGroups);
-
-    for (const imp of keep) {
+    for (const imp of organized) {
       for (const group of groupsWithPrecedence) {
         if (group.processImport(imp)) {
           break;
@@ -771,14 +498,20 @@ export class ImportManager {
       }
     }
 
-    // Generate import text
-    return await this.generateTextEdits(importGroups);
+    // Generate text edits (shared, parameterized by mode)
+    const renderOptions: RenderOptions = {
+      renderTypeKeywords: !isLegacy,
+      alwaysSortWithinGroups: isLegacy,
+      preserveBlankLinesBeforeImports: !isLegacy,
+    };
+
+    return await this.generateTextEdits(importGroups, renderOptions);
   }
 
   /**
    * Generate TextEdits to replace the old imports with the new organized imports.
    */
-  private async generateTextEdits(importGroups: ImportGroup[]): Promise<TextEdit[]> {
+  private async generateTextEdits(importGroups: ImportGroup[], renderOptions: RenderOptions): Promise<TextEdit[]> {
     const edits: TextEdit[] = [];
 
     // Get the range of all import declarations (both modern and old-style)
@@ -960,7 +693,6 @@ export class ImportManager {
     const importLines: string[] = [];
     const useSorting = !this.config.disableImportsSorting(this.document.uri);
     const useFirstSpecifierSort = this.config.organizeSortsByFirstSpecifier(this.document.uri);
-    const useLegacyWithinGroupSorting = this.config.legacyWithinGroupSorting(this.document.uri);
 
     // Cache formatting config values once (avoid repeated lookups per import)
     const quote = await this.config.stringQuoteStyle(this.document.uri);
@@ -975,21 +707,23 @@ export class ImportManager {
 
       // Choose which import list to use:
       //
-      // LEGACY MODE (replicates old TypeScript Hero bug):
+      // LEGACY MODE (alwaysSortWithinGroups = true):
       // - Always use group.sortedImports (sorted by library name)
       // - Ignores disableImportsSorting and organizeSortsByFirstSpecifier
-      // - This is the "Level 2 sorting" bug from the old extension
+      // - This replicates the old TypeScript Hero's "Level 2 sorting" bug
       //
-      // MODERN MODE (correct behavior):
+      // MODERN MODE (alwaysSortWithinGroups = false):
       // - If sorting is DISABLED: use pre-sorted order (group.imports)
-      // - If sorting by FIRST SPECIFIER: use pre-sorted order (group.imports) - sorted in organizeImports()
+      // - If sorting by FIRST SPECIFIER: use pre-sorted order (group.imports) - sorted in pipeline
       // - If sorting by LIBRARY NAME: re-sort within group (group.sortedImports)
-      const importsToUse = useLegacyWithinGroupSorting
-        ? group.sortedImports // Legacy: always sort within groups (bug!)
+      const importsToUse = renderOptions.alwaysSortWithinGroups
+        ? group.sortedImports
         : (useSorting && !useFirstSpecifierSort)
           ? group.sortedImports
           : group.imports;
-      const groupLines = await Promise.all(importsToUse.map(imp => this.generateImportStatement(imp, quote, semi, spaceInBraces, indent)));
+      const groupLines = await Promise.all(importsToUse.map(imp =>
+        this.generateImportStatement(imp, quote, semi, spaceInBraces, indent, renderOptions.renderTypeKeywords),
+      ));
       importLines.push(...groupLines);
 
       // Add blank line between groups
@@ -1006,8 +740,8 @@ export class ImportManager {
       let importText = '';
 
       // Legacy mode: Remove blank lines between header and imports (old TypeScript Hero behavior)
-      // Modern modes: Preserve blank lines between header and imports
-      if (!this.config.legacyMode(this.document.uri) && hasHeader && blankLinesBefore > 0) {
+      // Modern mode: Preserve blank lines between header and imports
+      if (renderOptions.preserveBlankLinesBeforeImports && hasHeader && blankLinesBefore > 0) {
         importText += this.eol.repeat(blankLinesBefore);
       }
 
@@ -1160,7 +894,8 @@ export class ImportManager {
     quote: '"' | '\'',
     semi: string,
     spaceInBraces: boolean,
-    indent: string
+    indent: string,
+    renderTypeKeywords: boolean,
   ): Promise<string> {
     const attrs = imp.attributes ? ` ${imp.attributes}` : '';
 
@@ -1169,9 +904,7 @@ export class ImportManager {
     }
 
     if (imp instanceof NamespaceImport) {
-      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
-      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
-      const typeKeyword = useTypeKeyword ? 'type ' : '';
+      const typeKeyword = imp.isTypeOnly && renderTypeKeywords ? 'type ' : '';
       const defaultPart = imp.defaultAlias ? `${imp.defaultAlias}, ` : '';
       return `import ${typeKeyword}${defaultPart}* as ${imp.alias} from ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
     }
@@ -1184,9 +917,7 @@ export class ImportManager {
       const parts: string[] = [];
 
       // Add 'type' keyword for type-only imports (TS 3.8+)
-      // In legacy mode, always strip 'type' keyword (old extension doesn't support it)
-      const useTypeKeyword = imp.isTypeOnly && !this.config.legacyMode(this.document.uri);
-      const typeKeyword = useTypeKeyword ? 'type ' : '';
+      const typeKeyword = imp.isTypeOnly && renderTypeKeywords ? 'type ' : '';
 
       // Default import
       if (imp.defaultAlias) {
@@ -1200,8 +931,7 @@ export class ImportManager {
 
         const specifierStrings = imp.specifiers.map(spec => {
           const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
-          // In legacy mode, strip specifier-level type modifiers (old extension doesn't support them)
-          const isSpecTypeOnly = spec.isTypeOnly && !this.config.legacyMode(this.document.uri);
+          const isSpecTypeOnly = spec.isTypeOnly && renderTypeKeywords;
           const typePrefix = isSpecTypeOnly ? 'type ' : '';
           let result = `${typePrefix}${baseSpec}`;
 
@@ -1237,8 +967,7 @@ export class ImportManager {
           // e.g., "B, // end" not "B // end,"
           const formattedSpecifiers = imp.specifiers.map((spec, index) => {
             const baseSpec = spec.alias ? `${spec.specifier} as ${spec.alias}` : spec.specifier;
-            // In legacy mode, strip specifier-level type modifiers
-            const isSpecTypeOnly = spec.isTypeOnly && !this.config.legacyMode(this.document.uri);
+            const isSpecTypeOnly = spec.isTypeOnly && renderTypeKeywords;
             const typePrefix = isSpecTypeOnly ? 'type ' : '';
             let result = `${typePrefix}${baseSpec}`;
 
