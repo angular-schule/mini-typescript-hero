@@ -33,7 +33,7 @@
 
 import * as assert from 'assert';
 import * as fs from 'fs';
-import { commands, window } from 'vscode';
+import { commands, Position, window } from 'vscode';
 import { createTempDocument, deleteTempDocument } from './test-helpers';
 
 suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
@@ -57,10 +57,32 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
   }
 
   /**
+   * Wait for the TypeScript language service to be ready for a document.
+   * Polls executeHoverProvider as a reliable "TS has processed this file" signal.
+   * When TS is ready, hovering over an import keyword returns type information.
+   */
+  async function waitForTypeScriptReady(uri: import('vscode').Uri, timeoutMs: number = 10000): Promise<void> {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const hovers = await commands.executeCommand<import('vscode').Hover[]>(
+          'vscode.executeHoverProvider', uri, new Position(0, 10),
+        );
+        if (hovers && hovers.length > 0) {
+          return; // TS language service is ready
+        }
+      } catch { /* TS not ready yet */ }
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    // Timed out — proceed anyway (best effort)
+  }
+
+  /**
    * Helper function to organize imports using VS Code's ACTUAL command
    * This executes "editor.action.organizeImports" - the real command!
    *
-   * Uses polling-based waiting instead of hardcoded delays for reliability.
+   * Uses hover provider polling to reliably detect when the TypeScript
+   * language service is ready before running the organize command.
    */
   async function organizeImportsViaVSCode(content: string): Promise<string> {
     // Create temp file using shared helper
@@ -74,13 +96,9 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
       await doc.save();
 
       // Wait for TypeScript language service to be ready
-      // We poll for diagnostics availability as a proxy for "TS is ready"
-      // This is more reliable than a fixed delay
-      await waitForCondition(() => {
-        // TypeScript service is ready when the file can be processed
-        // We can't easily check diagnostics, so we use a reasonable initial delay
-        return true;
-      }, 2000, 200);
+      // This prevents the flaky failure where editor.action.organizeImports
+      // runs before TS has registered its code action provider
+      await waitForTypeScriptReady(doc.uri);
 
       // Capture initial content to detect changes
       const initialContent = fs.readFileSync(doc.uri.fsPath, 'utf-8');
