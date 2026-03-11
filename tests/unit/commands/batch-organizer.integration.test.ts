@@ -125,9 +125,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
 
-      // Wait for file system to flush
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Check logs for errors
       const logs = logger.lines.join('');
 
@@ -173,8 +170,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Read modified content
       const after = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
       assert.ok(!after.includes("from './unused'"), 'Should have removed unused import');
@@ -214,8 +209,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Verify all files were processed
       for (const fileUri of tempWs.fileUris) {
         const content = fs.readFileSync(fileUri.fsPath, 'utf-8');
@@ -251,8 +244,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify all files were organized (sorted)
       const after1 = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -294,8 +285,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // CALL THE REAL METHOD! (should not crash)
       await organizer.organizeFolder(tempWs.rootUri);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Valid files should be organized
       const after1 = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
       const after3 = fs.readFileSync(tempWs.fileUris[2].fsPath, 'utf-8');
@@ -331,8 +320,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       // CALL THE REAL METHOD!
       await organizer.organizeWorkspace();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify files were organized
       const after1 = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -370,8 +357,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify src/app.ts was organized
       const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -413,18 +398,13 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
         .update('excludePatterns', ['**/generated/**'], 1); // ConfigurationTarget.Global
 
-      // Wait for config to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Verify config was set
+      // Verify config was set (update() resolves when config is written)
       const verifyConfig = workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
         .get<string[]>('excludePatterns', []);
       assert.deepStrictEqual(verifyConfig, ['**/generated/**'], 'Config should be set');
 
       // CALL THE REAL METHOD!
       await organizer.organizeFolder(tempWs.rootUri);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify src/app.ts was organized
       const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -467,8 +447,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // CALL THE REAL METHOD - organizeWorkspace() instead of organizeFolder()
       await organizer.organizeWorkspace();
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Verify src/app.ts was organized
       const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
       assert.ok(appContent.indexOf("from './a'") < appContent.indexOf("from './b'"), 'src/app.ts should be organized');
@@ -508,18 +486,13 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       await workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
         .update('excludePatterns', ['**/generated/**'], 1); // ConfigurationTarget.Global
 
-      // Wait for config to propagate
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Verify config was set
+      // Verify config was set (update() resolves when config is written)
       const actualPatterns = workspace.getConfiguration('miniTypescriptHero.imports', tempWs.rootUri)
         .get<string[]>('excludePatterns');
       assert.deepStrictEqual(actualPatterns, ['**/generated/**'], 'Config should be set');
 
       // CALL THE REAL METHOD - organizeWorkspace() instead of organizeFolder()
       await organizer.organizeWorkspace();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify src/app.ts was organized
       const appContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -549,9 +522,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       if (originalCount > 0) {
         await workspace.updateWorkspaceFolders(0, originalCount);
       }
-
-      // Wait for workspace to update
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Verify no workspace folders
       assert.strictEqual(workspace.workspaceFolders?.length || 0, 0, 'Should have no workspace folders');
@@ -604,8 +574,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
       // Call organizeWorkspace - should show info message and return (no TS/JS files to process)
       await organizer.organizeWorkspace();
 
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       // REAL validation: Verify files were NOT modified (mtime unchanged)
       const readmeMtimeAfter = fs.statSync(tempWs.fileUris[0].fsPath).mtimeMs;
       const jsonMtimeAfter = fs.statSync(tempWs.fileUris[1].fsPath).mtimeMs;
@@ -657,8 +625,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       // Call organizeWorkspace - should continue despite syntax error in middle file
       await organizer.organizeWorkspace();
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify valid files were organized
       const valid1Content = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -730,8 +696,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
         { uri: symlinkUri, name: 'SymlinkWorkspace' }
       );
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Try to organize folder using the REAL path (not symlink)
       // VS Code bug: getWorkspaceFolder(realPath) returns undefined
       // Our code's findTargetFilesInFolder() will throw "Folder is not in workspace"
@@ -739,8 +703,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
 
       // The function should complete without throwing (error handled internally)
       await organizer.organizeFolder(tempWs.rootUri); // Use REAL path, not symlink
-
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       // REAL validation: Verify file was NOT modified (error prevented processing)
       const fileContent = fs.readFileSync(tempWs.fileUris[0].fsPath, 'utf-8');
@@ -794,13 +756,10 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
         { uri: tempWs2.rootUri, name: 'Root2' }
       );
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       // Both roots use default excludePatterns (includes **/dist/**)
       // This tests that each root's patterns are applied correctly to its own files
 
       await organizer.organizeWorkspace();
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify files were organized correctly
       // Root1: src/app.ts should be organized, dist/auto.ts should NOT (excluded by default)
@@ -903,8 +862,6 @@ suite('BatchOrganizer - REAL Integration (calls actual methods!)', () => {
           'Should throw cancellation error'
         );
       }
-
-      await new Promise(resolve => setTimeout(resolve, 300));
 
       // REAL validation: Verify ALL files remain unchanged (cancellation prevented modifications)
       tempWs.fileUris.forEach((uri, i) => {
