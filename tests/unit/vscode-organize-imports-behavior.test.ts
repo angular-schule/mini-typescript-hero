@@ -57,11 +57,22 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
   }
 
   /**
+   * Whether the TypeScript language service has been confirmed ready at least once.
+   * Once ready, it stays ready for subsequent tests — no need to re-poll.
+   */
+  let tsServiceReady = false;
+
+  /**
    * Wait for the TypeScript language service to be ready for a document.
    * Polls executeHoverProvider as a reliable "TS has processed this file" signal.
    * When TS is ready, hovering over an import keyword returns type information.
+   *
+   * Caches readiness: once TS is confirmed ready, subsequent calls return immediately.
    */
-  async function waitForTypeScriptReady(uri: import('vscode').Uri, timeoutMs: number = 10000): Promise<void> {
+  async function waitForTypeScriptReady(uri: import('vscode').Uri, timeoutMs: number = 5000): Promise<void> {
+    if (tsServiceReady) {
+      return; // TS was already confirmed ready in a previous test
+    }
     const startTime = Date.now();
     while (Date.now() - startTime < timeoutMs) {
       try {
@@ -69,7 +80,8 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
           'vscode.executeHoverProvider', uri, new Position(0, 10),
         );
         if (hovers && hovers.length > 0) {
-          return; // TS language service is ready
+          tsServiceReady = true;
+          return;
         }
       } catch { /* TS not ready yet */ }
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -108,15 +120,15 @@ suite('VS Code Organize Imports Behavior (Real VS Code Command)', () => {
 
       // Wait for the organize imports to take effect
       // Poll until document content changes or timeout
+      // Short timeout (1s) — the command is fast; if nothing changed, input was already organized
       await waitForCondition(() => {
         try {
           const currentContent = doc.getText();
-          // Content changed means organize imports completed
           return currentContent !== initialContent;
         } catch {
           return false;
         }
-      }, 3000, 100);
+      }, 1000, 100);
 
       // Save to capture changes
       await doc.save();
