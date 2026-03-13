@@ -157,8 +157,10 @@ export class BatchOrganizer {
 
     this.logger.appendLine(`[BatchOrganizer] Searching workspace: ${include}`);
 
-    // Find all files (undefined = VS Code respects files.exclude; null would bypass it)
-    const allFiles = await workspace.findFiles(include, undefined);
+    // Pass '**/node_modules/**' to findFiles to avoid enumerating thousands of dependency files.
+    // 'undefined' would only respect files.exclude (which doesn't include node_modules by default).
+    // Our manual filter below handles the remaining exclude patterns (dist, build, out, user patterns).
+    const allFiles = await workspace.findFiles(include, '**/node_modules/**');
 
     // Manually filter files using exclude patterns
     // IMPORTANT: Get excludePatterns per file based on its workspace folder
@@ -197,7 +199,8 @@ export class BatchOrganizer {
     // Use RelativePattern to scope findFiles to the specific workspace folder
     // (plain string patterns search across ALL workspace roots in multi-root workspaces)
     const include = new RelativePattern(workspaceFolder, includeGlob);
-    const allFiles = await workspace.findFiles(include, undefined);
+    // Pass '**/node_modules/**' to findFiles to avoid enumerating thousands of dependency files.
+    const allFiles = await workspace.findFiles(include, '**/node_modules/**');
 
     // Manually filter files using exclude patterns
     const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
