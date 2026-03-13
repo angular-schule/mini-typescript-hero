@@ -4,6 +4,10 @@
 
 # Mini TypeScript Hero – Small hero. Big cleanup!
 
+<div align="center">
+  <img src="https://raw.githubusercontent.com/angular-schule/mini-typescript-hero/master/demo.gif" alt="Mini TypeScript Hero Demo" width="800">
+</div>
+
 **One keystroke. One click. Hundreds of files organized.** — A lightweight, modern VSCode extension that sorts and organizes your TypeScript/JavaScript imports.
 
 **Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2026-03-mini-typescript-hero)
