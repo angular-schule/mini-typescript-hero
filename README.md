@@ -1,12 +1,10 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/angular-schule/mini-typescript-hero/master/logo.png" alt="Mini TypeScript Hero Logo" width="300">
+  <img src="logo.png" alt="Mini TypeScript Hero Logo" width="300">
 </div>
 
 # Mini TypeScript Hero – Small hero. Big cleanup!
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/angular-schule/mini-typescript-hero/master/demo.gif" alt="Mini TypeScript Hero Demo" width="800">
-</div>
+![Demo video](demo.gif)
 
 **One keystroke. One click. Hundreds of files organized.** — A lightweight, modern VSCode extension that sorts and organizes your TypeScript/JavaScript imports.
 
@@ -258,9 +256,8 @@ This extension continues [TypeScript Hero](https://github.com/buehler/typescript
 
 ## License
 
-MIT License — Copyright (c) [Angular.Schule](https://angular.schule) (by Johannes Hoppe)
-
-Original work Copyright (c) Christoph Bühler
+MIT License — Copyright (c) [Angular.Schule](https://angular.schule) (by Johannes Hoppe)  
+MIT License — Original work Copyright (c) Christoph Bühler
 
 ## Documentation
 
@@ -275,3 +272,13 @@ Original work Copyright (c) Christoph Bühler
 - [GitHub Repository](https://github.com/angular-schule/mini-typescript-hero)
 - [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=angular-schule.mini-typescript-hero)
 - [Angular.Schule](https://angular.schule)
+
+## 🅰️ About
+
+![Angular.Schule](https://assets.angular.schule/header-only-logo.png)
+
+🇬🇧 `mini-typescript-hero` is brought to you by the **Angular.Schule** team – two Google Developer Experts (GDE) from Germany. We get you and your team up to speed with Angular through remote trainings in English! Visit [angular.schule](https://angular.schule) to learn more.
+
+🇩🇪 `mini-typescript-hero` wurde für Sie entwickelt von der **Angular.Schule**! Wir machen Sie und Ihr Team fit für das Webframework Angular – in [offenen Gruppen](https://angular.schule/schulungen/online) oder [individuellen Inhouse-Schulungen](https://angular.schule/schulungen/online-teams). Von den Buchautoren und Google Developer Experts (GDE) Johannes Hoppe und Ferdinand Malcher.
+
+<img src="https://assets.angular.schule/logo-angular-schule.png" height="60">
