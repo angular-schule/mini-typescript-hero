@@ -914,6 +914,12 @@ export class ImportManager {
     }
 
     if (imp instanceof NamedImport) {
+      // Handle empty NamedImport (import {} from 'lib') — render as side-effect import
+      // This can happen when disableImportRemovalOnOrganize is true or library is in ignoredFromRemoval
+      if (!imp.defaultAlias && imp.specifiers.length === 0) {
+        return `import ${quote}${imp.libraryName}${quote}${attrs}${semi}`;
+      }
+
       const parts: string[] = [];
 
       // Add 'type' keyword for type-only imports (TS 3.8+)
