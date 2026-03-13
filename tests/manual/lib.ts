@@ -2,6 +2,9 @@
 export const VeryLongName1 = 'value1';
 export const VeryLongName2 = 'value2';
 export const VeryLongName3 = 'value3';
+export const VeryLongName4 = 'value4';
+export const VeryLongName5 = 'value5';
+export const VeryLongName6 = 'value6';
 export const VeryLongSpecifierName1 = 'spec1';
 export const VeryLongSpecifierName2 = 'spec2';
 export const VeryLongSpecifierName3 = 'spec3';
