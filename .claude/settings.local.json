@@ -36,7 +36,11 @@
       "Bash(git rm:*)",
       "Bash(find:*)",
       "Bash(gh release list:*)",
-      "Bash(gh release view:*)"
+      "Bash(gh release view:*)",
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(gh run:*)",
+      "Read(//Volumes/Untitled/**)"
     ],
     "deny": [],
     "ask": []

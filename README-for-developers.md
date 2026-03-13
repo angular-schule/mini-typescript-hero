@@ -176,16 +176,23 @@ vsce package
 ```
 mini-typescript-hero/
 ├── src/
-│   ├── configuration/          # Configuration system
-│   │   ├── imports-config.ts   # Import settings
-│   │   └── settings-migration.ts  # Migration from old extension
-│   ├── imports/                # Import organization logic
-│   │   ├── import-grouping/    # Group classification
-│   │   ├── import-manager.ts   # Core logic (ts-morph)
-│   │   ├── import-organizer.ts # VSCode integration
-│   │   ├── import-types.ts     # Import representations
-│   │   └── import-utilities.ts # Sorting/precedence
-│   └── extension.ts            # Extension entry point
+│   ├── configuration/              # Configuration system
+│   │   ├── imports-config.ts       # Import settings
+│   │   ├── settings-migration.ts   # Migration from old extension
+│   │   └── conflict-detector.ts    # Detects conflicts with Prettier/ESLint
+│   ├── imports/                    # Import organization logic
+│   │   ├── import-grouping/        # Group classification
+│   │   ├── import-manager.ts       # Core logic (ts-morph, pipeline dispatch)
+│   │   ├── import-organizer.ts     # VSCode integration
+│   │   ├── import-types.ts         # Import representations
+│   │   ├── import-utilities.ts     # Sorting/precedence
+│   │   ├── organize-pipeline.ts    # Pipeline type definitions
+│   │   ├── pipeline-shared.ts      # Shared pipeline functions (filter, merge, sort)
+│   │   ├── pipeline-modern.ts      # Modern mode orchestrator
+│   │   └── pipeline-legacy.ts      # Legacy mode orchestrator
+│   ├── commands/
+│   │   └── batch-organizer.ts      # Workspace/folder batch operations
+│   └── extension.ts                # Extension entry point
 ├── tests/
 │   ├── unit/                   # Main extension tests
 │   ├── comparison/             # Old vs new extension comparison
@@ -208,11 +215,13 @@ mini-typescript-hero/
    - Scan all identifiers in code
    - Detect local shadowing
    - Handle re-exports
-4. **Remove** unused imports (respects `ignoredFromRemoval` config)
-5. **Sort** imports (by module or first specifier)
-6. **Group** imports (Plains → Modules → Workspace, regex precedence)
-7. **Generate** formatted text (`ImportManager.generateImportStatement()`)
-8. **Apply** edits via VSCode TextEdit API
+4. **Dispatch** to pipeline based on mode:
+   - **Modern** (`pipeline-modern.ts`): filter → sort → removeTrailingIndex → merge
+   - **Legacy** (`pipeline-legacy.ts`): filter (strip type flags) → sort → merge → removeTrailingIndex
+   - Both pipelines call shared functions from `pipeline-shared.ts` with different option flags
+5. **Group** imports (Plains → Modules → Workspace, regex precedence)
+6. **Generate** formatted text (`ImportManager.generateImportStatement()`)
+7. **Apply** edits via VSCode TextEdit API
 
 ### Key Design Decisions
 

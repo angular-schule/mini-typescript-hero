@@ -52,7 +52,7 @@ His response was incredibly kind and supportive. He gave me his blessing, shared
 
 ## Cool New Features
 
-While modernizing, we added some features that the original never had:
+While modernizing, I added some features that the original never had:
 
 **🗂️ Organize entire folders or your whole workspace at once!**
 
@@ -81,7 +81,7 @@ Using Prettier or ESLint plugins that also sort imports? Run "Check for configur
 ❌ **Remove `/index` from paths** — Keeps `./lib/index` as-is instead of cleaning to `./lib`
 ❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
 
-**In practice:** When you add a new Angular import, VS Code requires you to manually maintain blank line separators between import groups. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically places imports in the correct groups with proper spacing. Configure once, organize forever.
+**In practice:** When you add a new import, VS Code requires you to manually maintain blank line separators between import groups. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically places imports in the correct groups with proper spacing. Configure once, organize forever.
 
 ## What Changed Under the Hood
 
@@ -122,7 +122,7 @@ All your custom configurations transfer automatically — quote style, semicolon
 
 This extension is **MIT licensed and free for everyone**.
 
-I'm incredibly grateful to Christoph Bühler for creating TypeScript Hero in the first place, and for being so generous in allowing this work to continue. The original code, the design decisions, the thoughtful features: all of that came from Christoph.
+Thanks to Christoph Bühler for creating TypeScript Hero in the first place. The original code, the design decisions, the thoughtful features: all of that came from Christoph.
 
 I'm committed to keeping this tool maintained and working for the community.
 
@@ -145,6 +145,6 @@ Ready to organize your imports with a single keystroke?
 
 ---
 
-**TL;DR:** TypeScript Hero isn't dead. We picked it up and modernized it as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and import organization that can match your team's style guide.
+**TL;DR:** TypeScript Hero isn't dead. I picked it up and modernized it as Mini TypeScript Hero. VS Code has basic organize imports, but Mini TypeScript Hero gives you custom grouping patterns, formatting control, and import organization that can match your team's style guide.
 
 Happy coding! ✨

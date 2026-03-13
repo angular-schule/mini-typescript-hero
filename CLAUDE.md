@@ -51,6 +51,10 @@ extension.ts
   │   ├─> Logger (OutputChannel)
   │   └─> ImportManager
   │       ├─> ts-morph (modern parser)
+  │       ├─> Pipeline dispatch (modern or legacy)
+  │       │   ├─> pipeline-modern.ts  (modern orchestrator)
+  │       │   ├─> pipeline-legacy.ts  (legacy orchestrator)
+  │       │   └─> pipeline-shared.ts  (shared parameterized functions)
   │       └─> Import Groups
   └─> BatchOrganizer (workspace/folder operations)
 ```
@@ -59,7 +63,6 @@ extension.ts
 - ❌ No InversifyJS (direct instantiation)
 - ❌ No winston (native VSCode OutputChannel)
 - ❌ No typescript-parser (modern ts-morph)
-- ✅ 80% less code complexity
 
 ---
 
@@ -163,6 +166,10 @@ mini-typescript-hero/                     ← Project root
 │   │   ├── import-organizer.ts           ← Orchestrator, VSCode integration
 │   │   ├── import-types.ts               ← Import model types (NamedImport, etc.)
 │   │   ├── import-utilities.ts           ← Sorting and helper functions
+│   │   ├── organize-pipeline.ts          ← Pipeline type definitions (interfaces)
+│   │   ├── pipeline-shared.ts            ← Shared pipeline functions (filter, merge, sort)
+│   │   ├── pipeline-modern.ts            ← Modern mode orchestrator
+│   │   ├── pipeline-legacy.ts            ← Legacy mode orchestrator
 │   │   └── import-grouping/              ← Group definitions (Plains, Modules, etc.)
 │   │       ├── index.ts                  ← Re-exports
 │   │       ├── import-group.ts           ← ImportGroup interface
@@ -181,7 +188,7 @@ mini-typescript-hero/                     ← Project root
 │
 ├── tests/                                ← All test-related folders
 │   ├── unit/                             ← Main extension tests (run with npm test)
-│   │   ├── import-manager.test.ts        ← Core import manager tests (~100 tests)
+│   │   ├── import-manager.test.ts        ← Core import manager tests
 │   │   ├── import-manager.*.test.ts      ← Additional: blank-lines, edge-cases, indentation, path-aliases, settings-matrix
 │   │   ├── import-grouping.test.ts       ← Grouping logic tests
 │   │   ├── import-organizer.test.ts      ← Orchestrator/command tests

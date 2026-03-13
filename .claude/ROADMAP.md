@@ -464,7 +464,7 @@ describe('CLI', () => {
 
 **Before considering complete**:
 - [ ] Core package has zero VS Code dependencies (verify package.json)
-- [ ] All 384 extension tests still passing
+- [ ] All extension tests still passing
 - [ ] CLI tests added (>20 integration tests)
 - [ ] CLI works without VS Code installed (test on clean VM)
 - [ ] Config schema validated and published

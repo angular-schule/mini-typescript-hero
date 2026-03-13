@@ -8,7 +8,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
 
 ## Mini TypeScript Hero
 
-### [4.0.0-rc.0] - Unreleased
+### [4.0.0-rc.0]
 
 **Modernization release** - rebuilding Mini TypeScript Hero with a modern technology stack.
 
@@ -42,7 +42,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
 
 #### Notes
 
-[TypeScript Hero](https://github.com/buehler/typescript-hero) by Christoph Bühler was well-known for its import organizer, but it went unmaintained. We picked it up, modernized everything, and added new features.
+[TypeScript Hero](https://github.com/buehler/typescript-hero) by Christoph Bühler was well-known for its import organizer, but it went unmaintained. I picked it up, modernized everything, and added new features.
 
 **Technology improvements:**
 - Replaced deprecated `typescript-parser` with modern ts-morph
