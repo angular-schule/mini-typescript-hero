@@ -1,0 +1,4 @@
+[submodule "tests/comparison/old-typescript-hero"]
+	path = tests/comparison/old-typescript-hero
+	url = https://github.com/angular-schule/mini-typescript-hero.git
+	branch = old-ts-hero-v3

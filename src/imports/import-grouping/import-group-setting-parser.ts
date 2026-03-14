@@ -14,14 +14,11 @@ export type ImportGroupSetting =
   | string
   | { identifier: ImportGroupKeyword | string; order: ImportGroupOrder };
 
-const REGEX_REGEX_GROUP = /^\/.+\/$/;
+const REGEX_REGEX_GROUP = /^\/.+\/[dgimsuyv]*$/;
 
 /**
  * Parser that takes the vscode - setting and creates import groups out of it.
  * Contains a default if the parsing fails.
- *
- * @export
- * @class ImportGroupSettingParser
  */
 export class ImportGroupSettingParser {
   /**
@@ -30,11 +27,6 @@ export class ImportGroupSettingParser {
    *  - Plain imports
    *  - Module imports
    *  - Workspace imports
-   *
-   * @readonly
-   * @static
-   * @type {ImportGroup[]}
-   * @memberof ImportGroupSettingParser
    */
   public static get default(): ImportGroup[] {
     return [
@@ -46,14 +38,9 @@ export class ImportGroupSettingParser {
   }
 
   /**
-   * Function that takes a string or object ({@link ImportGroupSetting}) and parses an import group out of it.
+   * Function that takes a string or object and parses an import group out of it.
    *
-   * @static
-   * @param {ImportGroupSetting} setting
-   * @returns {ImportGroup}
    * @throws {ImportGroupIdentifierInvalidError} When the identifier is invalid (neither keyword nor valid regex)
-   *
-   * @memberof ImportGroupSettingParser
    */
   public static parseSetting(setting: ImportGroupSetting): ImportGroup {
     let identifier: ImportGroupKeyword | string;
@@ -63,7 +50,9 @@ export class ImportGroupSettingParser {
       identifier = setting;
     } else {
       identifier = setting.identifier;
-      order = setting.order;
+      // Normalize order to valid enum value (case-insensitive)
+      const rawOrder = String(setting.order || '').toLowerCase();
+      order = rawOrder === ImportGroupOrder.Desc ? ImportGroupOrder.Desc : ImportGroupOrder.Asc;
     }
 
     if (REGEX_REGEX_GROUP.test(identifier)) {
@@ -74,11 +63,10 @@ export class ImportGroupSettingParser {
       return new RemainImportGroup(order);
     }
 
-    if (ImportGroupKeyword[identifier as any] !== undefined) {
-      return new KeywordImportGroup(
-        (ImportGroupKeyword as any)[identifier as any],
-        order,
-      );
+    if (identifier === ImportGroupKeyword.Modules ||
+        identifier === ImportGroupKeyword.Plains ||
+        identifier === ImportGroupKeyword.Workspace) {
+      return new KeywordImportGroup(identifier, order);
     }
 
     throw new ImportGroupIdentifierInvalidError(identifier);

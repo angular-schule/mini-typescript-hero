@@ -1,20 +1,44 @@
-.github/**
+# Build artifacts (tests)
+out/**
+**/.vscode-test.*
+
+# Development files
 .vscode/**
 .vscode-test/**
-
-.gitignore
-package-lock.json
-prepare-release.js
-
-config/**
-test/**
+.claude/**
+.editorconfig
+.github/**
+.gitmodules
 src/**
-!src/assets/**
-tsconfig.json
-tslint.json
-coverage/**
+**/*.ts
+!dist/**/*.d.ts
+**/tsconfig.json
+**/eslint.config.mjs
+esbuild.js
+.gitignore
+.yarnrc
 
-__snapshots__/**
+# Test infrastructure (DO NOT SHIP)
+tests/**
 
-*.vsix
-out/test/**
+# Documentation - exclude all .md and .txt files EXCEPT user-facing docs
+**/*.md
+**/*.txt
+!README.md
+!CHANGELOG.md
+!README-migration.md
+!README-configuration.md
+!LICENSE
+!LICENSE.txt
+
+# Design files
+logo.svg
+logo.ai
+logo.png
+*.gif
+
+# Source maps (keep for production debugging)
+# **/*.map
+
+# Dependencies
+node_modules/**

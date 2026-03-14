@@ -1,0 +1,52 @@
+name: Test Mini TypeScript Hero
+
+on:
+  push:
+    branches: [main, mini-typescript-hero-v4]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    timeout-minutes: 10  # Tests take ~2-3min, add buffer for CI overhead
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true  # Checkout submodule at pinned commit from repo
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install main dependencies
+        run: npm install
+
+      - name: Run main extension tests (Linux with xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
+
+      - name: Run main extension tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+
+      - name: Install comparison tests dependencies
+        run: npm install
+        working-directory: ./tests/comparison
+
+      - name: Run comparison tests (Linux with xvfb)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm test
+        working-directory: ./tests/comparison
+
+      - name: Run comparison tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: npm test
+        working-directory: ./tests/comparison

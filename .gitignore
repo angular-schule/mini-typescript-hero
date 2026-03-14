@@ -1,10 +1,20 @@
 out
+dist
 node_modules
 .vscode-test
 *.vsix
+
+# NOTE: dist/ is ignored in git but INCLUDED in VSIX via .vscodeignore
+# Build artifacts should not be committed to version control
+# CI/CD or local build generates dist/ before packaging
+
+# Test workspace contents (keep structure, ignore generated files)
+tests/workspaces/**/mths-workspace-*
 
 # Logs
 logs
 *.log
 npm-debug.log*
 coverage/
+.DS_Store
+.claude/settings.local.json

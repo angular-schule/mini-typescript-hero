@@ -1,0 +1,28 @@
+{
+  "name": "comparison-tests",
+  "version": "1.0.0",
+  "description": "Comparison tests: old vs new TypeScript Hero",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "compile-tests": "tsc -p . --outDir out --noEmitOnError false 2>&1 | grep -v 'old-typescript-hero/src/ioc.ts' || true",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "clean": "rm -rf out",
+    "pretest": "npm run clean && npm run compile-tests",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.104.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "inversify": "^7.10.2",
+    "reflect-metadata": "^0.2.2",
+    "typescript": "^5.9.3",
+    "typescript-parser": "^2.6.1"
+  }
+}
