@@ -81,8 +81,8 @@ Using Prettier or ESLint plugins that also sort imports? Run "Check for configur
 
 **What VS Code cannot do:**
 
-❌ **Automatically create groups based on patterns** — Without manual blank lines, VS Code sorts everything alphabetically as one flat list
-❌ **Remove `/index` from paths** — Keeps `./lib/index` as-is instead of cleaning to `./lib`
+❌ **Automatically create groups based on patterns** — Without manual blank lines, VS Code sorts everything alphabetically as one flat list  
+❌ **Remove `/index` from paths** — Keeps `./lib/index` as-is instead of cleaning to `./lib`  
 ❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
 
 **In practice:** When you add a new import, VS Code requires you to manually maintain blank line separators between import groups. With Mini TypeScript Hero, you press `Ctrl+Alt+O` and it automatically places imports in the correct groups with proper spacing. Configure once, organize forever.
@@ -94,14 +94,14 @@ The original TypeScript Hero used Christoph's own `typescript-parser` library ([
 For a tool I rely on daily, that was a ticking time bomb.
 
 **The old engine:**
-- `typescript-parser` (Christoph's library, great but unmaintained)
+- Custom-built `typescript-parser` (Christoph's library, great but unmaintained)
 - InversifyJS for dependency injection
-- Complex codebase from 2018
+- A lot of hand-written infrastructure code from 2018
 
 **The new engine:**
-- [`ts-morph`](https://github.com/dsherret/ts-morph) (actively maintained, modern)
+- [`ts-morph`](https://github.com/dsherret/ts-morph) for parsing (actively maintained, battle-tested)
 - TypeScript with strict mode
-- Simpler, cleaner architecture, everything new
+- Leaner codebase — delegate the heavy lifting to a proven library instead of rolling our own parser
 - No deprecated dependencies
 
 **Other improvements:**

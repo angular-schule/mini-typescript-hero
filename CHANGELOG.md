@@ -46,7 +46,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
 
 **Technology improvements:**
 - Replaced deprecated `typescript-parser` with modern ts-morph
-- Simplified architecture (removed InversifyJS DI container)
+- Replaced InversifyJS DI container with direct instantiation
 - Native VSCode OutputChannel logging (replaced winston)
 - Modern esbuild bundling
 - Strict TypeScript

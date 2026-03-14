@@ -23,7 +23,7 @@ Extract and modernize the "Sort and organize your imports" feature with:
 - ✅ **Comprehensive backward compatibility** with TypeScript Hero settings
 - ✅ **Modern tech stack** (ts-morph, esbuild, latest TypeScript)
 - ✅ **No dependencies on deprecated libraries** (typescript-parser is 7 years old!)
-- ✅ **Simplified architecture** (no InversifyJS DI container overkill)
+- ✅ **Straightforward architecture** (plain classes, no DI container)
 
 ---
 
@@ -43,7 +43,7 @@ extension.ts
                   └─> Import Groups
 ```
 
-### Mini TypeScript Hero (Simplified)
+### Mini TypeScript Hero
 ```
 extension.ts
   ├─> ImportOrganizer
@@ -59,10 +59,11 @@ extension.ts
   └─> BatchOrganizer (workspace/folder operations)
 ```
 
-**Key Simplifications**:
-- ❌ No InversifyJS (direct instantiation)
+**Key Differences**:
+- ❌ No InversifyJS — constructor injection is still used, just without a container (a handful of classes don't need one)
 - ❌ No winston (native VSCode OutputChannel)
-- ❌ No typescript-parser (modern ts-morph)
+- ❌ No typescript-parser (ts-morph handles the heavy lifting)
+- ❌ No mocks in tests — real VS Code APIs, real files, so tests verify actual behavior of VS Code instead of guessed behavior
 
 ---
 

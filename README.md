@@ -111,8 +111,8 @@ VS Code has a built-in "Organize Imports" that removes unused imports and sorts 
 
 ### What VS Code Cannot Do
 
-❌ **Automatically create groups based on patterns** — VS Code sorts everything alphabetically unless you manually add blank lines
-❌ **Remove `/index` from paths** — Keeps `./foo/index` as-is instead of cleaning to `./foo`
+❌ **Automatically create groups based on patterns** — VS Code sorts everything alphabetically unless you manually add blank lines  
+❌ **Remove `/index` from paths** — Keeps `./foo/index` as-is instead of cleaning to `./foo`  
 ❌ **Sort by first specifier** — Only sorts by module path, not by the first imported name
 
 ### Example: Automatic vs Manual Grouping
