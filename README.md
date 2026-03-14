@@ -56,7 +56,6 @@ import { UserDetail } from './components/user-detail';
 
 **What happened:**
 - Angular imports merged into one import
-- RxJS operators in separate group
 - Local imports grouped together with blank line separator
 - Unused `UnusedService` removed automatically
 - Everything sorted alphabetically
