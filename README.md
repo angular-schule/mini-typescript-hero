@@ -8,7 +8,7 @@
 
 **One keystroke. One click. Hundreds of files organized.** — A lightweight, modern VSCode extension that sorts and organizes your TypeScript/JavaScript imports.
 
-**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](blog-post.md)
+**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2026-03-mini-typescript-hero)
 
 ## Features
 
