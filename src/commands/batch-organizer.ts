@@ -157,10 +157,12 @@ export class BatchOrganizer {
 
     this.logger.appendLine(`[BatchOrganizer] Searching workspace: ${include}`);
 
-    // Pass '**/node_modules/**' to findFiles to avoid enumerating thousands of dependency files.
+    // Pre-filter all default exclude patterns at the findFiles level to avoid enumerating
+    // thousands of files in build artifacts and dependencies.
     // 'undefined' would only respect files.exclude (which doesn't include node_modules by default).
-    // Our manual filter below handles the remaining exclude patterns (dist, build, out, user patterns).
-    const allFiles = await workspace.findFiles(include, '**/node_modules/**');
+    // Our manual filter below handles user-configured exclude patterns on top of these.
+    const defaultExclude = '**/{node_modules,dist,build,out,.git,coverage}/**';
+    const allFiles = await workspace.findFiles(include, defaultExclude);
 
     // Manually filter files using exclude patterns
     // IMPORTANT: Get excludePatterns per file based on its workspace folder
@@ -199,8 +201,9 @@ export class BatchOrganizer {
     // Use RelativePattern to scope findFiles to the specific workspace folder
     // (plain string patterns search across ALL workspace roots in multi-root workspaces)
     const include = new RelativePattern(workspaceFolder, includeGlob);
-    // Pass '**/node_modules/**' to findFiles to avoid enumerating thousands of dependency files.
-    const allFiles = await workspace.findFiles(include, '**/node_modules/**');
+    // Pre-filter all default exclude patterns at the findFiles level.
+    const defaultExclude = '**/{node_modules,dist,build,out,.git,coverage}/**';
+    const allFiles = await workspace.findFiles(include, defaultExclude);
 
     // Manually filter files using exclude patterns
     const files = allFiles.filter(fileUri => !this.isFileExcluded(fileUri, excludePatterns));
