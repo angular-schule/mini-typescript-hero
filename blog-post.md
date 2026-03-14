@@ -40,6 +40,8 @@ Angular libraries grouped together and automatically merged into one import. RxJ
 
 **This really helps keep the code clean.**
 
+![Demo](demo.gif)
+
 ## The Mission
 
 [Christoph Bühler](https://me.cbue.ch/), the original author of TypeScript Hero, no longer had time to maintain the extension. He's moved on from TypeScript work, which is totally fair. We all have our seasons with different technologies.
@@ -62,6 +64,8 @@ Right-click any folder in the Explorer → "Organize imports in folder". Or run 
 - Enforcing consistent imports across hundreds of files
 
 The extension intelligently skips `node_modules`, `dist`, `build`, and other artifacts. You can also configure custom exclude patterns for auto-generated files your team shouldn't touch.
+
+![Folder organization demo](demo2.gif)
 
 **⚠️ Conflict detection**
 

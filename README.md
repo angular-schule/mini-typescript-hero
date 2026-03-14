@@ -87,6 +87,8 @@ Access these commands via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 4. **Mini TS Hero: Check for configuration conflicts** — Detect if multiple tools would organize imports
 5. **Mini TS Hero: Toggle legacy mode** — Switch between modern and legacy behavior
 
+![Folder organization demo](demo2.gif)
+
 > **Tip:** Workspace and folder commands automatically skip build artifacts (`node_modules`, `dist`, `build`, etc.). You can add custom exclude patterns for auto-generated files — see [excludePatterns configuration](README-configuration.md#exclude-patterns-team-collaboration).
 
 ### Organize on Save
