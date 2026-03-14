@@ -42,11 +42,19 @@ This will:
 
 ### Launch Extension Development Host
 
-1. Open this project in VSCode
+**Option A: From VS Code (F5)**
+1. Open this project in VS Code
 2. Press **F5** (or Run → Start Debugging)
-3. A new VSCode window opens with the extension loaded
-4. Open any TypeScript/JavaScript file
-5. Press **Ctrl+Alt+O** (or **Cmd+Alt+O** on macOS) to organize imports
+3. A new VS Code window opens with the extension loaded
+
+**Option B: From the command line**
+```bash
+code --extensionDevelopmentPath=/absolute/path/to/mini-typescript-hero tests/manual/
+```
+
+> **Important:** The `--extensionDevelopmentPath` must be an **absolute path**. A relative path like `.` will silently fail to load the extension.
+
+Then open any TypeScript/JavaScript file and press **Ctrl+Alt+O** (or **Cmd+Alt+O** on macOS) to organize imports.
 
 ### Manual Test Cases
 
