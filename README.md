@@ -38,8 +38,6 @@ import {Router} from "@angular/router"
 import { map, switchMap } from 'rxjs/operators';
 import {OnInit, inject} from "@angular/core"
 import { BookList } from './components/book-list';
-
-
 ```
 
 **After** pressing `Ctrl+Alt+O` (or `Cmd+Alt+O` on macOS):
@@ -51,7 +49,6 @@ import { map, switchMap } from 'rxjs/operators';
 
 import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
-
 ```
 
 **What happened:**

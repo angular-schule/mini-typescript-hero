@@ -8,7 +8,7 @@ This project continues the legacy of [TypeScript Hero](https://github.com/buehle
 
 ## Mini TypeScript Hero
 
-### [4.0.0-rc.0]
+### [4.0.0]
 
 **Modernization release** - rebuilding Mini TypeScript Hero with a modern technology stack.
 
