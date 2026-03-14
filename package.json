@@ -2,7 +2,7 @@
   "name": "mini-typescript-hero",
   "displayName": "Mini TypeScript Hero",
   "description": "Sorts and organizes TypeScript/JavaScript imports — Keep your codebase clean with custom import grouping, automatic cleanup, and smart formatting. Small hero. Big cleanup!",
-  "version": "4.0.0-rc.0",
+  "version": "4.0.0",
   "publisher": "angular-schule",
   "icon": "icon.png",
   "galleryBanner": {
@@ -308,7 +308,8 @@
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vscode-test",
     "test:comparison": "cd tests/comparison && npm test",
-    "test:all": "npm test && npm run test:comparison"
+    "test:all": "npm test && npm run test:comparison",
+    "vsix": "vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -318,6 +319,7 @@
     "@typescript-eslint/parser": "^8.45.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "esbuild": "^0.25.10",
     "eslint": "^9.36.0",
     "npm-run-all": "^4.1.5",
