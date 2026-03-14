@@ -2,9 +2,9 @@ name: Test Mini TypeScript Hero
 
 on:
   push:
-    branches: [main, master, mini-typescript-hero-v4]
+    branches: [main, mini-typescript-hero-v4]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   test:

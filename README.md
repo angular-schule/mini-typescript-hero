@@ -262,7 +262,7 @@ MIT License — Original work Copyright (c) Christoph Bühler
 
 - [Configuration Reference](README-configuration.md) — Complete settings documentation
 - [Migration Guide](README-migration.md) — Migrating from TypeScript Hero
-- [Developer Guide](https://github.com/angular-schule/mini-typescript-hero/blob/master/README-for-developers.md) — Development setup, debugging, and contributing
+- [Developer Guide](https://github.com/angular-schule/mini-typescript-hero/blob/main/README-for-developers.md) — Development setup, debugging, and contributing
 - [Report Issues](https://github.com/angular-schule/mini-typescript-hero/issues)
 - [Request Features](https://github.com/angular-schule/mini-typescript-hero/issues)
 
