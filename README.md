@@ -8,7 +8,7 @@
 
 **One keystroke. One click. Hundreds of files organized.** — A lightweight, modern VSCode extension that sorts and organizes your TypeScript/JavaScript imports.
 
-**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](https://angular.schule/blog/2026-03-mini-typescript-hero)
+**Read the full story:** [TypeScript Hero is dead (is yet another VS Code extension gone forever?)](blog-post.md)
 
 ## Features
 
@@ -236,11 +236,9 @@ The extension preserves most comments in your import blocks:
 - Comments above import statements
 - Comments at the end of import lines
 - Comments between import statements
+- Comments next to specifiers inside braces (triggers multiline wrapping)
 
-**Not preserved:**
-- Comments inside import braces (e.g., `import { Foo /* comment */ } from './lib'`)
-
-**Best Practice:** Put critical comments above the import statement, not embedded inside the braces.
+**Best Practice:** Put critical comments above the import statement for maximum visibility.
 
 ### Legacy Mode
 
@@ -265,7 +263,7 @@ MIT License — Original work Copyright (c) Christoph Bühler
 
 - [Configuration Reference](README-configuration.md) — Complete settings documentation
 - [Migration Guide](README-migration.md) — Migrating from TypeScript Hero
-- [Developer Guide](README-for-developers.md) — Development setup, debugging, and contributing
+- [Developer Guide](https://github.com/angular-schule/mini-typescript-hero/blob/master/README-for-developers.md) — Development setup, debugging, and contributing
 - [Report Issues](https://github.com/angular-schule/mini-typescript-hero/issues)
 - [Request Features](https://github.com/angular-schule/mini-typescript-hero/issues)
 
