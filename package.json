@@ -78,6 +78,12 @@
           "when": "explorerResourceIsFolder",
           "group": "1_modification"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "miniTypescriptHero.imports.organizeFolder",
+          "when": "false"
+        }
       ]
     },
     "keybindings": [
