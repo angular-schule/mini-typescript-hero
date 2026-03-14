@@ -1,10 +1,14 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { of } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+// Demo file for video - shows the full power of Mini TypeScript Hero
+// Press Ctrl+Alt+O (or Cmd+Alt+O on macOS) to organize imports
 
-import { BookList } from './components/book-list';
 import { UserDetail } from './components/user-detail';
+import { Component } from '@angular/core';
+import { UnusedService } from './services/unused';
+import {Router} from "@angular/router"
+import { map, switchMap } from 'rxjs/operators';
+import {OnInit, inject} from "@angular/core"
+import { BookList } from './components/book-list';
+import {of} from "rxjs"
 
 @Component({
   selector: 'app-demo',
@@ -37,3 +41,5 @@ export class DemoComponent implements OnInit {
     return of(value);
   }
 }
+
+// Note: UnusedService is imported but never used - it will be removed!
